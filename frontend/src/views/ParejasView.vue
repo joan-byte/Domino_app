@@ -41,12 +41,21 @@
         </div>
         <div class="flex gap-4">
           <button 
+            v-if="campeonato?.partida_actual > 0"
+            @click="volverAtras"
+            class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            Volver Atrás
+          </button>
+          <button 
+            v-if="campeonato?.partida_actual === 0"
             @click="cerrarInscripcion" 
             class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
             Cerrar Inscripción
           </button>
           <button 
+            v-if="campeonato?.partida_actual === 0"
             @click="nuevaPareja"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
@@ -73,6 +82,7 @@
               <h3 
                 @click="editarPareja(pareja)"
                 class="text-lg font-medium text-blue-500 hover:text-blue-700 cursor-pointer"
+                :class="{ 'pointer-events-none text-gray-400': campeonato?.partida_actual > 0 }"
               >
                 {{ pareja.nombre }}
               </h3>
@@ -104,10 +114,12 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useParejasStore } from '../stores/parejas';
 import { useCampeonatoStore } from '../stores/campeonato';
+import { useMesaStore } from '../stores/mesa';
 
 const router = useRouter();
 const parejasStore = useParejasStore();
 const campeonatoStore = useCampeonatoStore();
+const mesaStore = useMesaStore();
 
 const parejas = ref([]);
 const campeonato = ref(null);
@@ -132,6 +144,18 @@ const nuevaPareja = () => {
   router.push('/parejas/nueva');
 };
 
+const volverAtras = async () => {
+  try {
+    loading.value = true;
+    await mesaStore.eliminarMesas(campeonatoStore.campeonato.id);
+    await campeonatoStore.reiniciarCampeonato(campeonatoStore.campeonato.id);
+    loading.value = false;
+  } catch (error) {
+    loading.value = false;
+    mostrarError('Error al eliminar las mesas y reiniciar el campeonato. Por favor, inténtelo de nuevo.');
+  }
+};
+
 const cerrarInscripcion = async () => {
   try {
     // Verificar número mínimo de parejas activas
@@ -142,21 +166,15 @@ const cerrarInscripcion = async () => {
       return;
     }
 
-    // Verificar que el campeonato no ha comenzado
-    if (campeonato.value.partida_actual > 0) {
-      mensajeError.value = 'No se puede cerrar la inscripción porque el campeonato ya ha comenzado';
-      mostrarModalError.value = true;
-      return;
-    }
-
     // Confirmar con el usuario
-    if (!confirm('¿Está seguro de que desea cerrar la inscripción? Esta acción no se puede deshacer.')) {
+    if (!confirm('¿Está seguro de que desea cerrar la inscripción? Esta acción creará las mesas iniciales por sorteo.')) {
       return;
     }
 
     // Cerrar inscripción y crear mesas iniciales
     await campeonatoStore.cerrarInscripcion(campeonato.value.id);
     await cargarDatos();
+    router.push('/mesas/asignacion');
   } catch (e) {
     console.error('Error al cerrar la inscripción:', e);
     mensajeError.value = 'Error al cerrar la inscripción';
@@ -175,6 +193,7 @@ const toggleEstado = async (pareja) => {
 };
 
 const editarPareja = (pareja) => {
+  if (campeonato.value?.partida_actual > 0) return;
   router.push(`/parejas/${pareja.id}/editar`);
 };
 

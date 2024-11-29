@@ -59,6 +59,11 @@ export const campeonatoService = {
   async cerrarInscripcion(id) {
     const response = await api.post(`/campeonatos/${id}/cerrar-inscripcion`);
     return response.data;
+  },
+
+  async actualizarPartida(id, partida) {
+    const response = await api.put(`/campeonatos/${id}/partida`, { partida });
+    return response.data;
   }
 };
 
@@ -95,8 +100,8 @@ export const parejaService = {
 };
 
 export const mesaService = {
-  async obtenerMesas(campeonatoId) {
-    const response = await api.get(`/campeonatos/${campeonatoId}/mesas`);
+  async obtenerMesas(campeonatoId, partida) {
+    const response = await api.get(`/mesas?campeonato_id=${campeonatoId}&partida=${partida}`);
     return response.data;
   },
 
@@ -107,6 +112,11 @@ export const mesaService = {
 
   async obtenerMesa(id) {
     const response = await api.get(`/mesas/${id}`);
+    return response.data;
+  },
+
+  async eliminarMesas(campeonatoId) {
+    const response = await api.delete(`/campeonatos/${campeonatoId}/mesas`);
     return response.data;
   }
 };

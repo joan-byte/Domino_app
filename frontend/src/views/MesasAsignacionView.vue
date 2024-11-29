@@ -32,7 +32,7 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="(pareja, index) in parejasMesas" :key="pareja.id" :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ index + 1 }}
+              {{ pareja.numero }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ pareja.nombre }}
@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { campeonatoService, mesaService } from '../services/api';
+import { campeonatoService, mesaService, parejaService } from '../services/api';
 
 const campeonato = ref(null);
 const parejasMesas = ref([]);
@@ -67,27 +67,33 @@ const cargarDatos = async () => {
       return;
     }
 
+    // Cargar todas las parejas del campeonato
+    const parejas = await parejaService.obtenerParejas(campeonato.value.id);
+    
     // Cargar las mesas de la partida actual
-    const mesas = await mesaService.listar(
+    const mesas = await mesaService.obtenerMesas(
       campeonato.value.id,
       campeonato.value.partida_actual
     );
 
+    // Crear un mapa de mesa por pareja
+    const mesaPorPareja = new Map();
+    mesas.forEach(mesa => {
+      if (mesa.pareja1_id) mesaPorPareja.set(mesa.pareja1_id, mesa.id);
+      if (mesa.pareja2_id) mesaPorPareja.set(mesa.pareja2_id, mesa.id);
+    });
+
     // Transformar los datos para la tabla
-    parejasMesas.value = mesas.flatMap(mesa => [
-      {
-        id: mesa.pareja1.id,
-        nombre: mesa.pareja1.nombre,
-        club_pertenencia: mesa.pareja1.club_pertenencia,
-        mesa: mesa.id
-      },
-      {
-        id: mesa.pareja2.id,
-        nombre: mesa.pareja2.nombre,
-        club_pertenencia: mesa.pareja2.club_pertenencia,
-        mesa: mesa.id
-      }
-    ]).sort((a, b) => a.id - b.id);
+    parejasMesas.value = parejas
+      .filter(pareja => pareja.activa)
+      .map(pareja => ({
+        id: pareja.id,
+        numero: pareja.id,
+        nombre: pareja.nombre,
+        club_pertenencia: pareja.club_pertenencia,
+        mesa: mesaPorPareja.get(pareja.id) || '-'
+      }))
+      .sort((a, b) => a.id - b.id);
 
   } catch (e) {
     console.error('Error al cargar los datos:', e);

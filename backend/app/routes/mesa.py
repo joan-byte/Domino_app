@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 import random
 from ..database import get_db
@@ -128,6 +128,9 @@ def get_mesas(campeonato_id: int, partida: int, db: Session = Depends(get_db)):
     return db.query(Mesa).filter(
         Mesa.campeonato_id == campeonato_id,
         Mesa.partida == partida
+    ).options(
+        joinedload(Mesa.pareja1),
+        joinedload(Mesa.pareja2)
     ).all()
 
 @router.get("/{mesa_id}", response_model=MesaSchema)
