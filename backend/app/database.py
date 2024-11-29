@@ -41,6 +41,11 @@ def init_db(db_name: str):
                 conn.execute(text("COMMIT"))
                 conn.execute(text(f"CREATE DATABASE {db_name}"))
                 print(f"Base de datos '{db_name}' creada exitosamente")
+                
+                # Solo reiniciar secuencias si es una base de datos nueva
+                should_reset_sequences = True
+            else:
+                should_reset_sequences = False
         
         postgres_engine.dispose()
         
@@ -49,9 +54,9 @@ def init_db(db_name: str):
         engine = create_engine(database_url)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
-        # Crear todas las tablas
+        # Crear todas las tablas si no existen
         Base.metadata.create_all(bind=engine)
-        print("Tablas creadas exitosamente")
+        print("Tablas creadas/verificadas exitosamente")
         
         # Verificar la conexión
         with engine.connect() as conn:

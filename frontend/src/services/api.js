@@ -123,12 +123,22 @@ export const mesaService = {
 
 export const resultadoService = {
   async obtenerResultados(mesaId) {
-    const response = await api.get(`/mesas/${mesaId}/resultados`);
+    const response = await api.get(`/resultados/mesa/${mesaId}`);
     return response.data;
   },
 
-  async guardarResultado(data) {
+  async obtenerPorMesa(mesaId) {
+    const response = await api.get(`/resultados/mesa/${mesaId}`);
+    return response.data;
+  },
+
+  async crear(data) {
     const response = await api.post('/resultados', data);
+    return response.data;
+  },
+
+  async actualizarPorMesa(mesaId, data) {
+    const response = await api.put(`/resultados/mesa/${mesaId}`, data);
     return response.data;
   },
 

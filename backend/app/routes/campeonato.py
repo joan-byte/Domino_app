@@ -125,13 +125,6 @@ def actualizar_campeonato(
                 detail="Campeonato no encontrado"
             )
         
-        # Verificar si hay resultados registrados
-        if db_campeonato.partida_actual > 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se puede modificar un campeonato que ya ha comenzado"
-            )
-        
         # Actualizar campos
         for key, value in campeonato.dict(exclude_unset=True).items():
             setattr(db_campeonato, key, value)

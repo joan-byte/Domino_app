@@ -19,7 +19,7 @@
     <div v-if="campeonato" class="bg-white shadow-lg rounded-lg p-6">
       <div class="flex justify-between items-start mb-6">
         <h2 class="text-2xl font-bold">{{ campeonato.nombre }}</h2>
-        <div class="space-x-2" v-if="campeonato.partida_actual === 0">
+        <div class="space-x-2">
           <button
             @click="mostrarFormularioEdicion"
             class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded"
