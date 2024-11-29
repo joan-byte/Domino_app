@@ -20,9 +20,12 @@ export const useCampeonatoStore = defineStore('campeonato', () => {
     const cerrarInscripcion = async (id) => {
         try {
             await campeonatoService.cerrarInscripcion(id);
-            await obtenerActual();
+            const campeonatoActualizado = await campeonatoService.obtenerActual();
+            campeonato.value = campeonatoActualizado;
+            error.value = null;
+            return campeonatoActualizado;
         } catch (e) {
-            error.value = 'Error al cerrar la inscripción';
+            error.value = e.response?.data?.detail || 'Error al cerrar la inscripción';
             throw e;
         }
     };

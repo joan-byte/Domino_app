@@ -1,8 +1,35 @@
 <template>
   <div class="container mx-auto px-4 py-8">
-    <!-- Mensaje de error -->
+    <!-- Mensaje de error general -->
     <div v-if="error" class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
       <span class="block sm:inline">{{ error }}</span>
+    </div>
+
+    <!-- Modal de Error -->
+    <div v-if="mostrarModalError" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-center">
+            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+              <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-medium leading-6 text-gray-900 text-center mt-4">Error</h3>
+          <div class="mt-2 px-7 py-3">
+            <p class="text-sm text-gray-500 text-center">{{ mensajeError }}</p>
+          </div>
+          <div class="flex justify-center mt-4">
+            <button
+              @click="mostrarModalError = false"
+              class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+            >
+              Aceptar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Encabezado -->
@@ -85,6 +112,8 @@ const campeonatoStore = useCampeonatoStore();
 const parejas = ref([]);
 const campeonato = ref(null);
 const error = ref(null);
+const mostrarModalError = ref(false);
+const mensajeError = ref('');
 
 const cargarDatos = async () => {
   try {
@@ -105,11 +134,33 @@ const nuevaPareja = () => {
 
 const cerrarInscripcion = async () => {
   try {
+    // Verificar número mínimo de parejas activas
+    const parejasActivas = parejas.value.filter(p => p.activa);
+    if (parejasActivas.length < 4) {
+      mensajeError.value = 'Se necesitan al menos 4 parejas activas para cerrar la inscripción';
+      mostrarModalError.value = true;
+      return;
+    }
+
+    // Verificar que el campeonato no ha comenzado
+    if (campeonato.value.partida_actual > 0) {
+      mensajeError.value = 'No se puede cerrar la inscripción porque el campeonato ya ha comenzado';
+      mostrarModalError.value = true;
+      return;
+    }
+
+    // Confirmar con el usuario
+    if (!confirm('¿Está seguro de que desea cerrar la inscripción? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    // Cerrar inscripción y crear mesas iniciales
     await campeonatoStore.cerrarInscripcion(campeonato.value.id);
     await cargarDatos();
   } catch (e) {
     console.error('Error al cerrar la inscripción:', e);
-    error.value = 'Error al cerrar la inscripción';
+    mensajeError.value = 'Error al cerrar la inscripción';
+    mostrarModalError.value = true;
   }
 };
 

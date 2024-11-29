@@ -13,6 +13,7 @@ import logging
 import os
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import random
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -303,4 +304,72 @@ def obtener_parejas_campeonato(campeonato_id: int, db: Session = Depends(get_db)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener las parejas: {str(e)}"
+        )
+
+@router.post("/{campeonato_id}/cerrar-inscripcion")
+def cerrar_inscripcion(campeonato_id: int, db: Session = Depends(get_db)):
+    try:
+        logger.info(f"Intentando cerrar inscripción del campeonato {campeonato_id}")
+        
+        # Verificar que existe el campeonato
+        campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+        if not campeonato:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campeonato no encontrado"
+            )
+        
+        # Verificar que el campeonato no ha comenzado
+        if campeonato.partida_actual > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El campeonato ya ha comenzado"
+            )
+        
+        # Obtener parejas activas
+        parejas_activas = db.query(Pareja).filter(
+            Pareja.campeonato_id == campeonato_id,
+            Pareja.activa == True
+        ).all()
+        
+        # Verificar número mínimo de parejas
+        if len(parejas_activas) < 4:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Se necesitan al menos 4 parejas activas para comenzar"
+            )
+        
+        # Crear mesas iniciales por sorteo
+        parejas_ids = [p.id for p in parejas_activas]
+        random.shuffle(parejas_ids)
+        
+        # Crear mesas
+        for i in range(0, len(parejas_ids), 2):
+            pareja1_id = parejas_ids[i]
+            pareja2_id = parejas_ids[i + 1] if i + 1 < len(parejas_ids) else None
+            
+            mesa = Mesa(
+                partida=1,
+                pareja1_id=pareja1_id,
+                pareja2_id=pareja2_id,
+                campeonato_id=campeonato_id
+            )
+            db.add(mesa)
+        
+        # Actualizar estado del campeonato
+        campeonato.partida_actual = 1
+        db.commit()
+        
+        logger.info(f"Inscripción cerrada exitosamente para el campeonato {campeonato_id}")
+        return {"message": "Inscripción cerrada exitosamente"}
+        
+    except HTTPException as he:
+        logger.error(f"Error HTTP al cerrar inscripción: {str(he)}")
+        raise he
+    except Exception as e:
+        logger.error(f"Error al cerrar inscripción: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al cerrar la inscripción: {str(e)}"
         ) 
