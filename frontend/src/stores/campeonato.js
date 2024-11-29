@@ -1,73 +1,36 @@
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
 import { campeonatoService } from '../services/api';
 
-export const useCampeonatoStore = defineStore('campeonato', {
-    state: () => ({
-        campeonato: null,
-        loading: false,
-        error: null,
-    }),
+export const useCampeonatoStore = defineStore('campeonato', () => {
+    const campeonato = ref(null);
+    const error = ref(null);
 
-    getters: {
-        isActive: (state) => !!state.campeonato,
-        currentPartida: (state) => state.campeonato?.partida_actual || 0,
-    },
+    const obtenerActual = async () => {
+        try {
+            const data = await campeonatoService.obtenerActual();
+            campeonato.value = data;
+            return data;
+        } catch (e) {
+            error.value = 'Error al obtener el campeonato actual';
+            throw e;
+        }
+    };
 
-    actions: {
-        async fetchCampeonatoActual() {
-            this.loading = true;
-            this.error = null;
-            try {
-                this.campeonato = await campeonatoService.obtenerActual();
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al obtener el campeonato';
-                this.campeonato = null;
-            } finally {
-                this.loading = false;
-            }
-        },
+    const cerrarInscripcion = async (id) => {
+        try {
+            await campeonatoService.cerrarInscripcion(id);
+            await obtenerActual();
+        } catch (e) {
+            error.value = 'Error al cerrar la inscripción';
+            throw e;
+        }
+    };
 
-        async crearCampeonato(campeonato) {
-            this.loading = true;
-            this.error = null;
-            try {
-                this.campeonato = await campeonatoService.crear(campeonato);
-                return true;
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al crear el campeonato';
-                return false;
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async actualizarCampeonato(id, campeonato) {
-            this.loading = true;
-            this.error = null;
-            try {
-                this.campeonato = await campeonatoService.actualizar(id, campeonato);
-                return true;
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al actualizar el campeonato';
-                return false;
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async eliminarCampeonato(id) {
-            this.loading = true;
-            this.error = null;
-            try {
-                await campeonatoService.eliminar(id);
-                this.campeonato = null;
-                return true;
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al eliminar el campeonato';
-                return false;
-            } finally {
-                this.loading = false;
-            }
-        },
-    },
+    return {
+        campeonato,
+        error,
+        obtenerActual,
+        cerrarInscripcion
+    };
 }); 

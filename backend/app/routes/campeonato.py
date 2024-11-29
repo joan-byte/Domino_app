@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db, init_db
 from ..models.campeonato import Campeonato
+from ..models.resultado import Resultado
+from ..models.mesa import Mesa
+from ..models.pareja import Pareja
 from ..schemas.campeonato import CampeonatoCreate, CampeonatoResponse, CampeonatoUpdate
-from sqlalchemy import desc, func
+from ..schemas.pareja import Pareja as ParejaSchema
+from sqlalchemy import desc, func, text
 import logging
 import os
 import psycopg2
@@ -19,6 +23,42 @@ router = APIRouter(
     tags=["campeonatos"]
 )
 
+def reset_database_sequences(db: Session):
+    """Reinicia todas las secuencias de las tablas a 1"""
+    tables = [
+        'campeonatos',
+        'parejas',
+        'mesas',
+        'resultados'
+    ]
+    
+    try:
+        for table in tables:
+            # Eliminar todos los registros de la tabla
+            db.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE"))
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error al reiniciar secuencias: {str(e)}")
+        db.rollback()
+        raise
+
+def eliminar_datos_relacionados(db: Session, campeonato_id: int):
+    """Elimina todos los datos relacionados con un campeonato en el orden correcto"""
+    try:
+        # Eliminar resultados
+        db.query(Resultado).filter(Resultado.campeonato_id == campeonato_id).delete()
+        
+        # Eliminar mesas
+        db.query(Mesa).filter(Mesa.campeonato_id == campeonato_id).delete()
+        
+        # Eliminar parejas
+        db.query(Pareja).filter(Pareja.campeonato_id == campeonato_id).delete()
+        
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+
 @router.post("/", response_model=CampeonatoResponse)
 def crear_campeonato(campeonato: CampeonatoCreate, db: Session = Depends(get_db)):
     try:
@@ -30,6 +70,9 @@ def crear_campeonato(campeonato: CampeonatoCreate, db: Session = Depends(get_db)
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ya existe un campeonato activo"
             )
+        
+        # Reiniciar todas las secuencias antes de crear el nuevo campeonato
+        reset_database_sequences(db)
         
         # Crear nuevo campeonato
         db_campeonato = Campeonato(
@@ -121,6 +164,8 @@ def actualizar_campeonato(
 def eliminar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
     try:
         logger.info(f"Intentando eliminar campeonato {campeonato_id}")
+        
+        # Verificar si el campeonato existe
         db_campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
         if not db_campeonato:
             raise HTTPException(
@@ -128,11 +173,16 @@ def eliminar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
                 detail="Campeonato no encontrado"
             )
         
-        # Eliminar el campeonato de la base de datos
-        db.delete(db_campeonato)
-        db.commit()
-        logger.info(f"Campeonato {campeonato_id} eliminado exitosamente")
+        # Eliminar registros relacionados usando SQL directo
+        db.execute(text("DELETE FROM resultados WHERE campeonato_id = :id"), {"id": campeonato_id})
+        db.execute(text("DELETE FROM mesas WHERE campeonato_id = :id"), {"id": campeonato_id})
+        db.execute(text("DELETE FROM parejas WHERE campeonato_id = :id"), {"id": campeonato_id})
         
+        # Eliminar el campeonato
+        db.execute(text("DELETE FROM campeonatos WHERE id = :id"), {"id": campeonato_id})
+        
+        db.commit()
+        logger.info(f"Campeonato {campeonato_id} y datos relacionados eliminados exitosamente")
         return {"message": "Campeonato eliminado exitosamente"}
     except HTTPException as he:
         logger.error(f"Error HTTP al eliminar campeonato: {str(he)}")
@@ -225,4 +275,32 @@ def finalizar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al finalizar el campeonato: {str(e)}"
+        )
+
+@router.get("/{campeonato_id}/parejas", response_model=List[ParejaSchema])
+def obtener_parejas_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
+    try:
+        logger.info(f"Obteniendo parejas del campeonato {campeonato_id}")
+        # Verificar que existe el campeonato
+        campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+        if not campeonato:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campeonato no encontrado"
+            )
+        
+        # Obtener todas las parejas del campeonato ordenadas por ID descendente
+        parejas = db.query(Pareja)\
+                   .filter(Pareja.campeonato_id == campeonato_id)\
+                   .order_by(desc(Pareja.id))\
+                   .all()
+        return parejas
+    except HTTPException as he:
+        logger.error(f"Error HTTP al obtener parejas: {str(he)}")
+        raise he
+    except Exception as e:
+        logger.error(f"Error al obtener parejas: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener las parejas: {str(e)}"
         ) 

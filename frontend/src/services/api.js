@@ -1,128 +1,141 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
-
+// Crear instancia de axios con la configuración base
 const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
+// Interceptor para manejar errores
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response) {
+      console.error('Error de respuesta:', error.response.data);
+    } else if (error.request) {
+      console.error('Error de petición:', error.request);
+    } else {
+      console.error('Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const campeonatoService = {
-    async obtenerActual() {
-        try {
-            const response = await api.get('/campeonatos/actual');
-            return response.data;
-        } catch (error) {
-            if (error.response?.status === 404) {
-                // Si no hay campeonato, retornamos null en lugar de lanzar error
-                return null;
-            }
-            console.error('Error al obtener el campeonato actual:', error);
-            throw error;
-        }
-    },
-
-    async crear(campeonato) {
-        try {
-            const response = await api.post('/campeonatos', campeonato);
-            return response.data;
-        } catch (error) {
-            console.error('Error al crear el campeonato:', error);
-            throw error;
-        }
-    },
-
-    async actualizar(id, campeonato) {
-        try {
-            const response = await api.put(`/campeonatos/${id}`, campeonato);
-            return response.data;
-        } catch (error) {
-            console.error('Error al actualizar el campeonato:', error);
-            throw error;
-        }
-    },
-
-    async eliminar(id) {
-        try {
-            const response = await api.delete(`/campeonatos/${id}`);
-            return response.data;
-        } catch (error) {
-            console.error('Error al eliminar el campeonato:', error);
-            throw error;
-        }
+  async obtenerActual() {
+    try {
+      const response = await api.get('/campeonatos/actual');
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
     }
-};
+  },
 
-export const rankingService = {
-    async obtenerRanking(campeonatoId) {
-        try {
-            const response = await api.get(`/ranking/${campeonatoId}`);
-            return response.data;
-        } catch (error) {
-            console.error('Error al obtener el ranking:', error);
-            throw error;
-        }
-    }
+  async obtenerDetalles() {
+    const response = await api.get('/campeonatos/actual/detalles');
+    return response.data;
+  },
+
+  async crear(data) {
+    const response = await api.post('/campeonatos', data);
+    return response.data;
+  },
+
+  async actualizar(id, data) {
+    const response = await api.put(`/campeonatos/${id}`, data);
+    return response.data;
+  },
+
+  async eliminar(id) {
+    const response = await api.delete(`/campeonatos/${id}`);
+    return response.data;
+  },
+
+  async cerrarInscripcion(id) {
+    const response = await api.post(`/campeonatos/${id}/cerrar-inscripcion`);
+    return response.data;
+  }
 };
 
 export const parejaService = {
-    async listar(campeonatoId) {
-        const response = await api.get(`/parejas/${campeonatoId}`);
-        return response.data;
-    },
-    
-    async crear(pareja) {
-        const response = await api.post('/parejas', pareja);
-        return response.data;
-    },
-    
-    async actualizar(id, pareja) {
-        const response = await api.put(`/parejas/${id}`, pareja);
-        return response.data;
-    },
-    
-    async eliminar(id) {
-        await api.delete(`/parejas/${id}`);
-    },
-    
-    async toggleActiva(id) {
-        const response = await api.patch(`/parejas/${id}/toggle-activa`);
-        return response.data;
-    }
+  async obtenerParejas(campeonatoId) {
+    const response = await api.get(`/campeonatos/${campeonatoId}/parejas`);
+    return response.data;
+  },
+
+  async obtenerPareja(id) {
+    const response = await api.get(`/parejas/${id}`);
+    return response.data;
+  },
+
+  async crear(data) {
+    const response = await api.post('/parejas', data);
+    return response.data;
+  },
+
+  async actualizar(id, data) {
+    const response = await api.put(`/parejas/${id}`, data);
+    return response.data;
+  },
+
+  async toggleEstado(id) {
+    const response = await api.put(`/parejas/${id}/activar`);
+    return response.data;
+  },
+
+  async eliminar(id) {
+    const response = await api.delete(`/parejas/${id}`);
+    return response.data;
+  }
 };
 
 export const mesaService = {
-    async listar(campeonatoId, partida) {
-        const response = await api.get(`/mesas/${campeonatoId}/${partida}`);
-        return response.data;
-    },
-    
-    async crearPorSorteo(campeonatoId) {
-        const response = await api.post(`/mesas/${campeonatoId}/sorteo`);
-        return response.data;
-    },
-    
-    async crearPorRanking(campeonatoId) {
-        const response = await api.post(`/mesas/${campeonatoId}/ranking`);
-        return response.data;
-    }
+  async obtenerMesas(campeonatoId) {
+    const response = await api.get(`/campeonatos/${campeonatoId}/mesas`);
+    return response.data;
+  },
+
+  async crearMesas(campeonatoId) {
+    const response = await api.post(`/campeonatos/${campeonatoId}/mesas`);
+    return response.data;
+  },
+
+  async obtenerMesa(id) {
+    const response = await api.get(`/mesas/${id}`);
+    return response.data;
+  }
 };
 
 export const resultadoService = {
-    async crear(resultado) {
-        const response = await api.post('/resultados', resultado);
-        return response.data;
-    },
-    
-    async obtenerPorMesa(mesaId) {
-        const response = await api.get(`/resultados/mesa/${mesaId}`);
-        return response.data;
-    },
-    
-    async actualizarPorMesa(mesaId, resultado) {
-        const response = await api.put(`/resultados/mesa/${mesaId}`, resultado);
-        return response.data;
-    }
-}; 
+  async obtenerResultados(mesaId) {
+    const response = await api.get(`/mesas/${mesaId}/resultados`);
+    return response.data;
+  },
+
+  async guardarResultado(data) {
+    const response = await api.post('/resultados', data);
+    return response.data;
+  },
+
+  async obtenerResultado(id) {
+    const response = await api.get(`/resultados/${id}`);
+    return response.data;
+  },
+
+  async actualizarResultado(id, data) {
+    const response = await api.put(`/resultados/${id}`, data);
+    return response.data;
+  },
+
+  async obtenerRankingFinal(campeonatoId) {
+    const response = await api.get(`/campeonatos/${campeonatoId}/ranking-final`);
+    return response.data;
+  }
+};
+
+export { api }; 

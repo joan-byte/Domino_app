@@ -35,40 +35,14 @@
         </div>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold mb-3">Información General</h3>
-          <div class="space-y-2">
-            <p><span class="font-medium">Fecha de inicio:</span> {{ formatearFecha(campeonato.fecha_inicio) }}</p>
-            <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
-            <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
-            <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
-            <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
-          </div>
-        </div>
-
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold mb-3">Acciones</h3>
-          <div class="space-y-4">
-            <button
-              @click="navegarAParejas"
-              class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Gestionar Parejas
-            </button>
-            <button
-              @click="navegarAMesas"
-              class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Gestionar Mesas
-            </button>
-            <button
-              @click="navegarARanking"
-              class="w-full bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Ver Ranking
-            </button>
-          </div>
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold mb-3">Información General</h3>
+        <div class="space-y-2">
+          <p><span class="font-medium">Fecha de inicio:</span> {{ formatearFecha(campeonato.fecha_inicio) }}</p>
+          <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
+          <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
+          <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
+          <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
         </div>
       </div>
     </div>
@@ -223,7 +197,6 @@ const cargarCampeonatoActual = async () => {
     error.value = null;
   } catch (e) {
     if (e.response?.status === 404) {
-      // No hay campeonato activo - esto es normal
       campeonato.value = null;
       error.value = null;
     } else {
@@ -299,10 +272,12 @@ const eliminarCampeonato = async () => {
   try {
     await campeonatoService.eliminar(campeonato.value.id);
     mostrarConfirmacion.value = false;
+    campeonato.value = null;
+    error.value = null;
     await cargarCampeonatoActual();
   } catch (e) {
-    console.error('Error al eliminar el campeonato:', e);
-    error.value = e.response?.data?.detail || 'Error al eliminar el campeonato';
+    console.error('Error:', e);
+    error.value = 'Error al eliminar el campeonato';
   }
 };
 

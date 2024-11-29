@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from ..database import Base
 
@@ -7,10 +7,7 @@ class Resultado(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     pareja_id = Column(Integer, ForeignKey("parejas.id"))
-    gb = Column(Boolean)
-    rp = Column(Integer)
-    pg = Column(Integer)
-    pp = Column(Integer)
+    puntos = Column(Integer, default=0)
     mesa_id = Column(Integer, ForeignKey("mesas.id"))
     partida = Column(Integer)
     campeonato_id = Column(Integer, ForeignKey("campeonatos.id"))

@@ -11,35 +11,29 @@ router = APIRouter(prefix="/ranking", tags=["ranking"])
 @router.get("/{campeonato_id}", response_model=List[RankingPareja])
 async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
     """
-    Obtiene el ranking actual del campeonato, ordenado por puntos (de mayor a menor)
+    Obtiene el ranking actual del campeonato, ordenado por puntos totales (de mayor a menor)
     """
-    # Obtener todas las parejas del campeonato
-    parejas = db.query(Pareja).filter(Pareja.campeonato_id == campeonato_id).all()
+    # Obtener todas las parejas del campeonato con sus puntos totales
+    ranking = db.query(
+        Pareja.id,
+        Pareja.nombre,
+        Pareja.club_pertenencia,
+        func.count(Resultado.id).label('partidas_jugadas'),
+        func.coalesce(func.sum(Resultado.puntos), 0).label('puntos_totales')
+    ).outerjoin(Resultado).filter(
+        Pareja.campeonato_id == campeonato_id
+    ).group_by(
+        Pareja.id
+    ).order_by(
+        func.coalesce(func.sum(Resultado.puntos), 0).desc()
+    ).all()
     
-    ranking = []
-    for pareja in parejas:
-        # Obtener resultados donde la pareja participó
-        resultados = db.query(Resultado).filter(
-            (Resultado.pareja_id == pareja.id)
-        ).all()
-        
-        # Calcular estadísticas
-        partidos_jugados = len(resultados)
-        victorias = sum(1 for r in resultados if r.puntos > 0)
-        derrotas = partidos_jugados - victorias
-        puntos_totales = sum(r.puntos for r in resultados)
-        
-        ranking.append(RankingPareja(
-            id=pareja.id,
-            nombre=pareja.nombre,
-            puntos=puntos_totales,
-            partidos_jugados=partidos_jugados,
-            victorias=victorias,
-            derrotas=derrotas,
-            club_pertenencia=pareja.club_pertenencia
-        ))
-    
-    # Ordenar por puntos (descendente)
-    ranking.sort(key=lambda x: (-x.puntos, -x.victorias))
-    
-    return ranking 
+    return [
+        RankingPareja(
+            id=r.id,
+            nombre=r.nombre,
+            club_pertenencia=r.club_pertenencia,
+            partidas_jugadas=r.partidas_jugadas,
+            puntos_totales=r.puntos_totales
+        ) for r in ranking
+    ] 
