@@ -33,11 +33,12 @@ def create_resultado(resultado1: ResultadoCreate, resultado2: ResultadoCreate, d
         )
     
     # Calcular PG y PP
-    pp1 = resultado2.rp - resultado1.rp
-    pp2 = resultado1.rp - resultado2.rp
+    pp1 = resultado1.rp - resultado2.rp
+    pp2 = resultado2.rp - resultado1.rp
     
-    pg1 = 1 if pp1 > 0 else 0
-    pg2 = 1 if pp2 > 0 else 0
+    # PG se asigna a la pareja con mayor RP
+    pg1 = 1 if resultado1.rp > resultado2.rp else 0
+    pg2 = 1 if resultado2.rp > resultado1.rp else 0
     
     # Crear resultados
     db_resultado1 = Resultado(
@@ -114,11 +115,12 @@ def update_resultados_mesa(
         )
     
     # Calcular nuevos PG y PP
-    pp1 = resultado2.rp - resultado1.rp
-    pp2 = resultado1.rp - resultado2.rp
+    pp1 = resultado1.rp - resultado2.rp
+    pp2 = resultado2.rp - resultado1.rp
     
-    pg1 = 1 if pp1 > 0 else 0
-    pg2 = 1 if pp2 > 0 else 0
+    # PG se asigna a la pareja con mayor RP
+    pg1 = 1 if resultado1.rp > resultado2.rp else 0
+    pg2 = 1 if resultado2.rp > resultado1.rp else 0
     
     # Actualizar resultados
     for resultado in resultados:

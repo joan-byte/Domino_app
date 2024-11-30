@@ -132,8 +132,11 @@ export const resultadoService = {
     return response.data;
   },
 
-  async crear(data) {
-    const response = await api.post('/resultados', data);
+  async crear(resultado1, resultado2) {
+    const response = await api.post('/resultados', {
+      resultado1,
+      resultado2
+    });
     return response.data;
   },
 

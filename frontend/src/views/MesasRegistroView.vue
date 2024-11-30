@@ -66,51 +66,156 @@
 
     <!-- Modal de Registro de Resultado -->
     <div v-if="mostrarModal && mesaSeleccionada" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
         <div class="mt-3">
-          <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-            Registro de Resultado - Mesa {{ mesaSeleccionada.id }}
+          <h3 class="text-xl font-semibold text-gray-900 mb-6">
+            Registro de Resultado - Mesa {{ mesaSeleccionada.id }} - Partida {{ campeonato?.partida_actual }}
           </h3>
-          <form @submit.prevent="guardarResultado" class="space-y-4">
+
+          <form @submit.prevent="guardarResultado" class="space-y-6" id="formResultado">
+            <!-- Mensaje de error -->
+            <div v-if="error" class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">
+                    {{ error }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Pareja 1 -->
-            <div v-if="mesaSeleccionada.pareja1">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+            <div v-if="mesaSeleccionada.pareja1" class="space-y-2">
+              <div class="text-lg mb-4">
                 {{ mesaSeleccionada.pareja1.id }} - {{ mesaSeleccionada.pareja1.nombre }}
-              </label>
-              <input
-                v-model.number="resultado.puntos_pareja1"
-                type="number"
-                required
-                min="0"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              </div>
+              
+              <div class="grid grid-cols-3 gap-8">
+                <div class="flex flex-col">
+                  <label 
+                    for="rp_pareja1" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
+                    Resultado Partida (RP)
+                  </label>
+                  <input
+                    id="rp_pareja1"
+                    name="rp_pareja1"
+                    v-model.number="resultado.puntos_pareja1"
+                    type="number"
+                    required
+                    min="0"
+                    max="300"
+                    @input="() => {
+                      if (resultado.puntos_pareja1 > 300) {
+                        error = 'Los resultados no pueden ser mayores a 300';
+                      } else if (resultado.puntos_pareja1 === resultado.puntos_pareja2 && resultado.puntos_pareja1 !== 0) {
+                        error = 'Los resultados no pueden ser iguales';
+                      } else {
+                        error = '';
+                      }
+                    }"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    :class="{
+                      'border-red-500': resultado.puntos_pareja1 > 300 || 
+                        (resultado.puntos_pareja1 === resultado.puntos_pareja2 && resultado.puntos_pareja1 !== 0)
+                    }"
+                  />
+                </div>
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Partidas Ganadas (PG)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.pg1 }}
+                  </div>
+                </div>
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Puntos Partida (PP)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.pp1 }}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Pareja 2 -->
-            <div v-if="mesaSeleccionada.pareja2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+            <div v-if="mesaSeleccionada.pareja2" class="space-y-2">
+              <div class="text-lg mb-4">
                 {{ mesaSeleccionada.pareja2.id }} - {{ mesaSeleccionada.pareja2.nombre }}
-              </label>
-              <input
-                v-model.number="resultado.puntos_pareja2"
-                type="number"
-                required
-                min="0"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
+              </div>
+              
+              <div class="grid grid-cols-3 gap-8">
+                <div class="flex flex-col">
+                  <label 
+                    for="rp_pareja2" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
+                    Resultado Partida (RP)
+                  </label>
+                  <input
+                    id="rp_pareja2"
+                    name="rp_pareja2"
+                    v-model.number="resultado.puntos_pareja2"
+                    type="number"
+                    required
+                    min="0"
+                    max="300"
+                    @input="() => {
+                      if (resultado.puntos_pareja2 > 300) {
+                        error = 'Los resultados no pueden ser mayores a 300';
+                      } else if (resultado.puntos_pareja2 === resultado.puntos_pareja1 && resultado.puntos_pareja2 !== 0) {
+                        error = 'Los resultados no pueden ser iguales';
+                      } else {
+                        error = '';
+                      }
+                    }"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    :class="{
+                      'border-red-500': resultado.puntos_pareja2 > 300 || 
+                        (resultado.puntos_pareja2 === resultado.puntos_pareja1 && resultado.puntos_pareja2 !== 0)
+                    }"
+                  />
+                </div>
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Partidas Ganadas (PG)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.pg2 }}
+                  </div>
+                </div>
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Puntos Partida (PP)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.pp2 }}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="flex justify-end space-x-3 mt-6">
               <button
                 type="button"
+                id="btn_cancelar"
                 @click="cerrarModal"
-                class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded"
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                id="btn_guardar"
+                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
                 Guardar
               </button>
@@ -123,7 +228,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { campeonatoService, mesaService, resultadoService } from '../services/api';
 
 const campeonato = ref(null);
@@ -134,6 +239,42 @@ const mesaSeleccionada = ref(null);
 const resultado = ref({
   puntos_pareja1: 0,
   puntos_pareja2: 0
+});
+
+// Computed properties para los cálculos
+const calculos = computed(() => {
+  const rp1 = resultado.value.puntos_pareja1;
+  const rp2 = resultado.value.puntos_pareja2;
+
+  // Validar límites y empates
+  if (rp1 > 300 || rp2 > 300) {
+    error.value = 'Los resultados no pueden ser mayores a 300';
+    return {
+      pg1: 0,
+      pg2: 0,
+      pp1: 0,
+      pp2: 0
+    };
+  } else if (rp1 === rp2 && rp1 !== 0) {
+    error.value = 'Los resultados no pueden ser iguales';
+    return {
+      pg1: 0,
+      pg2: 0,
+      pp1: 0,
+      pp2: 0
+    };
+  } else {
+    error.value = '';
+  }
+
+  return {
+    // Partidas Ganadas: 1 para el ganador, 0 para el perdedor
+    pg1: rp1 > rp2 ? 1 : 0,
+    pg2: rp2 > rp1 ? 1 : 0,
+    // Puntos Partida: RP contrario - RP propio (igual que en el backend)
+    pp1: rp2 - rp1,  // PP de pareja 1 = RP de pareja 2 - RP de pareja 1
+    pp2: rp1 - rp2   // PP de pareja 2 = RP de pareja 1 - RP de pareja 2
+  };
 });
 
 const cargarDatos = async () => {
@@ -176,6 +317,34 @@ const cargarDatos = async () => {
   }
 };
 
+const validarResultado = () => {
+  // Reiniciar mensaje de error
+  error.value = '';
+
+  const rp1 = resultado.value.puntos_pareja1;
+  const rp2 = resultado.value.puntos_pareja2;
+
+  // Verificar que los valores son números
+  if (isNaN(rp1) || isNaN(rp2)) {
+    error.value = 'Los resultados deben ser números válidos';
+    return false;
+  }
+
+  // Verificar que los valores están entre 0 y 300
+  if (rp1 < 0 || rp1 > 300 || rp2 < 0 || rp2 > 300) {
+    error.value = 'Los resultados deben estar entre 0 y 300';
+    return false;
+  }
+
+  // Verificar que los valores son diferentes (no hay empate)
+  if (rp1 === rp2) {
+    error.value = 'Los resultados no pueden ser iguales';
+    return false;
+  }
+
+  return true;
+};
+
 const abrirFormularioResultado = async (mesa) => {
   mesaSeleccionada.value = mesa;
   if (mesa.tiene_resultado && mesa.resultados.length > 0) {
@@ -199,48 +368,58 @@ const cerrarModal = () => {
     puntos_pareja1: 0,
     puntos_pareja2: 0
   };
+  error.value = null;
 };
 
 const guardarResultado = async () => {
   try {
+    if (!validarResultado()) {
+      return;
+    }
+
     if (!mesaSeleccionada.value) {
       error.value = 'Datos de mesa incompletos';
       return;
     }
 
-    const resultadoData = {
-      resultado1: mesaSeleccionada.value.pareja1 ? {
-        mesa_id: mesaSeleccionada.value.id,
-        pareja_id: mesaSeleccionada.value.pareja1.id,
-        rp: resultado.value.puntos_pareja1,
-        gb: false,
-        partida: campeonato.value.partida_actual,
-        campeonato_id: campeonato.value.id
-      } : null,
-      resultado2: mesaSeleccionada.value.pareja2 ? {
-        mesa_id: mesaSeleccionada.value.id,
-        pareja_id: mesaSeleccionada.value.pareja2.id,
-        rp: resultado.value.puntos_pareja2,
-        gb: false,
-        partida: campeonato.value.partida_actual,
-        campeonato_id: campeonato.value.id
-      } : null
+    const resultado1 = {
+      mesa_id: mesaSeleccionada.value.id,
+      pareja_id: mesaSeleccionada.value.pareja1.id,
+      rp: resultado.value.puntos_pareja1,
+      gb: false,
+      partida: campeonato.value.partida_actual,
+      campeonato_id: campeonato.value.id
+    };
+
+    const resultado2 = {
+      mesa_id: mesaSeleccionada.value.id,
+      pareja_id: mesaSeleccionada.value.pareja2.id,
+      rp: resultado.value.puntos_pareja2,
+      gb: false,
+      partida: campeonato.value.partida_actual,
+      campeonato_id: campeonato.value.id
     };
 
     if (mesaSeleccionada.value.tiene_resultado) {
-      await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, resultadoData);
+      await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, {
+        resultado1,
+        resultado2
+      });
     } else {
-      await resultadoService.crear(
-        resultadoData.resultado1,
-        resultadoData.resultado2
-      );
+      await resultadoService.crear(resultado1, resultado2);
     }
 
     cerrarModal();
     await cargarDatos();
   } catch (e) {
     console.error('Error al guardar el resultado:', e);
-    error.value = 'Error al guardar el resultado';
+    if (e.response?.data?.detail) {
+      error.value = Array.isArray(e.response.data.detail) 
+        ? e.response.data.detail[0].msg 
+        : e.response.data.detail;
+    } else {
+      error.value = 'Error al guardar el resultado';
+    }
   }
 };
 
