@@ -122,9 +122,16 @@ export const mesaService = {
 };
 
 export const resultadoService = {
-  async obtenerResultados(mesaId) {
-    const response = await api.get(`/resultados/mesa/${mesaId}`);
-    return response.data;
+  async crear(resultado1, resultado2 = null) {
+    if (resultado2) {
+      // Caso normal: dos parejas
+      const response = await api.post('/resultados', { resultado1, resultado2 });
+      return response.data;
+    } else {
+      // Caso especial: una sola pareja
+      const response = await api.post('/resultados', { resultado1 });
+      return response.data;
+    }
   },
 
   async obtenerPorMesa(mesaId) {
@@ -132,17 +139,21 @@ export const resultadoService = {
     return response.data;
   },
 
-  async crear(resultado1, resultado2) {
-    const response = await api.post('/resultados', {
-      resultado1,
-      resultado2
-    });
+  async obtenerResultadosCampeonato(campeonatoId) {
+    const response = await api.get(`/resultados/campeonato/${campeonatoId}`);
     return response.data;
   },
 
-  async actualizarPorMesa(mesaId, data) {
-    const response = await api.put(`/resultados/mesa/${mesaId}`, data);
-    return response.data;
+  async actualizarPorMesa(mesaId, resultado1, resultado2 = null) {
+    if (resultado2) {
+      // Caso normal: dos parejas
+      const response = await api.put(`/resultados/mesa/${mesaId}`, { resultado1, resultado2 });
+      return response.data;
+    } else {
+      // Caso especial: una sola pareja
+      const response = await api.put(`/resultados/mesa/${mesaId}`, { resultado1 });
+      return response.data;
+    }
   },
 
   async obtenerResultado(id) {

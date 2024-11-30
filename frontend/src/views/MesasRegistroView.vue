@@ -5,8 +5,16 @@
         <h1 class="text-2xl font-bold text-gray-900">Registro de Resultados</h1>
         <h2 class="text-lg text-gray-600">{{ campeonato?.nombre }}</h2>
       </div>
-      <div class="text-xl font-semibold text-gray-800">
-        Partida {{ campeonato?.partida_actual || 1 }}
+      <div class="flex items-center gap-4">
+        <div class="text-xl font-semibold text-gray-800">
+          Partida {{ campeonato?.partida_actual || 1 }}
+        </div>
+        <button
+          v-if="todasMesasTienenResultado"
+          class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium"
+        >
+          Cerrar Partida
+        </button>
       </div>
     </div>
 
@@ -103,7 +111,11 @@
                   >
                     Resultado Partida (RP)
                   </label>
+                  <div v-if="!mesaSeleccionada.pareja2" class="px-3 py-2 bg-gray-100 rounded-md">
+                    150
+                  </div>
                   <input
+                    v-else
                     id="rp_pareja1"
                     name="rp_pareja1"
                     v-model.number="resultado.puntos_pareja1"
@@ -132,7 +144,7 @@
                     Partidas Ganadas (PG)
                   </span>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
-                    {{ calculos.pg1 }}
+                    {{ !mesaSeleccionada.pareja2 ? 1 : calculos.pg1 }}
                   </div>
                 </div>
                 <div class="flex flex-col">
@@ -140,13 +152,13 @@
                     Puntos Partida (PP)
                   </span>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
-                    {{ calculos.pp1 }}
+                    {{ !mesaSeleccionada.pareja2 ? 150 : calculos.pp1 }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Pareja 2 -->
+            <!-- Pareja 2 (solo se muestra si existe) -->
             <div v-if="mesaSeleccionada.pareja2" class="space-y-2">
               <div class="text-lg mb-4">
                 {{ mesaSeleccionada.pareja2.id }} - {{ mesaSeleccionada.pareja2.nombre }}
@@ -271,10 +283,15 @@ const calculos = computed(() => {
     // Partidas Ganadas: 1 para el ganador, 0 para el perdedor
     pg1: rp1 > rp2 ? 1 : 0,
     pg2: rp2 > rp1 ? 1 : 0,
-    // Puntos Partida: RP contrario - RP propio (igual que en el backend)
-    pp1: rp2 - rp1,  // PP de pareja 1 = RP de pareja 2 - RP de pareja 1
-    pp2: rp1 - rp2   // PP de pareja 2 = RP de pareja 1 - RP de pareja 2
+    // Puntos Partida: RP propio - RP contrario
+    pp1: rp1 - rp2,  // PP de pareja 1 = RP de pareja 1 - RP de pareja 2
+    pp2: rp2 - rp1   // PP de pareja 2 = RP de pareja 2 - RP de pareja 1
   };
+});
+
+// Computed property para verificar si todas las mesas tienen resultados
+const todasMesasTienenResultado = computed(() => {
+  return mesas.value.length > 0 && mesas.value.every(mesa => mesa.tiene_resultado);
 });
 
 const cargarDatos = async () => {
@@ -347,7 +364,14 @@ const validarResultado = () => {
 
 const abrirFormularioResultado = async (mesa) => {
   mesaSeleccionada.value = mesa;
-  if (mesa.tiene_resultado && mesa.resultados.length > 0) {
+  
+  // Caso especial: Mesa con una sola pareja
+  if (!mesa.pareja2) {
+    resultado.value = {
+      puntos_pareja1: 150,
+      puntos_pareja2: 0
+    };
+  } else if (mesa.tiene_resultado && mesa.resultados.length > 0) {
     resultado.value = {
       puntos_pareja1: mesa.pareja1 ? mesa.resultados[0].rp : 0,
       puntos_pareja2: mesa.pareja2 ? mesa.resultados[1].rp : 0
@@ -373,12 +397,32 @@ const cerrarModal = () => {
 
 const guardarResultado = async () => {
   try {
-    if (!validarResultado()) {
+    if (!mesaSeleccionada.value) {
+      error.value = 'Datos de mesa incompletos';
       return;
     }
 
-    if (!mesaSeleccionada.value) {
-      error.value = 'Datos de mesa incompletos';
+    // Caso especial: Mesa con una sola pareja
+    if (!mesaSeleccionada.value.pareja2) {
+      const resultado1 = {
+        mesa_id: mesaSeleccionada.value.id,
+        pareja_id: mesaSeleccionada.value.pareja1.id,
+        rp: 150,
+        pg: 1,
+        pp: 150,
+        gb: false,
+        partida: campeonato.value.partida_actual,
+        campeonato_id: campeonato.value.id
+      };
+
+      await resultadoService.crear(resultado1);
+      cerrarModal();
+      await cargarDatos();
+      return;
+    }
+
+    // Caso normal: Mesa con dos parejas
+    if (!validarResultado()) {
       return;
     }
 
@@ -420,6 +464,17 @@ const guardarResultado = async () => {
     } else {
       error.value = 'Error al guardar el resultado';
     }
+  }
+};
+
+// Agregar método para cerrar partida
+const cerrarPartida = async () => {
+  try {
+    await mesaService.crearMesasPorRanking(campeonato.value.id);
+    await cargarDatos();
+  } catch (e) {
+    console.error('Error al cerrar la partida:', e);
+    error.value = 'Error al cerrar la partida';
   }
 };
 

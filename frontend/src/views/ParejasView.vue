@@ -115,6 +115,7 @@ import { useRouter } from 'vue-router';
 import { useParejasStore } from '../stores/parejas';
 import { useCampeonatoStore } from '../stores/campeonato';
 import { useMesaStore } from '../stores/mesa';
+import { resultadoService } from '../services/api';
 
 const router = useRouter();
 const parejasStore = useParejasStore();
@@ -126,6 +127,7 @@ const campeonato = ref(null);
 const error = ref(null);
 const mostrarModalError = ref(false);
 const mensajeError = ref('');
+const loading = ref(false);
 
 const cargarDatos = async () => {
   try {
@@ -146,13 +148,23 @@ const nuevaPareja = () => {
 
 const volverAtras = async () => {
   try {
+    // Verificar si hay resultados registrados
+    const resultados = await resultadoService.obtenerResultadosCampeonato(campeonato.value.id);
+    if (resultados && resultados.length > 0) {
+      mensajeError.value = 'No se puede volver atrás, el campeonato ya ha empezado';
+      mostrarModalError.value = true;
+      return;
+    }
+
     loading.value = true;
-    await mesaStore.eliminarMesas(campeonatoStore.campeonato.id);
-    await campeonatoStore.reiniciarCampeonato(campeonatoStore.campeonato.id);
+    await mesaStore.eliminarMesas(campeonato.value.id);
+    await campeonatoStore.reiniciarCampeonato(campeonato.value.id);
     loading.value = false;
+    await cargarDatos();
   } catch (error) {
     loading.value = false;
-    mostrarError('Error al eliminar las mesas y reiniciar el campeonato. Por favor, inténtelo de nuevo.');
+    mensajeError.value = 'Error al eliminar las mesas y reiniciar el campeonato. Por favor, inténtelo de nuevo.';
+    mostrarModalError.value = true;
   }
 };
 

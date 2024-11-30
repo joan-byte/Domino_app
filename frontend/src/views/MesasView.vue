@@ -80,7 +80,7 @@
 
     <!-- Modal de Resultados -->
     <div v-if="showResultadosModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+      <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-medium text-gray-900">
             {{ modalMode === 'registrar' ? 'Registrar Resultado' : 'Ver Resultado' }}
@@ -102,27 +102,11 @@
           :mesa="mesaSeleccionada"
           :pareja1="getParejaById(mesaSeleccionada.pareja1_id)"
           :pareja2="getParejaById(mesaSeleccionada.pareja2_id)"
-          :editable="modalMode === 'registrar'"
+          :partida="campeonato?.partida_actual"
           :resultados-iniciales="mesaSeleccionada.resultados || []"
-          @update:resultados="resultadosActualizados = $event"
+          @guardar="guardarResultadoForm"
+          @cancelar="showResultadosModal = false"
         />
-
-        <div class="mt-5 sm:mt-6 space-x-3">
-          <button
-            v-if="modalMode === 'registrar'"
-            @click="guardarResultado"
-            class="btn btn-primary"
-            :disabled="!resultadosValidos"
-          >
-            Guardar
-          </button>
-          <button
-            @click="showResultadosModal = false"
-            class="btn btn-secondary"
-          >
-            {{ modalMode === 'registrar' ? 'Cancelar' : 'Cerrar' }}
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -153,7 +137,6 @@ const { mesas, loading, error } = storeToRefs(mesaStore);
 const showResultadosModal = ref(false);
 const modalMode = ref('registrar'); // 'registrar' o 'ver'
 const mesaSeleccionada = ref(null);
-const resultadosActualizados = ref([]);
 
 // Computed
 const puedeCrearNuevaRonda = computed(() => {
@@ -198,6 +181,7 @@ async function crearMesasPorRanking() {
 }
 
 function registrarResultado(mesa) {
+  console.log('Registrando resultado para mesa:', mesa);
   mesaSeleccionada.value = mesa;
   modalMode.value = 'registrar';
   showResultadosModal.value = true;
@@ -209,18 +193,17 @@ function verResultado(mesa) {
   showResultadosModal.value = true;
 }
 
-async function guardarResultado() {
-  if (!resultadosValidos.value) return;
-
-  const success = await resultadoStore.crearResultados(
-    resultadosActualizados.value[0],
-    resultadosActualizados.value[1]
-  );
-
-  if (success) {
-    // Actualizar la lista de mesas para reflejar el nuevo resultado
-    await mesaStore.fetchMesas(campeonato.value.id, campeonato.value.partida_actual);
-    showResultadosModal.value = false;
+async function guardarResultadoForm(resultado1, resultado2 = null) {
+  console.log('Guardando resultados:', { resultado1, resultado2 });
+  try {
+    const success = await resultadoStore.crearResultados(resultado1, resultado2);
+    
+    if (success) {
+      await mesaStore.fetchMesas(campeonato.value.id, campeonato.value.partida_actual);
+      showResultadosModal.value = false;
+    }
+  } catch (error) {
+    console.error('Error al guardar el resultado:', error);
   }
 }
 

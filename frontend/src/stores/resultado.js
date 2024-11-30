@@ -8,11 +8,17 @@ export const useResultadoStore = defineStore('resultado', {
     }),
 
     actions: {
-        async crearResultados(resultado1, resultado2) {
+        async crearResultados(resultado1, resultado2 = null) {
             this.loading = true;
             this.error = null;
             try {
-                await resultadoService.crear(resultado1, resultado2);
+                if (resultado2) {
+                    // Caso normal: dos parejas
+                    await resultadoService.crear(resultado1, resultado2);
+                } else {
+                    // Caso especial: una sola pareja
+                    await resultadoService.crear(resultado1);
+                }
                 return true;
             } catch (error) {
                 this.error = error.response?.data?.detail || 'Error al registrar los resultados';
