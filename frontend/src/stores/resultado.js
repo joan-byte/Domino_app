@@ -1,71 +1,60 @@
 import { defineStore } from 'pinia';
+import { ref } from 'vue';
 import { resultadoService } from '../services/api';
 
-export const useResultadoStore = defineStore('resultado', {
-    state: () => ({
-        loading: false,
-        error: null,
-    }),
+export const useResultadoStore = defineStore('resultado', () => {
+    const loading = ref(false);
+    const error = ref(null);
+    const ranking = ref([]);
 
-    actions: {
-        async crearResultados(resultado1, resultado2 = null) {
-            this.loading = true;
-            this.error = null;
-            try {
-                if (resultado2) {
-                    // Caso normal: dos parejas
-                    await resultadoService.crear(resultado1, resultado2);
-                } else {
-                    // Caso especial: una sola pareja
-                    await resultadoService.crear(resultado1);
-                }
-                return true;
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al registrar los resultados';
-                return false;
-            } finally {
-                this.loading = false;
-            }
-        },
+    const obtenerRanking = async (campeonatoId) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            const response = await resultadoService.obtenerRanking(campeonatoId);
+            ranking.value = response;
+            return response;
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al obtener el ranking';
+            ranking.value = [];
+            throw e;
+        } finally {
+            loading.value = false;
+        }
+    };
 
-        async actualizarResultados(mesaId, resultado1, resultado2) {
-            this.loading = true;
-            this.error = null;
-            try {
-                await resultadoService.actualizarPorMesa(mesaId, resultado1, resultado2);
-                return true;
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al actualizar los resultados';
-                return false;
-            } finally {
-                this.loading = false;
-            }
-        },
+    const obtenerResultadosPorMesa = async (mesaId) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            return await resultadoService.obtenerPorMesa(mesaId);
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al obtener los resultados';
+            return [];
+        } finally {
+            loading.value = false;
+        }
+    };
 
-        async obtenerResultadosPorMesa(mesaId) {
-            this.loading = true;
-            this.error = null;
-            try {
-                return await resultadoService.obtenerPorMesa(mesaId);
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al obtener los resultados';
-                return [];
-            } finally {
-                this.loading = false;
-            }
-        },
+    const obtenerResultadosPorPareja = async (parejaId) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            return await resultadoService.obtenerResultadosPorPareja(parejaId);
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al obtener los resultados';
+            return [];
+        } finally {
+            loading.value = false;
+        }
+    };
 
-        async obtenerRanking(campeonatoId) {
-            this.loading = true;
-            this.error = null;
-            try {
-                return await resultadoService.obtenerRanking(campeonatoId);
-            } catch (error) {
-                this.error = error.response?.data?.detail || 'Error al obtener el ranking';
-                return [];
-            } finally {
-                this.loading = false;
-            }
-        },
-    },
+    return {
+        loading,
+        error,
+        ranking,
+        obtenerRanking,
+        obtenerResultadosPorMesa,
+        obtenerResultadosPorPareja
+    };
 }); 

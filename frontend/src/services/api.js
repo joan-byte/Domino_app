@@ -37,7 +37,7 @@ export const campeonatoService = {
   },
 
   async obtenerDetalles() {
-    const response = await api.get('/campeonatos/actual/detalles');
+    const response = await api.get('/resultados/ranking');
     return response.data;
   },
 
@@ -118,24 +118,27 @@ export const mesaService = {
   async eliminarMesas(campeonatoId) {
     const response = await api.delete(`/campeonatos/${campeonatoId}/mesas`);
     return response.data;
+  },
+
+  async crearMesasPorRanking(campeonatoId) {
+    const response = await api.post(`/mesas/ranking?campeonato_id=${campeonatoId}`);
+    return response.data;
   }
 };
 
 export const resultadoService = {
   async crear(resultado1, resultado2 = null) {
     if (resultado2) {
-      // Caso normal: dos parejas
       const response = await api.post('/resultados', { resultado1, resultado2 });
       return response.data;
     } else {
-      // Caso especial: una sola pareja
       const response = await api.post('/resultados', { resultado1 });
       return response.data;
     }
   },
 
-  async obtenerPorMesa(mesaId) {
-    const response = await api.get(`/resultados/mesa/${mesaId}`);
+  async obtenerPorMesa(mesaId, partida) {
+    const response = await api.get(`/resultados/mesa/${mesaId}?partida=${partida}`);
     return response.data;
   },
 
@@ -144,30 +147,22 @@ export const resultadoService = {
     return response.data;
   },
 
+  async obtenerRanking(campeonatoId) {
+    const response = await api.get(`/resultados/ranking?campeonato_id=${campeonatoId}`);
+    return response.data;
+  },
+
+  async obtenerResultadosPorPareja(parejaId) {
+    const response = await api.get(`/resultados/pareja/${parejaId}`);
+    return response.data;
+  },
+
   async actualizarPorMesa(mesaId, resultado1, resultado2 = null) {
-    if (resultado2) {
-      // Caso normal: dos parejas
-      const response = await api.put(`/resultados/mesa/${mesaId}`, { resultado1, resultado2 });
-      return response.data;
-    } else {
-      // Caso especial: una sola pareja
-      const response = await api.put(`/resultados/mesa/${mesaId}`, { resultado1 });
-      return response.data;
-    }
-  },
-
-  async obtenerResultado(id) {
-    const response = await api.get(`/resultados/${id}`);
-    return response.data;
-  },
-
-  async actualizarResultado(id, data) {
-    const response = await api.put(`/resultados/${id}`, data);
-    return response.data;
-  },
-
-  async obtenerRankingFinal(campeonatoId) {
-    const response = await api.get(`/campeonatos/${campeonatoId}/ranking-final`);
+    const data = {
+      resultado1: resultado1,
+      resultado2: resultado2
+    };
+    const response = await api.put(`/resultados/mesa/${mesaId}`, data);
     return response.data;
   }
 };

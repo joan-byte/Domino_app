@@ -5,6 +5,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 const route = useRoute()
 const showMesasMenu = ref(false)
 const showResultadosMenu = ref(false)
+let closeTimeout = null
 
 const closeMenus = (e) => {
   const mesasButton = document.getElementById('mesas-menu-button')
@@ -14,14 +15,27 @@ const closeMenus = (e) => {
 
   if (mesasButton && mesasDropdown) {
     if (!mesasButton.contains(e.target) && !mesasDropdown.contains(e.target)) {
-      showMesasMenu.value = false
+      // Cerrar con retraso
+      closeTimeout = setTimeout(() => {
+        showMesasMenu.value = false
+      }, 200)
     }
   }
 
   if (resultadosButton && resultadosDropdown) {
     if (!resultadosButton.contains(e.target) && !resultadosDropdown.contains(e.target)) {
-      showResultadosMenu.value = false
+      // Cerrar con retraso
+      closeTimeout = setTimeout(() => {
+        showResultadosMenu.value = false
+      }, 200)
     }
+  }
+}
+
+const clearCloseTimeout = () => {
+  if (closeTimeout) {
+    clearTimeout(closeTimeout)
+    closeTimeout = null
   }
 }
 
@@ -31,6 +45,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', closeMenus)
+  clearCloseTimeout()
 })
 </script>
 
@@ -71,6 +86,7 @@ onUnmounted(() => {
               <button 
                 id="mesas-menu-button"
                 @click="showMesasMenu = !showMesasMenu"
+                @mouseenter="showMesasMenu = true"
                 class="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-gray-900"
               >
                 <span>Mesas</span>
@@ -87,6 +103,8 @@ onUnmounted(() => {
               <div 
                 id="mesas-dropdown"
                 v-show="showMesasMenu" 
+                @mouseenter="clearCloseTimeout"
+                @mouseleave="closeMenus"
                 class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
               >
                 <div class="py-1">
@@ -94,6 +112,7 @@ onUnmounted(() => {
                     to="/mesas/asignacion" 
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     :class="{ 'bg-gray-100': $route.path === '/mesas/asignacion' }"
+                    @click="showMesasMenu = false"
                   >
                     Asignación
                   </router-link>
@@ -101,6 +120,7 @@ onUnmounted(() => {
                     to="/mesas/registro" 
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     :class="{ 'bg-gray-100': $route.path === '/mesas/registro' }"
+                    @click="showMesasMenu = false"
                   >
                     Registro
                   </router-link>
@@ -113,6 +133,7 @@ onUnmounted(() => {
               <button 
                 id="resultados-menu-button"
                 @click="showResultadosMenu = !showResultadosMenu"
+                @mouseenter="showResultadosMenu = true"
                 class="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-gray-900"
               >
                 <span>Resultados</span>
@@ -129,6 +150,8 @@ onUnmounted(() => {
               <div 
                 id="resultados-dropdown"
                 v-show="showResultadosMenu" 
+                @mouseenter="clearCloseTimeout"
+                @mouseleave="closeMenus"
                 class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
               >
                 <div class="py-1">
@@ -136,6 +159,7 @@ onUnmounted(() => {
                     to="/ranking" 
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     :class="{ 'bg-gray-100': $route.path === '/ranking' }"
+                    @click="showResultadosMenu = false"
                   >
                     Ranking
                   </router-link>
@@ -143,6 +167,7 @@ onUnmounted(() => {
                     to="/podium" 
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     :class="{ 'bg-gray-100': $route.path === '/podium' }"
+                    @click="showResultadosMenu = false"
                   >
                     Podium
                   </router-link>

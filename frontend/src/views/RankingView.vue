@@ -1,188 +1,186 @@
 <template>
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Ranking del Torneo</h1>
-      <div class="text-xl">Partida {{ progreso.partidas_jugadas }}</div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Ranking</h1>
+        <h2 class="text-lg text-gray-600">{{ campeonato?.nombre || 'Cargando...' }}</h2>
+      </div>
+      <div class="text-xl font-semibold text-gray-800">
+        Partida {{ campeonato?.partida_actual ?? 0 }}
+      </div>
     </div>
 
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full">
-          <thead class="bg-gray-50 border-b">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                POS.
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                PART.
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                GB
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                PG
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                PP
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                N°
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                NOMBRE
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                CLUB
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="(pareja, index) in parejasFiltradas" 
-                :key="pareja.id" 
-                :class="{'bg-yellow-50': index % 2 === 0}"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ index + 1 }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.partidos_jugados }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.grupo }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.pg_total }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.pp_total }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.numero }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ pareja.nombre }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ pareja.club_pertenencia }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- Estado de carga -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div v-else-if="error" class="text-center py-8">
+      <div class="text-red-600">{{ error }}</div>
+      <button @click="cargarDatos" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- Mensaje cuando no hay datos -->
+    <div v-else-if="!rankingConUltimaPartida?.length" class="text-center py-8 text-gray-600">
+      No hay datos de ranking disponibles
+    </div>
+
+    <!-- Tabla de Ranking -->
+    <div v-else class="bg-white shadow-lg rounded-lg overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Pos.
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Part.
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              GB
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              PG
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              PP
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ID
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Nombre
+            </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Club
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="(pareja, index) in rankingConUltimaPartida" :key="pareja?.id">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ index + 1 }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm" 
+                :class="{'text-red-600': pareja?.atrasada, 
+                        'text-gray-900': !pareja?.atrasada}">
+              {{ pareja?.ultima_partida ?? 0 }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.gb ? 'Sí' : 'No' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.total_pg ?? 0 }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.total_pp ?? 0 }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.id }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.nombre || '-' }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ pareja?.club_pertenencia || '-' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useResultadoStore } from '../stores/resultado';
 import { storeToRefs } from 'pinia';
-import { campeonatoService } from '../services/api';
+import { useCampeonatoStore } from '../stores/campeonato';
+import { useResultadoStore } from '../stores/resultado';
 
+const campeonatoStore = useCampeonatoStore();
 const resultadoStore = useResultadoStore();
-const { loading, error } = storeToRefs(resultadoStore);
-const ranking = ref([]);
-const busqueda = ref('');
-const filtroClub = ref('');
-const campeonato = ref(null);
-const progreso = ref({
-  porcentaje: 0,
-  partidas_jugadas: 0,
-  partidas_restantes: 0
-});
 
-// Computed properties para estadísticas
-const totalPartidosJugados = computed(() => {
-  return ranking.value.reduce((total, pareja) => total + pareja.partidos_jugados, 0) / 2;
-});
+const { campeonato } = storeToRefs(campeonatoStore);
+const { ranking } = storeToRefs(resultadoStore);
+const isLoading = ref(true);
+const error = ref(null);
 
-const totalPuntos = computed(() => {
-  return ranking.value.reduce((total, pareja) => total + pareja.puntos, 0);
-});
-
-const promedioPuntos = computed(() => {
-  if (ranking.value.length === 0) return 0;
-  return Math.round(totalPuntos.value / ranking.value.length);
-});
-
-const clubesUnicos = computed(() => {
-  const clubes = new Set(ranking.value.map(p => p.club_pertenencia));
-  return Array.from(clubes).sort();
-});
-
-// Método para calcular los sumatorios de PG y PP de una pareja
-const calcularSumatorios = (pareja) => {
-  const resultados = pareja.resultados || [];
-  return {
-    pg_total: resultados.reduce((sum, resultado) => sum + (resultado.pg || 0), 0),
-    pp_total: resultados.reduce((sum, resultado) => sum + (resultado.pp || 0), 0)
-  };
-};
-
-const parejasFiltradas = computed(() => {
-  return ranking.value
-    .filter(pareja => {
-      const coincideNombre = pareja.nombre.toLowerCase().includes(busqueda.value.toLowerCase());
-      const coincideClub = !filtroClub.value || pareja.club_pertenencia === filtroClub.value;
-      return coincideNombre && coincideClub;
-    })
-    .map(pareja => {
-      const { pg_total, pp_total } = calcularSumatorios(pareja);
-      return {
-        ...pareja,
-        pg_total,
-        pp_total
-      };
-    })
-    .sort((a, b) => {
-      // Nivel 1: GB (grupo) ascendente
-      if (a.grupo !== b.grupo) {
-        return a.grupo.localeCompare(b.grupo);
+// Computed property para procesar los resultados por pareja
+const rankingConUltimaPartida = computed(() => {
+  if (!ranking?.value || !campeonato?.value) return [];
+  
+  try {
+    // Agrupar resultados por pareja_id y encontrar la última partida
+    const resultadosPorPareja = {};
+    
+    // Primera pasada: inicializar las parejas
+    ranking.value.forEach(resultado => {
+      const parejaId = resultado.pareja_id;
+      if (!resultadosPorPareja[parejaId]) {
+        resultadosPorPareja[parejaId] = {
+          id: parejaId,
+          nombre: resultado.nombre || `Pareja ${parejaId}`,
+          club_pertenencia: resultado.club || '-',
+          total_pg: resultado.pg || 0,
+          total_pp: resultado.pp || 0,
+          ultima_partida: resultado.ultima_partida || 0,
+          gb: resultado.gb || false
+        };
       }
-
-      // Nivel 2: Dentro de cada grupo, ordenar por sumatorio de PG descendente
-      if (b.pg_total !== a.pg_total) {
-        return b.pg_total - a.pg_total;
-      }
-
-      // Nivel 3: Para parejas con mismo PG, ordenar por sumatorio de PP descendente
-      if (b.pp_total !== a.pp_total) {
-        return b.pp_total - a.pp_total;
-      }
-
-      // Último nivel: Si todo lo anterior es igual, ordenar por número de pareja
-      return a.numero - b.numero;
     });
+
+    // Convertir a array y ordenar según los criterios
+    return Object.values(resultadosPorPareja)
+      .sort((a, b) => {
+        // 1. GB ascendente (false antes que true)
+        if (a.gb !== b.gb) {
+          return a.gb ? 1 : -1;
+        }
+        // 2. PG descendente
+        if (b.total_pg !== a.total_pg) {
+          return b.total_pg - a.total_pg;
+        }
+        // 3. PP descendente
+        return b.total_pp - a.total_pp;
+      })
+      .map(pareja => ({
+        ...pareja,
+        atrasada: pareja.ultima_partida < (campeonato.value?.partida_actual || 0)
+      }));
+  } catch (e) {
+    console.error('Error procesando ranking:', e);
+    return [];
+  }
 });
 
-// Método para cargar los datos
 const cargarDatos = async () => {
   try {
-    const [campeonatoActual, detalles] = await Promise.all([
-      campeonatoService.obtenerActual(),
-      campeonatoService.obtenerDetalles()
-    ]);
+    isLoading.value = true;
+    error.value = null;
     
-    campeonato.value = campeonatoActual;
-    progreso.value = detalles.progreso;
+    // Cargar el campeonato actual
+    const campeonatoActual = await campeonatoStore.obtenerActual();
     
-    // Obtener el ranking con los resultados incluidos
-    const resultado = await resultadoStore.obtenerRankingConResultados(campeonatoActual.id);
-    if (resultado) {
-      ranking.value = resultado;
+    if (campeonatoActual?.id) {
+      console.log('Cargando ranking para campeonato:', campeonatoActual.id);
+      const datos = await resultadoStore.obtenerRanking(campeonatoActual.id);
+      console.log('Datos del ranking:', datos);
+      
+      if (!datos || datos.length === 0) {
+        error.value = 'No hay resultados registrados para este campeonato';
+      }
+    } else {
+      error.value = 'No se pudo cargar el campeonato';
     }
-  } catch (error) {
-    console.error('Error al cargar los datos:', error);
+  } catch (err) {
+    console.error('Error al cargar los datos:', err);
+    error.value = 'Error al cargar los datos del ranking';
+  } finally {
+    isLoading.value = false;
   }
-};
-
-const formatearFecha = (fecha) => {
-  if (!fecha) return '';
-  return new Date(fecha).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
 };
 
 onMounted(() => {

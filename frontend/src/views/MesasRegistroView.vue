@@ -11,6 +11,7 @@
         </div>
         <button
           v-if="todasMesasTienenResultado"
+          @click="cerrarPartida"
           class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium"
         >
           Cerrar Partida
@@ -242,6 +243,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { campeonatoService, mesaService, resultadoService } from '../services/api';
+import { useRouter } from 'vue-router';
 
 const campeonato = ref(null);
 const mesas = ref([]);
@@ -252,6 +254,7 @@ const resultado = ref({
   puntos_pareja1: 0,
   puntos_pareja2: 0
 });
+const router = useRouter();
 
 // Computed properties para los cálculos
 const calculos = computed(() => {
@@ -312,7 +315,10 @@ const cargarDatos = async () => {
     // Agregar propiedad tiene_resultado
     mesas.value = await Promise.all(mesasData.map(async mesa => {
       try {
-        const resultados = await resultadoService.obtenerPorMesa(mesa.id);
+        const resultados = await resultadoService.obtenerPorMesa(
+          mesa.id,
+          campeonato.value.partida_actual
+        );
         return {
           ...mesa,
           tiene_resultado: resultados && resultados.length > 0,
@@ -445,10 +451,11 @@ const guardarResultado = async () => {
     };
 
     if (mesaSeleccionada.value.tiene_resultado) {
-      await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, {
+      await resultadoService.actualizarPorMesa(
+        mesaSeleccionada.value.id,
         resultado1,
         resultado2
-      });
+      );
     } else {
       await resultadoService.crear(resultado1, resultado2);
     }
@@ -472,6 +479,7 @@ const cerrarPartida = async () => {
   try {
     await mesaService.crearMesasPorRanking(campeonato.value.id);
     await cargarDatos();
+    router.push('/mesas/asignacion');
   } catch (e) {
     console.error('Error al cerrar la partida:', e);
     error.value = 'Error al cerrar la partida';
