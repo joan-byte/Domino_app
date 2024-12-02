@@ -136,7 +136,7 @@ const tercerLugar = computed(() => ranking.value[2] || null);
 onMounted(async () => {
   try {
     campeonato.value = await campeonatoStore.obtenerActual();
-    const resultado = await resultadoStore.obtenerRankingFinal(campeonato.value.id);
+    const resultado = await resultadoStore.obtenerRanking(campeonato.value.id);
     ranking.value = resultado;
   } catch (error) {
     console.error('Error al cargar el podium:', error);

@@ -21,7 +21,7 @@
 
     <!-- Lista de Mesas -->
     <div class="space-y-4">
-      <div v-for="mesa in mesas" :key="mesa.id" 
+      <div v-for="mesa in mesasVisibles" :key="mesa.id" 
            class="bg-white shadow rounded-lg p-4">
         <div class="grid grid-cols-12 items-center gap-4">
           <!-- Número de Mesa -->
@@ -71,6 +71,11 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Indicador de página -->
+    <div class="mt-4 px-6 py-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
+      Página {{ paginaActual + 1 }} de {{ totalPaginas }}
     </div>
 
     <!-- Modal de Registro de Resultado -->
@@ -241,7 +246,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { campeonatoService, mesaService, resultadoService } from '../services/api';
 import { useRouter } from 'vue-router';
 
@@ -255,6 +260,12 @@ const resultado = ref({
   puntos_pareja2: 0
 });
 const router = useRouter();
+
+const MESAS_POR_PAGINA = 15;
+const INTERVALO_CAMBIO = 10000; // 10 segundos
+
+const paginaActual = ref(0);
+const intervalId = ref(null);
 
 // Computed properties para los cálculos
 const calculos = computed(() => {
@@ -297,6 +308,35 @@ const todasMesasTienenResultado = computed(() => {
   return mesas.value.length > 0 && mesas.value.every(mesa => mesa.tiene_resultado);
 });
 
+// Computed properties para la paginación
+const totalPaginas = computed(() => 
+  Math.ceil(mesas.value.length / MESAS_POR_PAGINA)
+);
+
+const mesasVisibles = computed(() => {
+  const inicio = paginaActual.value * MESAS_POR_PAGINA;
+  const fin = inicio + MESAS_POR_PAGINA;
+  return mesas.value.slice(inicio, fin);
+});
+
+// Funciones para la paginación
+const cambiarPagina = () => {
+  paginaActual.value = (paginaActual.value + 1) % totalPaginas.value;
+};
+
+const iniciarRotacionPaginas = () => {
+  if (mesas.value.length > MESAS_POR_PAGINA) {
+    intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
+  }
+};
+
+const detenerRotacionPaginas = () => {
+  if (intervalId.value) {
+    clearInterval(intervalId.value);
+    intervalId.value = null;
+  }
+};
+
 const cargarDatos = async () => {
   try {
     // Cargar el campeonato actual
@@ -333,6 +373,9 @@ const cargarDatos = async () => {
         };
       }
     }));
+
+    // Iniciar la rotación de páginas si hay más de MESAS_POR_PAGINA mesas
+    iniciarRotacionPaginas();
 
   } catch (e) {
     console.error('Error al cargar los datos:', e);
@@ -486,5 +529,21 @@ const cerrarPartida = async () => {
   }
 };
 
-onMounted(cargarDatos);
+// Lifecycle hooks
+onMounted(() => {
+  cargarDatos();
+  // Reiniciar la rotación cuando la pestaña vuelve a estar visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      iniciarRotacionPaginas();
+    } else {
+      detenerRotacionPaginas();
+    }
+  });
+});
+
+onUnmounted(() => {
+  detenerRotacionPaginas();
+  document.removeEventListener('visibilitychange', () => {});
+});
 </script> 

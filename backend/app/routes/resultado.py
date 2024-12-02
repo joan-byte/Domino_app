@@ -203,7 +203,11 @@ def update_resultados_mesa(
     db: Session = Depends(get_db)
 ):
     # Verificar que existen resultados para la mesa
-    resultados = db.query(Resultado).filter(Resultado.mesa_id == mesa_id).all()
+    resultados = db.query(Resultado).filter(
+        Resultado.mesa_id == mesa_id,
+        Resultado.partida == request.resultado1.partida
+    ).all()
+    
     if not resultados:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

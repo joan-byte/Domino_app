@@ -23,6 +23,10 @@ export const useResultadoStore = defineStore('resultado', () => {
         }
     };
 
+    const obtenerRankingFinal = async (campeonatoId) => {
+        return obtenerRanking(campeonatoId);
+    };
+
     const obtenerResultadosPorMesa = async (mesaId) => {
         loading.value = true;
         error.value = null;
@@ -54,6 +58,7 @@ export const useResultadoStore = defineStore('resultado', () => {
         error,
         ranking,
         obtenerRanking,
+        obtenerRankingFinal,
         obtenerResultadosPorMesa,
         obtenerResultadosPorPareja
     };

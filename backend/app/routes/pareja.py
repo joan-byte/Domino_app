@@ -8,6 +8,30 @@ from sqlalchemy import desc
 
 router = APIRouter(prefix="/parejas", tags=["parejas"])
 
+def verificar_nombres_duplicados(db: Session, jugadores_data: List[dict], campeonato_id: int, pareja_id: int = None):
+    """Verifica que no haya jugadores con el mismo nombre y apellido en el campeonato"""
+    for jugador in jugadores_data:
+        nombre = jugador["nombre"]
+        apellido = jugador["apellido"]
+        
+        # Construir la consulta base
+        query = db.query(Jugador).join(Pareja).filter(
+            Jugador.nombre == nombre,
+            Jugador.apellido == apellido,
+            Pareja.campeonato_id == campeonato_id
+        )
+        
+        # Si estamos actualizando, excluir la pareja actual
+        if pareja_id:
+            query = query.filter(Pareja.id != pareja_id)
+        
+        # Verificar si existe un jugador con el mismo nombre y apellido
+        if query.first():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ya existe un jugador con nombre {nombre} {apellido} en el campeonato"
+            )
+
 @router.post("/", response_model=ParejaSchema)
 def create_pareja(pareja: ParejaCreate, db: Session = Depends(get_db)):
     # Verificar que existe el campeonato
@@ -31,6 +55,9 @@ def create_pareja(pareja: ParejaCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Una pareja debe tener exactamente 2 jugadores"
         )
+    
+    # Verificar nombres duplicados
+    verificar_nombres_duplicados(db, [{"nombre": j.nombre, "apellido": j.apellido} for j in pareja.jugadores], pareja.campeonato_id)
     
     try:
         # Crear la pareja
@@ -118,6 +145,14 @@ def update_pareja(pareja_id: int, pareja_update: ParejaCreate, db: Session = Dep
                 detail="Una pareja debe tener exactamente 2 jugadores"
             )
         
+        # Verificar nombres duplicados
+        verificar_nombres_duplicados(
+            db, 
+            [{"nombre": j.nombre, "apellido": j.apellido} for j in pareja_update.jugadores], 
+            pareja.campeonato_id,
+            pareja_id
+        )
+        
         # Actualizar datos de la pareja
         pareja.nombre = pareja_update.nombre
         pareja.club_pertenencia = pareja_update.club_pertenencia
@@ -138,6 +173,9 @@ def update_pareja(pareja_id: int, pareja_update: ParejaCreate, db: Session = Dep
         db.commit()
         db.refresh(pareja)
         return pareja
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
         db.rollback()
         raise HTTPException(

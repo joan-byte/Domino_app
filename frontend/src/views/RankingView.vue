@@ -24,7 +24,7 @@
     </div>
 
     <!-- Mensaje cuando no hay datos -->
-    <div v-else-if="!rankingConUltimaPartida?.length" class="text-center py-8 text-gray-600">
+    <div v-else-if="!ranking?.length" class="text-center py-8 text-gray-600">
       No hay datos de ranking disponibles
     </div>
 
@@ -49,7 +49,7 @@
               PP
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ID
+              Número
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Nombre
@@ -60,42 +60,47 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="(pareja, index) in rankingConUltimaPartida" :key="pareja?.id">
+          <tr v-for="(pareja, index) in parejasVisibles" :key="pareja.id" :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ index + 1 }}
+              {{ index + 1 + (paginaActual * PAREJAS_POR_PAGINA) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm" 
-                :class="{'text-red-600': pareja?.atrasada, 
-                        'text-gray-900': !pareja?.atrasada}">
-              {{ pareja?.ultima_partida ?? 0 }}
+                :class="{'text-red-600': pareja.ultima_partida < campeonato?.partida_actual, 
+                        'text-gray-900': pareja.ultima_partida >= campeonato?.partida_actual}">
+              {{ pareja.ultima_partida }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.gb ? 'Sí' : 'No' }}
+              {{ pareja.gb ? 'Sí' : 'No' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.total_pg ?? 0 }}
+              {{ pareja.pg }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.total_pp ?? 0 }}
+              {{ pareja.pp }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.id }}
+              {{ pareja.pareja_id }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.nombre || '-' }}
+              {{ pareja.nombre || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja?.club_pertenencia || '-' }}
+              {{ pareja.club || '-' }}
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Indicador de página -->
+      <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+        Página {{ paginaActual + 1 }} de {{ totalPaginas }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCampeonatoStore } from '../stores/campeonato';
 import { useResultadoStore } from '../stores/resultado';
@@ -108,83 +113,82 @@ const { ranking } = storeToRefs(resultadoStore);
 const isLoading = ref(true);
 const error = ref(null);
 
-// Computed property para procesar los resultados por pareja
-const rankingConUltimaPartida = computed(() => {
-  if (!ranking?.value || !campeonato?.value) return [];
-  
-  try {
-    // Agrupar resultados por pareja_id y encontrar la última partida
-    const resultadosPorPareja = {};
-    
-    // Primera pasada: inicializar las parejas
-    ranking.value.forEach(resultado => {
-      const parejaId = resultado.pareja_id;
-      if (!resultadosPorPareja[parejaId]) {
-        resultadosPorPareja[parejaId] = {
-          id: parejaId,
-          nombre: resultado.nombre || `Pareja ${parejaId}`,
-          club_pertenencia: resultado.club || '-',
-          total_pg: resultado.pg || 0,
-          total_pp: resultado.pp || 0,
-          ultima_partida: resultado.ultima_partida || 0,
-          gb: resultado.gb || false
-        };
-      }
-    });
+const PAREJAS_POR_PAGINA = 15;
+const INTERVALO_CAMBIO = 10000; // 10 segundos
 
-    // Convertir a array y ordenar según los criterios
-    return Object.values(resultadosPorPareja)
-      .sort((a, b) => {
-        // 1. GB ascendente (false antes que true)
-        if (a.gb !== b.gb) {
-          return a.gb ? 1 : -1;
-        }
-        // 2. PG descendente
-        if (b.total_pg !== a.total_pg) {
-          return b.total_pg - a.total_pg;
-        }
-        // 3. PP descendente
-        return b.total_pp - a.total_pp;
-      })
-      .map(pareja => ({
-        ...pareja,
-        atrasada: pareja.ultima_partida < (campeonato.value?.partida_actual || 0)
-      }));
-  } catch (e) {
-    console.error('Error procesando ranking:', e);
-    return [];
-  }
+const paginaActual = ref(0);
+const intervalId = ref(null);
+
+// Computed properties para la paginación
+const totalPaginas = computed(() => 
+  Math.ceil((ranking.value?.length || 0) / PAREJAS_POR_PAGINA)
+);
+
+const parejasVisibles = computed(() => {
+  if (!ranking.value) return [];
+  const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
+  const fin = inicio + PAREJAS_POR_PAGINA;
+  return ranking.value.slice(inicio, fin);
 });
+
+// Funciones para la paginación
+const cambiarPagina = () => {
+  if (totalPaginas.value > 0) {
+    paginaActual.value = (paginaActual.value + 1) % totalPaginas.value;
+  }
+};
+
+const iniciarRotacionPaginas = () => {
+  if (ranking.value?.length > PAREJAS_POR_PAGINA) {
+    intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
+  }
+};
+
+const detenerRotacionPaginas = () => {
+  if (intervalId.value) {
+    clearInterval(intervalId.value);
+    intervalId.value = null;
+  }
+};
 
 const cargarDatos = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    
-    // Cargar el campeonato actual
-    const campeonatoActual = await campeonatoStore.obtenerActual();
-    
-    if (campeonatoActual?.id) {
-      console.log('Cargando ranking para campeonato:', campeonatoActual.id);
-      const datos = await resultadoStore.obtenerRanking(campeonatoActual.id);
-      console.log('Datos del ranking:', datos);
-      
-      if (!datos || datos.length === 0) {
-        error.value = 'No hay resultados registrados para este campeonato';
-      }
-    } else {
-      error.value = 'No se pudo cargar el campeonato';
+
+    // Cargar el campeonato actual si no está cargado
+    if (!campeonato.value) {
+      await campeonatoStore.obtenerActual();
     }
-  } catch (err) {
-    console.error('Error al cargar los datos:', err);
-    error.value = 'Error al cargar los datos del ranking';
+
+    if (campeonato.value) {
+      await resultadoStore.obtenerRanking(campeonato.value.id);
+      iniciarRotacionPaginas();
+    }
+  } catch (e) {
+    console.error('Error al cargar los datos:', e);
+    error.value = e.message || 'Error al cargar los datos';
   } finally {
     isLoading.value = false;
   }
 };
 
+// Lifecycle hooks
 onMounted(() => {
   cargarDatos();
+  // Reiniciar la rotación cuando la pestaña vuelve a estar visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      iniciarRotacionPaginas();
+    } else {
+      detenerRotacionPaginas();
+    }
+  });
+});
+
+onUnmounted(() => {
+  detenerRotacionPaginas();
+  document.removeEventListener('visibilitychange', () => {});
 });
 </script>
 

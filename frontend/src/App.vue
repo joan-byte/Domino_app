@@ -72,17 +72,17 @@ onUnmounted(() => {
           </div>
 
           <!-- Enlaces derechos -->
-          <div class="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
+          <div class="hidden sm:ml-6 sm:flex sm:items-center">
             <router-link 
               to="/parejas" 
-              class="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-gray-900"
+              class="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-gray-900 mr-16"
               :class="{ 'border-b-2 border-gray-900': $route.path.startsWith('/parejas') }"
             >
               Parejas
             </router-link>
 
             <!-- Menú desplegable de Mesas -->
-            <div class="relative">
+            <div class="relative mr-16">
               <button 
                 id="mesas-menu-button"
                 @click="showMesasMenu = !showMesasMenu"
