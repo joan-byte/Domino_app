@@ -170,7 +170,8 @@ def get_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         subquery,
         Pareja.id == subquery.c.pareja_id
     ).filter(
-        Pareja.campeonato_id == campeonato_id
+        Pareja.campeonato_id == campeonato_id,
+        Pareja.activa == True
     ).order_by(
         func.coalesce(subquery.c.gb, False),  # GB ascendente
         func.coalesce(subquery.c.total_pg, 0).desc(),  # Total PG descendente
@@ -268,5 +269,14 @@ def update_resultados_mesa(
 
 @router.get("/campeonato/{campeonato_id}", response_model=List[ResultadoSchema])
 def get_resultados_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
-    """Obtener todos los resultados de un campeonato"""
-    return db.query(Resultado).filter(Resultado.campeonato_id == campeonato_id).all()
+    # Verificar que el campeonato existe
+    campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+    if not campeonato:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campeonato no encontrado"
+        )
+    
+    return db.query(Resultado).filter(
+        Resultado.campeonato_id == campeonato_id
+    ).all()

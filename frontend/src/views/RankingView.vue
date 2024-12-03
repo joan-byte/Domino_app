@@ -6,7 +6,7 @@
         <h2 class="text-lg text-gray-600">{{ campeonato?.nombre || 'Cargando...' }}</h2>
       </div>
       <div class="text-xl font-semibold text-gray-800">
-        Partida {{ campeonato?.partida_actual ?? 0 }}
+        Partida {{ campeonato?.partida_actual ?? 0 }} de {{ campeonato?.numero_partidas }}
       </div>
     </div>
 
@@ -115,9 +115,11 @@ const error = ref(null);
 
 const PAREJAS_POR_PAGINA = 15;
 const INTERVALO_CAMBIO = 10000; // 10 segundos
+const INTERVALO_RECARGA = 5000; // 5 segundos para recargar datos
 
 const paginaActual = ref(0);
 const intervalId = ref(null);
+const intervalRecargaId = ref(null);
 
 // Computed properties para la paginación
 const totalPaginas = computed(() => 
@@ -156,10 +158,8 @@ const cargarDatos = async () => {
     isLoading.value = true;
     error.value = null;
 
-    // Cargar el campeonato actual si no está cargado
-    if (!campeonato.value) {
-      await campeonatoStore.obtenerActual();
-    }
+    // Siempre cargar el campeonato actual para tener los datos más recientes
+    await campeonatoStore.obtenerActual();
 
     if (campeonato.value) {
       await resultadoStore.obtenerRanking(campeonato.value.id);
@@ -176,18 +176,36 @@ const cargarDatos = async () => {
 // Lifecycle hooks
 onMounted(() => {
   cargarDatos();
+  
+  // Iniciar intervalo de recarga de datos
+  intervalRecargaId.value = setInterval(cargarDatos, INTERVALO_RECARGA);
+  
   // Reiniciar la rotación cuando la pestaña vuelve a estar visible
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       iniciarRotacionPaginas();
+      // Reiniciar intervalo de recarga
+      if (!intervalRecargaId.value) {
+        intervalRecargaId.value = setInterval(cargarDatos, INTERVALO_RECARGA);
+      }
     } else {
       detenerRotacionPaginas();
+      // Detener intervalo de recarga
+      if (intervalRecargaId.value) {
+        clearInterval(intervalRecargaId.value);
+        intervalRecargaId.value = null;
+      }
     }
   });
 });
 
 onUnmounted(() => {
   detenerRotacionPaginas();
+  // Limpiar intervalo de recarga
+  if (intervalRecargaId.value) {
+    clearInterval(intervalRecargaId.value);
+    intervalRecargaId.value = null;
+  }
   document.removeEventListener('visibilitychange', () => {});
 });
 </script>

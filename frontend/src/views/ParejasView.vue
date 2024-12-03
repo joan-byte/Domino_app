@@ -128,6 +128,17 @@ const error = ref(null);
 const mostrarModalError = ref(false);
 const mensajeError = ref('');
 const loading = ref(false);
+const hayResultados = ref(false);
+
+const verificarResultados = async () => {
+  try {
+    const resultados = await resultadoService.obtenerResultadosCampeonato(campeonato.value.id);
+    hayResultados.value = resultados && resultados.length > 0;
+  } catch (e) {
+    console.error('Error al verificar resultados:', e);
+    hayResultados.value = false;
+  }
+};
 
 const cargarDatos = async () => {
   try {
@@ -135,6 +146,13 @@ const cargarDatos = async () => {
     campeonato.value = campeonatoActual;
     if (campeonatoActual) {
       parejas.value = await parejasStore.obtenerParejas(campeonatoActual.id);
+      if (campeonatoActual.partida_actual > 0) {
+        try {
+          await verificarResultados();
+        } catch (e) {
+          console.error('Error al verificar resultados:', e);
+        }
+      }
     }
   } catch (e) {
     console.error('Error al cargar los datos:', e);
@@ -148,14 +166,6 @@ const nuevaPareja = () => {
 
 const volverAtras = async () => {
   try {
-    // Verificar si hay resultados registrados
-    const resultados = await resultadoService.obtenerResultadosCampeonato(campeonato.value.id);
-    if (resultados && resultados.length > 0) {
-      mensajeError.value = 'No se puede volver atrás, el campeonato ya ha empezado';
-      mostrarModalError.value = true;
-      return;
-    }
-
     loading.value = true;
     await mesaStore.eliminarMesas(campeonato.value.id);
     await campeonatoStore.reiniciarCampeonato(campeonato.value.id);

@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 class ResultadoBase(BaseModel):
-    rp: int = Field(gt=0, lt=301)
+    rp: int = Field(ge=0, lt=301)
     gb: bool = False
 
 class ResultadoCreate(ResultadoBase):
@@ -15,7 +16,7 @@ class Resultado(ResultadoBase):
     pareja_id: int
     pg: int
     pp: int
-    mesa_id: int
+    mesa_id: Optional[int] = None
     partida: int
     campeonato_id: int
     

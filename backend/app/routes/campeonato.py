@@ -169,27 +169,10 @@ def eliminar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
                 detail="Campeonato no encontrado"
             )
         
-        # Eliminar resultados primero
-        db.query(Resultado).filter(Resultado.campeonato_id == campeonato_id).delete(synchronize_session=False)
-        
-        # Eliminar mesas
-        db.query(Mesa).filter(Mesa.campeonato_id == campeonato_id).delete(synchronize_session=False)
-        
-        # Obtener IDs de las parejas para eliminar sus jugadores
-        parejas_ids = [p.id for p in db.query(Pareja).filter(Pareja.campeonato_id == campeonato_id).all()]
-        if parejas_ids:
-            db.query(Jugador).filter(Jugador.pareja_id.in_(parejas_ids)).delete(synchronize_session=False)
-        
-        # Eliminar parejas
-        db.query(Pareja).filter(Pareja.campeonato_id == campeonato_id).delete(synchronize_session=False)
-        
-        # Finalmente eliminar el campeonato
+        # Eliminar el campeonato (el cascade se encargará del resto)
         db.delete(db_campeonato)
-        
-        # Reiniciar todas las secuencias después de eliminar
-        reset_database_sequences(db)
-        
         db.commit()
+        
         logger.info(f"Campeonato {campeonato_id} y datos relacionados eliminados exitosamente")
         return {"message": "Campeonato eliminado exitosamente"}
         
@@ -199,7 +182,7 @@ def eliminar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al eliminar el campeonato: {str(e)}"
-        ) 
+        )
 
 @router.post("/{campeonato_id}/cerrar-inscripcion")
 def cerrar_inscripcion(campeonato_id: int, db: Session = Depends(get_db)):
@@ -267,4 +250,32 @@ def cerrar_inscripcion(campeonato_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al cerrar la inscripción: {str(e)}"
+        )
+
+@router.put("/{campeonato_id}/reiniciar")
+def reiniciar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
+    try:
+        logger.info(f"Intentando reiniciar campeonato {campeonato_id}")
+        
+        # Verificar que existe el campeonato
+        campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+        if not campeonato:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campeonato no encontrado"
+            )
+        
+        # Reiniciar la partida actual a 0
+        campeonato.partida_actual = 0
+        db.commit()
+        
+        logger.info(f"Campeonato {campeonato_id} reiniciado exitosamente")
+        return {"message": "Campeonato reiniciado exitosamente"}
+        
+    except Exception as e:
+        logger.error(f"Error al reiniciar campeonato: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al reiniciar el campeonato: {str(e)}"
         ) 

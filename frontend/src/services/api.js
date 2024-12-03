@@ -64,6 +64,11 @@ export const campeonatoService = {
   async actualizarPartida(id, partida) {
     const response = await api.put(`/campeonatos/${id}/partida`, { partida });
     return response.data;
+  },
+
+  async reiniciarCampeonato(id) {
+    const response = await api.put(`/campeonatos/${id}/reiniciar`);
+    return response.data;
   }
 };
 
@@ -116,7 +121,7 @@ export const mesaService = {
   },
 
   async eliminarMesas(campeonatoId) {
-    const response = await api.delete(`/campeonatos/${campeonatoId}/mesas`);
+    const response = await api.delete(`/mesas/campeonato/${campeonatoId}`);
     return response.data;
   },
 

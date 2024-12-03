@@ -14,7 +14,7 @@
           @click="cerrarPartida"
           class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-medium"
         >
-          Cerrar Partida
+          {{ esUltimaPartida ? 'Finalizar Campeonato' : 'Cerrar Partida' }}
         </button>
       </div>
     </div>
@@ -132,7 +132,7 @@
                     @input="() => {
                       if (resultado.puntos_pareja1 > 300) {
                         error = 'Los resultados no pueden ser mayores a 300';
-                      } else if (resultado.puntos_pareja1 === resultado.puntos_pareja2 && resultado.puntos_pareja1 !== 0) {
+                      } else if (resultado.puntos_pareja1 === resultado.puntos_pareja2 && (resultado.puntos_pareja1 !== 0 || resultado.puntos_pareja2 !== 0)) {
                         error = 'Los resultados no pueden ser iguales';
                       } else {
                         error = '';
@@ -141,7 +141,7 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     :class="{
                       'border-red-500': resultado.puntos_pareja1 > 300 || 
-                        (resultado.puntos_pareja1 === resultado.puntos_pareja2 && resultado.puntos_pareja1 !== 0)
+                        (resultado.puntos_pareja1 === resultado.puntos_pareja2 && (resultado.puntos_pareja1 !== 0 || resultado.puntos_pareja2 !== 0))
                     }"
                   />
                 </div>
@@ -189,7 +189,7 @@
                     @input="() => {
                       if (resultado.puntos_pareja2 > 300) {
                         error = 'Los resultados no pueden ser mayores a 300';
-                      } else if (resultado.puntos_pareja2 === resultado.puntos_pareja1 && resultado.puntos_pareja2 !== 0) {
+                      } else if (resultado.puntos_pareja2 === resultado.puntos_pareja1 && (resultado.puntos_pareja2 !== 0 || resultado.puntos_pareja1 !== 0)) {
                         error = 'Los resultados no pueden ser iguales';
                       } else {
                         error = '';
@@ -198,7 +198,7 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                     :class="{
                       'border-red-500': resultado.puntos_pareja2 > 300 || 
-                        (resultado.puntos_pareja2 === resultado.puntos_pareja1 && resultado.puntos_pareja2 !== 0)
+                        (resultado.puntos_pareja2 === resultado.puntos_pareja1 && (resultado.puntos_pareja2 !== 0 || resultado.puntos_pareja1 !== 0))
                     }"
                   />
                 </div>
@@ -402,8 +402,8 @@ const validarResultado = () => {
     return false;
   }
 
-  // Verificar que los valores son diferentes (no hay empate)
-  if (rp1 === rp2) {
+  // Verificar que los valores son diferentes (no hay empate), excepto cuando ambos son 0
+  if (rp1 === rp2 && (rp1 !== 0 || rp2 !== 0)) {
     error.value = 'Los resultados no pueden ser iguales';
     return false;
   }
@@ -520,6 +520,10 @@ const guardarResultado = async () => {
 // Agregar método para cerrar partida
 const cerrarPartida = async () => {
   try {
+    if (esUltimaPartida.value) {
+      router.push('/podium');
+      return;
+    }
     await mesaService.crearMesasPorRanking(campeonato.value.id);
     await cargarDatos();
     router.push('/mesas/asignacion');
@@ -528,6 +532,10 @@ const cerrarPartida = async () => {
     error.value = 'Error al cerrar la partida';
   }
 };
+
+const esUltimaPartida = computed(() => {
+  return campeonato.value?.partida_actual === campeonato.value?.numero_partidas;
+});
 
 // Lifecycle hooks
 onMounted(() => {

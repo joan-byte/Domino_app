@@ -13,5 +13,4 @@ class Mesa(Base):
     
     pareja1 = relationship("Pareja", foreign_keys=[pareja1_id])
     pareja2 = relationship("Pareja", foreign_keys=[pareja2_id])
-    campeonato = relationship("Campeonato", back_populates="mesas")
-    resultados = relationship("Resultado", back_populates="mesa") 
+    campeonato = relationship("Campeonato", back_populates="mesas") 

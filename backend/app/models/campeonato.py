@@ -18,4 +18,5 @@ class Campeonato(Base):
     parejas = relationship("Pareja", back_populates="campeonato", cascade="all, delete-orphan")
     jugadores = relationship("Jugador", back_populates="campeonato", cascade="all, delete-orphan")
     mesas = relationship("Mesa", back_populates="campeonato", cascade="all, delete-orphan")
-    resultados = relationship("Resultado", back_populates="campeonato", cascade="all, delete-orphan") 
+    resultados = relationship("Resultado", back_populates="campeonato", cascade="all, delete-orphan")
+    
