@@ -1,11 +1,29 @@
-# Aplicación de Gestión de Campeonatos de Dominó
+# Sistema de Gestión de Campeonatos de Dominó
 
 ## Descripción
-Sistema completo de gestión para campeonatos de dominó que permite administrar parejas, mesas, resultados y rankings.
+Sistema integral para la gestión de campeonatos de dominó que facilita la organización, seguimiento y administración de torneos. La aplicación está diseñada para optimizar la experiencia tanto de organizadores como de jugadores, ofreciendo una interfaz intuitiva y funcionalidades completas.
+
+## Características Principales
+- Gestión completa de torneos y campeonatos
+- Sistema de ranking automático
+- Generación automática de mesas y emparejamientos
+- Estadísticas detalladas por pareja y jugador
+- Interfaz responsive para acceso desde cualquier dispositivo
+- Sistema de notificaciones en tiempo real
+- Exportación de resultados y estadísticas
 
 ## Tecnologías
-- Backend: FastAPI + PostgreSQL
-- Frontend: Vue.js + Tailwind CSS
+### Backend
+- FastAPI (Framework Python de alto rendimiento)
+- PostgreSQL (Base de datos relacional)
+- SQLAlchemy (ORM)
+- Pydantic (Validación de datos)
+
+### Frontend
+- Vue.js 3 (Framework JavaScript)
+- Tailwind CSS (Framework CSS)
+- Pinia (Gestión de estado)
+- Vue Router (Enrutamiento)
 
 ## Requisitos Previos
 - Python 3.8+
@@ -15,125 +33,158 @@ Sistema completo de gestión para campeonatos de dominó que permite administrar
 
 ## Instalación
 
-### 1. Clonar el repositorio
+### 1. Configuración Inicial
 ```bash
+# Clonar el repositorio
 git clone [url-del-repositorio]
 cd domino_app
-```
 
-### 2. Configurar el Backend
-
-#### Crear y activar entorno virtual
-```bash
+# Crear y activar entorno virtual
 python3 -m venv venv
-source venv/bin/activate  # En Unix/macOS
-# o
-.\venv\Scripts\activate  # En Windows
+source venv/bin/activate  # Unix/macOS
+.\venv\Scripts\activate   # Windows
 ```
 
-#### Instalar dependencias del backend
+### 2. Backend
 ```bash
+# Instalar dependencias
 pip install -r requirements.txt
-```
 
-#### Configurar variables de entorno
-Crear archivo `.env` en la raíz del proyecto con:
-```
+# Configurar variables de entorno (.env)
 DB_USER=domino
 DB_PASSWORD=375CheyTac
 DB_HOST=localhost
 DB_PORT=5432
+DB_NAME=domino_db
 SECRET_KEY=tu_clave_secreta_aqui
-```
+JWT_SECRET_KEY=tu_jwt_secreto_aqui
 
-#### Inicializar la base de datos
-```bash
+# Inicializar base de datos
 cd backend
 python init_app.py
 ```
 
-### 3. Configurar el Frontend
-
-#### Instalar dependencias
+### 3. Frontend
 ```bash
 cd frontend
 npm install
-```
-
-## Ejecutar la Aplicación
-
-### 1. Iniciar el Backend
-```bash
-cd backend
-uvicorn main:app --reload
-```
-El servidor estará disponible en `http://localhost:8000`
-
-### 2. Iniciar el Frontend
-```bash
-cd frontend
 npm run dev
 ```
-La aplicación estará disponible en `http://localhost:5173`
 
-## Uso de la Aplicación
+## Guía de Uso
 
-1. **Gestión de Campeonato**
-   - Crear un nuevo campeonato
-   - Configurar número de partidas y duración
+### 1. Gestión de Campeonatos
+#### Crear Nuevo Campeonato
+- Definir nombre y descripción
+- Establecer fecha de inicio y duración
+- Configurar número de partidas
+- Activar/desactivar modo GB (Great Britain)
+- Gestionar estado activo del campeonato
 
-2. **Gestión de Parejas**
-   - Registrar nuevas parejas
-   - Activar/desactivar parejas
-   - Ver lista de parejas
+#### Configuración de Reglas
+- Sistema de puntuación configurable
+- Control de partidas por campeonato
+- Gestión de inscripciones
+- Sistema de cierre automático
 
-3. **Gestión de Mesas**
-   - Crear mesas por sorteo o ranking
-   - Ver distribución de mesas
-   - Registrar resultados
+### 2. Gestión de Parejas
+#### Registro de Parejas
+- Datos completos de los jugadores
+- Asignación a campeonatos
+- Control de estado activo/inactivo
+- Historial de participación
 
-4. **Ranking**
-   - Ver clasificación actual
-   - Estadísticas por pareja
-   - Filtrar y buscar resultados
+#### Sistema de Ranking
+- Puntuación acumulada automática
+- Posición en tiempo real
+- Estadísticas detalladas
+- Histórico de resultados
+
+### 3. Control de Partidas
+#### Gestión de Mesas
+- Asignación automática por sorteo
+- Control de rotación de parejas
+- Seguimiento de mesas activas
+- Registro de incidencias
+
+#### Registro de Resultados
+- Puntuación por partida
+- Validación automática
+- Actualización en tiempo real
+- Generación de reportes
+
+### 4. Análisis y Estadísticas
+- Rendimiento por pareja
+- Gráficos de evolución
+- Exportación de datos
+- Informes personalizados
 
 ## Estructura del Proyecto
 ```
 domino_app/
 ├── backend/
 │   ├── app/
-│   │   ├── models/        # Modelos de la base de datos
-│   │   ├── routes/        # Rutas de la API
-│   │   ├── schemas/       # Esquemas Pydantic
-│   │   └── database.py    # Configuración de la BD
-│   ├── main.py           # Aplicación principal
-│   └── init_app.py       # Script de inicialización
+│   │   ├── models/          # Modelos de datos
+│   │   ├── routes/          # Endpoints API
+│   │   ├── schemas/         # Esquemas de validación
+│   │   ├── services/        # Lógica de negocio
+│   │   └── utils/           # Utilidades
+│   ├── tests/               # Pruebas unitarias
+│   ├── main.py             # Punto de entrada
+│   └── init_app.py         # Inicialización
 ├── frontend/
 │   ├── src/
-│   │   ├── components/   # Componentes Vue
-│   │   ├── views/        # Vistas principales
-│   │   ├── stores/       # Estado global (Pinia)
-│   │   └── services/     # Servicios API
+│   │   ├── components/     # Componentes Vue
+│   │   ├── views/          # Páginas principales
+│   │   ├── stores/         # Estado global
+│   │   ├── services/       # Servicios API
+│   │   └── assets/         # Recursos estáticos
 │   └── package.json
 └── README.md
 ```
 
-## Desarrollo
+## API Documentation
+### Endpoints Principales
+- `/campeonatos`: Gestión completa de torneos
+  - POST /: Crear nuevo campeonato
+  - GET /actual: Obtener campeonato activo
+  - PUT /{id}: Actualizar campeonato
+  - DELETE /{id}: Eliminar campeonato
+  - POST /{id}/cerrar-inscripcion: Cerrar inscripciones
 
+- `/parejas`: Gestión de parejas
+  - POST /: Registrar nueva pareja
+  - GET /: Listar parejas
+  - PUT /{id}: Actualizar pareja
+  - DELETE /{id}: Eliminar pareja
+
+- `/mesas`: Control de mesas
+  - GET /: Listar mesas activas
+  - POST /asignar: Asignar mesas
+  - PUT /{id}: Actualizar mesa
+
+- `/resultados`: Registro de resultados
+  - POST /: Registrar resultado
+  - GET /campeonato/{id}: Obtener resultados
+  - PUT /{id}: Actualizar resultado
+
+## Desarrollo
 ### Backend
-- API documentación disponible en `http://localhost:8000/docs`
-- Pruebas con pytest en `/backend/tests`
+- Documentación API: `http://localhost:8000/docs`
+- Tests con pytest
+- Logging configurado para debugging
+- Manejo de errores centralizado
 
 ### Frontend
 - Componentes Vue 3 con Composition API
 - Estado global con Pinia
-- Estilos con Tailwind CSS
+- Rutas protegidas
+- Diseño responsive
 
-## Contribuir
-1. Fork el repositorio
-2. Crear una rama para tu feature
-3. Commit los cambios
-4. Push a la rama
-5. Crear un Pull Request
+## Soporte
+Para reportar bugs o solicitar nuevas características, por favor crear un issue en el repositorio.
+
+## Licencia
+Distribuido bajo la licencia MIT. Ver `LICENSE` para más información.
 ``` 
-</rewritten_file># Domino_app
+</rewritten_file>
