@@ -43,7 +43,9 @@
           <button 
             v-if="campeonato?.partida_actual > 0"
             @click="volverAtras"
-            class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+            :disabled="hayResultados"
+            class="px-4 py-2 bg-amber-500 text-white rounded-lg transition-colors"
+            :class="hayResultados ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-600'"
           >
             Volver Atrás
           </button>
