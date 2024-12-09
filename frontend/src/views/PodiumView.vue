@@ -95,15 +95,27 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="(pareja, index) in parejasVisibles" :key="pareja.id"
-                :class="{'bg-yellow-50': index + paginaActual * PAREJAS_POR_PAGINA === 0, 
-                        'bg-gray-50': index + paginaActual * PAREJAS_POR_PAGINA === 1, 
-                        'bg-orange-50': index + paginaActual * PAREJAS_POR_PAGINA === 2}">
+                :class="{
+                  'bg-yellow-50': index + paginaActual * PAREJAS_POR_PAGINA === 0 || 
+                                 (obtenerPosicionPrimerGrupoB() === index + paginaActual * PAREJAS_POR_PAGINA), 
+                  'bg-gray-50': index + paginaActual * PAREJAS_POR_PAGINA === 1 || 
+                               (obtenerPosicionPrimerGrupoB() + 1 === index + paginaActual * PAREJAS_POR_PAGINA),
+                  'bg-orange-50': index + paginaActual * PAREJAS_POR_PAGINA === 2 || 
+                                 (obtenerPosicionPrimerGrupoB() + 2 === index + paginaActual * PAREJAS_POR_PAGINA)
+                }">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <span class="text-sm font-medium text-gray-900">{{ index + 1 + paginaActual * PAREJAS_POR_PAGINA }}</span>
-                  <span v-if="index + paginaActual * PAREJAS_POR_PAGINA < 3" class="ml-2">
-                    {{ index + paginaActual * PAREJAS_POR_PAGINA === 0 ? '🏆' : 
-                       index + paginaActual * PAREJAS_POR_PAGINA === 1 ? '🥈' : '🥉' }}
+                  <span v-if="index + paginaActual * PAREJAS_POR_PAGINA < 3 || 
+                            (index + paginaActual * PAREJAS_POR_PAGINA >= obtenerPosicionPrimerGrupoB() && 
+                             index + paginaActual * PAREJAS_POR_PAGINA < obtenerPosicionPrimerGrupoB() + 3)" 
+                        class="ml-2">
+                    {{ 
+                      index + paginaActual * PAREJAS_POR_PAGINA === 0 || 
+                      index + paginaActual * PAREJAS_POR_PAGINA === obtenerPosicionPrimerGrupoB() ? '🏆' : 
+                      index + paginaActual * PAREJAS_POR_PAGINA === 1 || 
+                      index + paginaActual * PAREJAS_POR_PAGINA === obtenerPosicionPrimerGrupoB() + 1 ? '🥈' : '🥉' 
+                    }}
                   </span>
                 </div>
               </td>
@@ -192,6 +204,11 @@ const cargarDatos = async () => {
     console.error('Error al cargar los datos:', e);
     error.value = e.message || 'Error al cargar los datos';
   }
+};
+
+// Función para obtener la posición de la primera pareja del grupo B
+const obtenerPosicionPrimerGrupoB = () => {
+  return ranking.value.findIndex(p => p.gb === true);
 };
 
 onMounted(() => {
