@@ -12,13 +12,7 @@ const api = axios.create({
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response) {
-      console.error('Error de respuesta:', error.response.data);
-    } else if (error.request) {
-      console.error('Error de petición:', error.request);
-    } else {
-      console.error('Error:', error.message);
-    }
+    // Silenciosamente rechazar el error sin mostrar mensajes en la consola
     return Promise.reject(error);
   }
 );

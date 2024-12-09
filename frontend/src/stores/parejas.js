@@ -33,7 +33,7 @@ export const useParejasStore = defineStore('parejas', () => {
       parejas.value.push(nuevaPareja)
       return nuevaPareja
     } catch (e) {
-      error.value = e.response?.data?.detail?.[0]?.msg || 'Error al crear la pareja'
+      error.value = e.response?.data?.detail || 'Error al crear la pareja'
       throw e
     }
   }
