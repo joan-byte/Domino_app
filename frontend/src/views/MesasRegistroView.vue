@@ -432,6 +432,14 @@ const abrirFormularioResultado = async (mesa) => {
     };
   }
   mostrarModal.value = true;
+  
+  // Dar foco al primer campo de entrada después de que el modal se muestre
+  setTimeout(() => {
+    const primerInput = document.getElementById('rp_pareja1');
+    if (primerInput && mesa.pareja2) {
+      primerInput.focus();
+    }
+  }, 100);
 };
 
 const cerrarModal = () => {
