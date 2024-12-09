@@ -18,6 +18,16 @@ class ResultadoUpdateRequest(BaseModel):
 
 router = APIRouter(prefix="/resultados", tags=["resultados"])
 
+# Verificar si el GB está activo y si estamos en la partida que corresponde
+def debe_activar_gb(campeonato, partida_actual):
+    if not campeonato.gb:
+        return False
+    
+    # Para un campeonato de N partidas:
+    # N/2 -> parte entera -> +1 = partida donde se activa GB
+    partida_gb = (campeonato.numero_partidas // 2) + 1
+    return campeonato.partida_actual == partida_gb
+
 @router.post("/", response_model=List[ResultadoSchema])
 def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
     # Verificar que la mesa existe
@@ -28,7 +38,18 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
             detail="Mesa no encontrada"
         )
     
-    # Caso especial: Mesa con una sola pareja (pareja2_id es None)
+    # Obtener el campeonato para verificar GB
+    campeonato = db.query(Campeonato).filter(Campeonato.id == request.resultado1.campeonato_id).first()
+    if not campeonato:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campeonato no encontrado"
+        )
+
+    # Verificar si el GB está activo
+    gb_activo = debe_activar_gb(campeonato, request.resultado1.partida)
+    
+    # Caso especial: Mesa con una sola pareja (pareja2_id is None)
     if mesa.pareja2_id is None:
         # Verificar que el resultado corresponde a la pareja1
         if request.resultado1.pareja_id != mesa.pareja1_id:
@@ -44,12 +65,41 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
             Resultado.campeonato_id == request.resultado1.campeonato_id
         ).first()
         
+        # Verificar si la pareja ya tiene GB en resultados anteriores
+        tiene_gb_previo = db.query(Resultado).filter(
+            Resultado.pareja_id == mesa.pareja1_id,
+            Resultado.campeonato_id == request.resultado1.campeonato_id,
+            Resultado.gb == True
+        ).first() is not None
+
+        # Si GB está activo y no tiene GB previo, verificar si está en las últimas mesas
+        if gb_activo and not tiene_gb_previo:
+            # Obtener todas las mesas de la partida actual ordenadas por ID
+            mesas_partida = db.query(Mesa).filter(
+                Mesa.campeonato_id == campeonato.id,
+                Mesa.partida == request.resultado1.partida
+            ).order_by(Mesa.id).all()
+            
+            total_mesas = len(mesas_partida)
+            mitad_mesas = total_mesas // 2
+            
+            # Identificar las parejas que están en las últimas mesas
+            parejas_gb = set()
+            for m in mesas_partida[mitad_mesas:]:
+                if m.pareja1_id:
+                    parejas_gb.add(m.pareja1_id)
+                if m.pareja2_id:
+                    parejas_gb.add(m.pareja2_id)
+            
+            # Verificar si la pareja está en el conjunto de parejas GB
+            tiene_gb_previo = mesa.pareja1_id in parejas_gb
+        
         if existing_resultado:
             # Actualizar el resultado existente
             existing_resultado.rp = 150
             existing_resultado.pp = 150
             existing_resultado.pg = 1
-            existing_resultado.gb = request.resultado1.gb
+            existing_resultado.gb = tiene_gb_previo
             db.commit()
             db.refresh(existing_resultado)
             return [existing_resultado]
@@ -63,7 +113,7 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
                 rp=150,
                 pp=150,
                 pg=1,
-                gb=request.resultado1.gb
+                gb=tiene_gb_previo
             )
             db.add(db_resultado1)
             db.commit()
@@ -106,10 +156,46 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
     # Calcular PG y PP
     pp1 = request.resultado1.rp - request.resultado2.rp
     pp2 = request.resultado2.rp - request.resultado1.rp
-    
-    # PG se asigna a la pareja con mayor RP
     pg1 = 1 if request.resultado1.rp > request.resultado2.rp else 0
     pg2 = 1 if request.resultado2.rp > request.resultado1.rp else 0
+    
+    # Verificar GB previo para cada pareja
+    tiene_gb_previo1 = db.query(Resultado).filter(
+        Resultado.pareja_id == request.resultado1.pareja_id,
+        Resultado.campeonato_id == request.resultado1.campeonato_id,
+        Resultado.gb == True
+    ).first() is not None
+
+    tiene_gb_previo2 = db.query(Resultado).filter(
+        Resultado.pareja_id == request.resultado2.pareja_id,
+        Resultado.campeonato_id == request.resultado2.campeonato_id,
+        Resultado.gb == True
+    ).first() is not None
+
+    # Si el GB está activo y estamos a mitad de torneo, verificar si las parejas están en las últimas mesas
+    if gb_activo and not (tiene_gb_previo1 and tiene_gb_previo2):
+        # Obtener todas las mesas de la partida actual ordenadas por ID
+        mesas_partida = db.query(Mesa).filter(
+            Mesa.campeonato_id == campeonato.id,
+            Mesa.partida == request.resultado1.partida
+        ).order_by(Mesa.id).all()
+        
+        total_mesas = len(mesas_partida)
+        mitad_mesas = total_mesas // 2
+        
+        # Identificar las parejas que están en las últimas mesas
+        parejas_gb = set()
+        for m in mesas_partida[mitad_mesas:]:
+            if m.pareja1_id:
+                parejas_gb.add(m.pareja1_id)
+            if m.pareja2_id:
+                parejas_gb.add(m.pareja2_id)
+        
+        # Verificar si las parejas están en el conjunto de parejas GB
+        if not tiene_gb_previo1:
+            tiene_gb_previo1 = request.resultado1.pareja_id in parejas_gb
+        if not tiene_gb_previo2:
+            tiene_gb_previo2 = request.resultado2.pareja_id in parejas_gb
     
     # Crear resultados
     db_resultado1 = Resultado(
@@ -120,7 +206,7 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
         rp=request.resultado1.rp,
         pp=pp1,
         pg=pg1,
-        gb=request.resultado1.gb
+        gb=tiene_gb_previo1
     )
     
     db_resultado2 = Resultado(
@@ -131,7 +217,7 @@ def create_resultado(request: ResultadoRequest, db: Session = Depends(get_db)):
         rp=request.resultado2.rp,
         pp=pp2,
         pg=pg2,
-        gb=request.resultado2.gb
+        gb=tiene_gb_previo2
     )
     
     db.add(db_resultado1)

@@ -13,40 +13,49 @@
     <!-- Podium -->
     <div class="flex justify-center items-end gap-12 mb-16 h-72">
       <!-- Segundo lugar -->
-      <div class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 2" class="w-[32rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🥈</div>
         <div class="bg-gray-100 p-8 rounded-t-lg w-full text-center h-40">
-          <div class="font-bold text-2xl mb-2">Pareja {{ segundoLugar?.numero }}</div>
-          <div class="text-xl mb-4">{{ segundoLugar?.nombre }}</div>
+          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[1]?.numero }}</div>
+          <div class="text-xl mb-4">{{ ranking[1]?.nombre }}</div>
           <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ segundoLugar?.club }}</div>
-            <div>PG: {{ segundoLugar?.pg }} | PP: {{ segundoLugar?.pp }}</div>
+            <div class="text-gray-600">{{ ranking[1]?.club }}</div>
+            <div class="flex gap-4">
+              <span>GB: {{ ranking[1]?.gb ? 'B' : 'A' }}</span>
+              <span>PG: {{ ranking[1]?.pg }} | PP: {{ ranking[1]?.pp }}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Primer lugar -->
-      <div class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 1" class="w-[32rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🏆</div>
         <div class="bg-yellow-100 p-8 rounded-t-lg w-full text-center h-48">
-          <div class="font-bold text-2xl mb-2">Pareja {{ primerLugar?.numero }}</div>
-          <div class="text-xl mb-4">{{ primerLugar?.nombre }}</div>
+          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[0]?.numero }}</div>
+          <div class="text-xl mb-4">{{ ranking[0]?.nombre }}</div>
           <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ primerLugar?.club }}</div>
-            <div>PG: {{ primerLugar?.pg }} | PP: {{ primerLugar?.pp }}</div>
+            <div class="text-gray-600">{{ ranking[0]?.club }}</div>
+            <div class="flex gap-4">
+              <span>GB: {{ ranking[0]?.gb ? 'B' : 'A' }}</span>
+              <span>PG: {{ ranking[0]?.pg }} | PP: {{ ranking[0]?.pp }}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Tercer lugar -->
-      <div class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 3" class="w-[32rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🥉</div>
         <div class="bg-orange-100 p-8 rounded-t-lg w-full text-center h-36">
-          <div class="font-bold text-2xl mb-2">Pareja {{ tercerLugar?.numero }}</div>
-          <div class="text-xl mb-4">{{ tercerLugar?.nombre }}</div>
+          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[2]?.numero }}</div>
+          <div class="text-xl mb-4">{{ ranking[2]?.nombre }}</div>
           <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ tercerLugar?.club }}</div>
-            <div>PG: {{ tercerLugar?.pg }} | PP: {{ tercerLugar?.pp }}</div>
+            <div class="text-gray-600">{{ ranking[2]?.club }}</div>
+            <div class="flex gap-4">
+              <span>GB: {{ ranking[2]?.gb ? 'B' : 'A' }}</span>
+              <span>PG: {{ ranking[2]?.pg }} | PP: {{ ranking[2]?.pp }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -63,6 +72,9 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Posición
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                GB
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Pareja
@@ -94,6 +106,9 @@
                        index + paginaActual * PAREJAS_POR_PAGINA === 1 ? '🥈' : '🥉' }}
                   </span>
                 </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ pareja.gb ? 'B' : 'A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ pareja.numero }}
@@ -136,10 +151,6 @@ const PAREJAS_POR_PAGINA = 10;
 const INTERVALO_CAMBIO = 7000; // 7 segundos
 const intervalId = ref(null);
 
-const primerLugar = computed(() => ranking.value[0]);
-const segundoLugar = computed(() => ranking.value[1]);
-const tercerLugar = computed(() => ranking.value[2]);
-
 const totalPaginas = computed(() => Math.ceil(ranking.value.length / PAREJAS_POR_PAGINA));
 
 const parejasVisibles = computed(() => {
@@ -175,8 +186,7 @@ const cargarDatos = async () => {
     }
 
     // Cargar el ranking final
-    const rankingData = await resultadoService.obtenerRanking(campeonato.value.id);
-    ranking.value = rankingData;
+    ranking.value = await resultadoService.obtenerRanking(campeonato.value.id);
     iniciarRotacionPaginas();
   } catch (e) {
     console.error('Error al cargar los datos:', e);
