@@ -115,11 +115,9 @@ const error = ref(null);
 
 const PAREJAS_POR_PAGINA = 15;
 const INTERVALO_CAMBIO = 10000; // 10 segundos
-const INTERVALO_RECARGA = 5000; // 5 segundos para recargar datos
 
 const paginaActual = ref(0);
 const intervalId = ref(null);
-const intervalRecargaId = ref(null);
 
 // Computed properties para la paginación
 const totalPaginas = computed(() => 
@@ -136,12 +134,21 @@ const parejasVisibles = computed(() => {
 // Funciones para la paginación
 const cambiarPagina = () => {
   if (totalPaginas.value > 0) {
-    paginaActual.value = (paginaActual.value + 1) % totalPaginas.value;
+    // Si estamos en la última página, volver a la primera
+    if (paginaActual.value >= totalPaginas.value - 1) {
+      paginaActual.value = 0;
+    } else {
+      paginaActual.value++;
+    }
   }
 };
 
 const iniciarRotacionPaginas = () => {
-  if (ranking.value?.length > PAREJAS_POR_PAGINA) {
+  // Detener el intervalo existente si hay uno
+  detenerRotacionPaginas();
+  
+  // Solo iniciar si hay más de una página
+  if (totalPaginas.value > 1) {
     intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
   }
 };
@@ -158,12 +165,14 @@ const cargarDatos = async () => {
     isLoading.value = true;
     error.value = null;
 
-    // Siempre cargar el campeonato actual para tener los datos más recientes
     await campeonatoStore.obtenerActual();
 
     if (campeonato.value) {
       await resultadoStore.obtenerRanking(campeonato.value.id);
-      iniciarRotacionPaginas();
+      // Solo iniciar la rotación si la página está visible
+      if (document.visibilityState === 'visible') {
+        iniciarRotacionPaginas();
+      }
     }
   } catch (e) {
     console.error('Error al cargar los datos:', e);
@@ -177,35 +186,18 @@ const cargarDatos = async () => {
 onMounted(() => {
   cargarDatos();
   
-  // Iniciar intervalo de recarga de datos
-  intervalRecargaId.value = setInterval(cargarDatos, INTERVALO_RECARGA);
-  
-  // Reiniciar la rotación cuando la pestaña vuelve a estar visible
+  // Manejar visibilidad de la página
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       iniciarRotacionPaginas();
-      // Reiniciar intervalo de recarga
-      if (!intervalRecargaId.value) {
-        intervalRecargaId.value = setInterval(cargarDatos, INTERVALO_RECARGA);
-      }
     } else {
       detenerRotacionPaginas();
-      // Detener intervalo de recarga
-      if (intervalRecargaId.value) {
-        clearInterval(intervalRecargaId.value);
-        intervalRecargaId.value = null;
-      }
     }
   });
 });
 
 onUnmounted(() => {
   detenerRotacionPaginas();
-  // Limpiar intervalo de recarga
-  if (intervalRecargaId.value) {
-    clearInterval(intervalRecargaId.value);
-    intervalRecargaId.value = null;
-  }
   document.removeEventListener('visibilitychange', () => {});
 });
 </script>
