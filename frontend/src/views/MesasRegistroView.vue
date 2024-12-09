@@ -467,7 +467,6 @@ const guardarResultado = async () => {
         rp: 150,
         pg: 1,
         pp: 150,
-        gb: false,
         partida: campeonato.value.partida_actual,
         campeonato_id: campeonato.value.id
       };
@@ -487,7 +486,6 @@ const guardarResultado = async () => {
       mesa_id: mesaSeleccionada.value.id,
       pareja_id: mesaSeleccionada.value.pareja1.id,
       rp: resultado.value.puntos_pareja1,
-      gb: false,
       partida: campeonato.value.partida_actual,
       campeonato_id: campeonato.value.id
     };
@@ -496,7 +494,6 @@ const guardarResultado = async () => {
       mesa_id: mesaSeleccionada.value.id,
       pareja_id: mesaSeleccionada.value.pareja2.id,
       rp: resultado.value.puntos_pareja2,
-      gb: false,
       partida: campeonato.value.partida_actual,
       campeonato_id: campeonato.value.id
     };

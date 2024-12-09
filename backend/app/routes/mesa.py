@@ -113,9 +113,13 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             func.coalesce(func.sum(Resultado.pp), 0).desc()   # Total PP descendente
         ).all()
 
-        # Si hay al menos dos parejas, verificar las condiciones especiales
+        # Separar parejas por GB
+        parejas_gb_a = [p for p in parejas_ranking if not p[3]]  # GB = False (A)
+        parejas_gb_b = [p for p in parejas_ranking if p[3]]      # GB = True (B)
+
         parejas_para_mesas = []
         if len(parejas_ranking) >= 2:
+            # Verificar condiciones para GB=A (primeras dos parejas del ranking general)
             primera_pareja = parejas_ranking[0]
             segunda_pareja = parejas_ranking[1]
             
@@ -127,9 +131,8 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             diferencia_pg = pg_primera - pg_segunda
             diferencia_pp = pp_primera - pp_segunda
             
-            # Verificar condiciones
+            # Si la primera pareja cumple las condiciones, gana automáticamente
             if diferencia_pg >= 2 or (diferencia_pg < 2 and diferencia_pp > 300):
-                # La primera pareja gana automáticamente
                 nuevo_resultado = Resultado(
                     pareja_id=primera_pareja[0].id,
                     pg=1,
@@ -146,6 +149,35 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             else:
                 # Incluir todas las parejas en la asignación
                 parejas_para_mesas = [p[0] for p in parejas_ranking]
+
+            # Verificar condiciones para GB=B (si hay al menos dos parejas con GB=B)
+            if len(parejas_gb_b) >= 2:
+                primera_pareja_b = parejas_gb_b[0]
+                segunda_pareja_b = parejas_gb_b[1]
+                
+                pg_primera_b = primera_pareja_b[1] or 0
+                pg_segunda_b = segunda_pareja_b[1] or 0
+                pp_primera_b = primera_pareja_b[2] or 0
+                pp_segunda_b = segunda_pareja_b[2] or 0
+                
+                diferencia_pg_b = pg_primera_b - pg_segunda_b
+                diferencia_pp_b = pp_primera_b - pp_segunda_b
+                
+                # Si la primera pareja de GB=B cumple las condiciones, gana automáticamente
+                if diferencia_pg_b >= 2 or (diferencia_pg_b < 2 and diferencia_pp_b > 300):
+                    nuevo_resultado_b = Resultado(
+                        pareja_id=primera_pareja_b[0].id,
+                        pg=1,
+                        pp=0,
+                        rp=0,
+                        gb=True,
+                        mesa_id=None,
+                        partida=campeonato.partida_actual + 1,
+                        campeonato_id=campeonato_id
+                    )
+                    db.add(nuevo_resultado_b)
+                    # Excluir primera pareja GB=B de la asignación de mesas
+                    parejas_para_mesas = [p for p in parejas_para_mesas if p.id != primera_pareja_b[0].id]
         else:
             parejas_para_mesas = [p[0] for p in parejas_ranking]
 
