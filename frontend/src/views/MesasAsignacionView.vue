@@ -72,6 +72,70 @@ VALUES (
         Página {{ paginaActual + 1 }} de {{ totalPaginas }}
       </div>
     </div>
+    
+    <!-- Botón de imprimir -->
+    <div class="flex justify-end mt-4">
+      <button @click="imprimir" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+        Imprimir
+      </button>
+    </div>
+
+    <!-- Formato de impresión (oculto normalmente) -->
+    <div class="hidden print:block print:m-0 print-section">
+      <div class="print-pages">
+        <template v-for="(mesa, index) in mesasParaImprimir" :key="index">
+          <div :class="{'page-break': index % 2 === 0 && index !== 0}" class="mesa-container">
+            <div class="border border-gray-300 h-full flex flex-col">
+              <!-- Contenido de la mesa igual que antes -->
+              <div class="border-b border-gray-300 p-4">
+                <div class="text-left font-bold text-2xl mb-1">CAMPEONATO</div>
+                <div class="text-left font-semibold text-xl mb-2">{{ campeonato?.nombre }}</div>
+                <div class="flex justify-end">
+                  <div class="text-right">
+                    <span class="mr-4">Partida {{ campeonato?.partida_actual }}</span>
+                    <span>Mesa {{ mesa.id }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Parejas de la mesa -->
+              <div class="divide-y divide-gray-300">
+                <div class="p-3">
+                  <div class="grid grid-cols-12">
+                    <div class="col-span-6">{{ mesa.pareja1.nombre }}</div>
+                    <div class="col-span-6">
+                      <span class="mr-4">PG {{ mesa.pareja1.pg || 0 }}</span>
+                      <span>PP {{ mesa.pareja1.pp || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-3">
+                  <div class="grid grid-cols-12">
+                    <div class="col-span-6">{{ mesa.pareja2.nombre }}</div>
+                    <div class="col-span-6">
+                      <span class="mr-4">PG {{ mesa.pareja2.pg || 0 }}</span>
+                      <span>PP {{ mesa.pareja2.pp || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Espacio para resultados -->
+              <div class="flex-grow px-3">
+                <div class="grid grid-cols-1">
+                  <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6"></div>
+                </div>
+              </div>
+              
+              <!-- Total -->
+              <div class="border-t border-gray-300 p-3">
+                <div>Total</div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -160,6 +224,45 @@ const cargarDatos = async () => {
   }
 };
 
+const mesasParaImprimir = computed(() => {
+  const mesasCompletas = [];
+  const mesas = new Map();
+  
+  // Agrupar parejas por mesa
+  parejasMesas.value.forEach(pareja => {
+    if (pareja.mesa !== '-') {
+      if (!mesas.has(pareja.mesa)) {
+        mesas.set(pareja.mesa, {
+          id: pareja.mesa,
+          parejas: []
+        });
+      }
+      mesas.get(pareja.mesa).parejas.push({
+        nombre: pareja.nombre,
+        pg: 0,
+        pp: 0
+      });
+    }
+  });
+
+  // Filtrar solo mesas con dos parejas
+  mesas.forEach(mesa => {
+    if (mesa.parejas.length === 2) {
+      mesasCompletas.push({
+        id: mesa.id,
+        pareja1: mesa.parejas[0],
+        pareja2: mesa.parejas[1]
+      });
+    }
+  });
+
+  return mesasCompletas.sort((a, b) => a.id - b.id);
+});
+
+const imprimir = () => {
+  window.print();
+};
+
 // Lifecycle hooks
 onMounted(() => {
   cargarDatos();
@@ -177,4 +280,90 @@ onUnmounted(() => {
   detenerRotacionPaginas();
   document.removeEventListener('visibilitychange', () => {});
 });
-</script> 
+</script>
+
+<style>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-section,
+  .print-section * {
+    visibility: visible;
+  }
+  
+  .print-section {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .print-pages {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .mesa-container {
+    width: 50%;
+    height: 21cm;
+    padding: 1.5%;
+    box-sizing: border-box;
+  }
+
+  .mesa-container > div {
+    height: 97%;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+  }
+
+  .page-break {
+    break-before: always;
+    page-break-before: always;
+  }
+
+  /* Ajustes de contenido interno */
+  .mesa-container .border-b {
+    border-bottom-width: 1px;
+  }
+
+  .mesa-container .p-4 {
+    padding: 0.8rem;
+  }
+
+  .mesa-container .p-3 {
+    padding: 0.6rem;
+  }
+
+  .mesa-container .flex-grow {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .mesa-container .grid > div {
+    height: 0.8cm;
+  }
+}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+/* Estilos específicos para la vista previa de impresión */
+@media print {
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+</style> 
