@@ -7,6 +7,20 @@ export const useResultadoStore = defineStore('resultado', () => {
     const error = ref(null);
     const ranking = ref([]);
 
+    const obtenerResultadosCampeonato = async (campeonatoId) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            const response = await resultadoService.obtenerResultadosCampeonato(campeonatoId);
+            return response;
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al obtener los resultados del campeonato';
+            return [];
+        } finally {
+            loading.value = false;
+        }
+    };
+
     const obtenerRanking = async (campeonatoId) => {
         loading.value = true;
         error.value = null;
@@ -60,6 +74,7 @@ export const useResultadoStore = defineStore('resultado', () => {
         obtenerRanking,
         obtenerRankingFinal,
         obtenerResultadosPorMesa,
-        obtenerResultadosPorPareja
+        obtenerResultadosPorPareja,
+        obtenerResultadosCampeonato
     };
 }); 

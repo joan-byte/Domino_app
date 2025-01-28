@@ -122,14 +122,26 @@ VALUES (
               
               <!-- Espacio para resultados -->
               <div class="flex-grow px-3">
-                <div class="grid grid-cols-1">
-                  <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6"></div>
+                <div class="grid grid-cols-2 divide-x divide-gray-300">
+                  <div class="pr-2">
+                    <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6 flex items-center">
+                      <span class="w-6 text-sm text-gray-500">{{ i }}</span>
+                    </div>
+                  </div>
+                  <div class="pl-2">
+                    <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6 flex items-center">
+                      <span class="w-6 text-sm text-gray-500">{{ i }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
               <!-- Total -->
               <div class="border-t border-gray-300 p-3">
-                <div>Total</div>
+                <div class="grid grid-cols-2 divide-x divide-gray-300">
+                  <div class="pr-2">Total</div>
+                  <div class="pl-2">Total</div>
+                </div>
               </div>
             </div>
           </div>
@@ -141,7 +153,8 @@ VALUES (
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { campeonatoService, mesaService, parejaService } from '../services/api';
+import { campeonatoService, mesaService, parejaService, resultadoService } from '../services/api';
+import { useResultadoStore } from '../stores/resultado';
 
 const campeonato = ref(null);
 const parejasMesas = ref([]);
@@ -150,6 +163,9 @@ const paginaActual = ref(0);
 const intervalId = ref(null);
 const PAREJAS_POR_PAGINA = 15;
 const INTERVALO_CAMBIO = 10000; // 10 segundos en milisegundos
+
+const resultadoStore = useResultadoStore();
+const resultados = ref([]);
 
 const totalPaginas = computed(() => 
   Math.ceil(parejasMesas.value.length / PAREJAS_POR_PAGINA)
@@ -178,6 +194,47 @@ const detenerRotacionPaginas = () => {
   }
 };
 
+const mesasParaImprimir = computed(() => {
+  const mesasCompletas = [];
+  const mesas = new Map();
+  
+  // Agrupar parejas por mesa
+  parejasMesas.value.forEach(pareja => {
+    if (pareja.mesa !== '-') {
+      if (!mesas.has(pareja.mesa)) {
+        mesas.set(pareja.mesa, {
+          id: pareja.mesa,
+          parejas: []
+        });
+      }
+      
+      // Obtener los sumatorios de PG y PP de la base de datos
+      const resultadosPareja = resultados.value.filter(r => r.pareja_id === pareja.id);
+      const pg = resultadosPareja.reduce((sum, r) => sum + (r.pg || 0), 0);
+      const pp = resultadosPareja.reduce((sum, r) => sum + (r.pp || 0), 0);
+      
+      mesas.get(pareja.mesa).parejas.push({
+        nombre: pareja.nombre,
+        pg: pg,
+        pp: pp
+      });
+    }
+  });
+
+  // Filtrar solo mesas con dos parejas
+  mesas.forEach(mesa => {
+    if (mesa.parejas.length === 2) {
+      mesasCompletas.push({
+        id: mesa.id,
+        pareja1: mesa.parejas[0],
+        pareja2: mesa.parejas[1]
+      });
+    }
+  });
+
+  return mesasCompletas.sort((a, b) => a.id - b.id);
+});
+
 const cargarDatos = async () => {
   try {
     // Cargar el campeonato actual
@@ -195,6 +252,10 @@ const cargarDatos = async () => {
       campeonato.value.id,
       campeonato.value.partida_actual
     );
+
+    // Cargar los resultados del campeonato usando el servicio directamente
+    const resultadosData = await resultadoService.obtenerResultadosCampeonato(campeonato.value.id);
+    resultados.value = resultadosData;
 
     // Crear un mapa de mesa por pareja
     const mesaPorPareja = new Map();
@@ -223,41 +284,6 @@ const cargarDatos = async () => {
     error.value = 'Error al cargar los datos';
   }
 };
-
-const mesasParaImprimir = computed(() => {
-  const mesasCompletas = [];
-  const mesas = new Map();
-  
-  // Agrupar parejas por mesa
-  parejasMesas.value.forEach(pareja => {
-    if (pareja.mesa !== '-') {
-      if (!mesas.has(pareja.mesa)) {
-        mesas.set(pareja.mesa, {
-          id: pareja.mesa,
-          parejas: []
-        });
-      }
-      mesas.get(pareja.mesa).parejas.push({
-        nombre: pareja.nombre,
-        pg: 0,
-        pp: 0
-      });
-    }
-  });
-
-  // Filtrar solo mesas con dos parejas
-  mesas.forEach(mesa => {
-    if (mesa.parejas.length === 2) {
-      mesasCompletas.push({
-        id: mesa.id,
-        pareja1: mesa.parejas[0],
-        pareja2: mesa.parejas[1]
-      });
-    }
-  });
-
-  return mesasCompletas.sort((a, b) => a.id - b.id);
-});
 
 const imprimir = () => {
   window.print();

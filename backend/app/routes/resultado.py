@@ -355,14 +355,24 @@ def update_resultados_mesa(
 
 @router.get("/campeonato/{campeonato_id}", response_model=List[ResultadoSchema])
 def get_resultados_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
-    # Verificar que el campeonato existe
-    campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
-    if not campeonato:
+    """Obtiene todos los resultados de un campeonato"""
+    try:
+        # Verificar que el campeonato existe
+        campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+        if not campeonato:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campeonato no encontrado"
+            )
+        
+        # Obtener todos los resultados del campeonato
+        resultados = db.query(Resultado).filter(
+            Resultado.campeonato_id == campeonato_id
+        ).all()
+        
+        return resultados
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Campeonato no encontrado"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener los resultados: {str(e)}"
         )
-    
-    return db.query(Resultado).filter(
-        Resultado.campeonato_id == campeonato_id
-    ).all()
