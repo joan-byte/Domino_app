@@ -42,6 +42,7 @@
           <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
           <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
           <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
+          <p><span class="font-medium">PM:</span> {{ campeonato.pm }}</p>
           <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
         </div>
       </div>
@@ -101,6 +102,20 @@
                 type="number"
                 required
                 min="1"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label for="pm" class="block text-sm font-medium text-gray-700">Puntuación Máxima (PM)</label>
+              <input
+                id="pm"
+                name="pm"
+                v-model.number="nuevoCampeonato.pm"
+                type="number"
+                required
+                min="0"
+                max="500"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
@@ -180,7 +195,8 @@ const nuevoCampeonato = ref({
   fecha_inicio: new Date().toISOString().split('T')[0],
   dias_duracion: 1,
   numero_partidas: 1,
-  gb: false
+  gb: false,
+  pm: 300
 });
 
 const formatearFecha = (fecha) => {
@@ -214,7 +230,8 @@ const mostrarFormularioCreacion = () => {
     fecha_inicio: new Date().toISOString().split('T')[0],
     dias_duracion: 1,
     numero_partidas: 1,
-    gb: false
+    gb: false,
+    pm: 300
   };
 };
 
@@ -226,7 +243,8 @@ const mostrarFormularioEdicion = () => {
     fecha_inicio: campeonato.value.fecha_inicio,
     dias_duracion: campeonato.value.dias_duracion,
     numero_partidas: campeonato.value.numero_partidas,
-    gb: campeonato.value.gb
+    gb: campeonato.value.gb,
+    pm: campeonato.value.pm
   };
 };
 
@@ -238,7 +256,8 @@ const cerrarModal = () => {
     fecha_inicio: new Date().toISOString().split('T')[0],
     dias_duracion: 1,
     numero_partidas: 1,
-    gb: false
+    gb: false,
+    pm: 300
   };
 };
 
@@ -270,11 +289,16 @@ const confirmarEliminacion = () => {
 
 const eliminarCampeonato = async () => {
   try {
+    // Primero limpiamos el localStorage
+    localStorage.clear(); // Limpiamos todo el localStorage para asegurarnos
+    
     await campeonatoService.eliminar(campeonato.value.id);
     mostrarConfirmacion.value = false;
     campeonato.value = null;
     error.value = null;
-    await cargarCampeonatoActual();
+    
+    // No necesitamos cargar el campeonato actual aquí ya que no debería haber ninguno
+    // await cargarCampeonatoActual();
   } catch (e) {
     console.error('Error:', e);
     error.value = 'Error al eliminar el campeonato';

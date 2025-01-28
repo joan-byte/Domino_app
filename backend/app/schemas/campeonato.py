@@ -8,6 +8,7 @@ class CampeonatoBase(BaseModel):
     dias_duracion: int = Field(gt=0, description="Duración del campeonato en días")
     numero_partidas: int = Field(gt=0, description="Número total de partidas")
     gb: bool = False
+    pm: int = Field(ge=0, le=500, default=300, description="Puntuación Máxima por partida")
 
 class CampeonatoCreate(CampeonatoBase):
     pass
@@ -18,6 +19,7 @@ class CampeonatoUpdate(BaseModel):
     dias_duracion: Optional[int] = Field(None, gt=0, description="Duración del campeonato en días")
     numero_partidas: Optional[int] = Field(None, gt=0, description="Número total de partidas")
     gb: Optional[bool] = None
+    pm: Optional[int] = Field(None, ge=0, le=500, description="Puntuación Máxima por partida")
 
 class CampeonatoResponse(CampeonatoBase):
     id: int

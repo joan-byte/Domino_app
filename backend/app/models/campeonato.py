@@ -14,6 +14,7 @@ class Campeonato(Base):
     gb = Column(Boolean, default=False)
     activo = Column(Boolean, default=True)
     partida_actual = Column(Integer, default=0)
+    pm = Column(Integer, default=300)
     
     parejas = relationship("Pareja", back_populates="campeonato", cascade="all, delete-orphan")
     jugadores = relationship("Jugador", back_populates="campeonato", cascade="all, delete-orphan")
