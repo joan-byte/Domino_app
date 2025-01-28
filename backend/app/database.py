@@ -11,13 +11,14 @@ def get_db_url(db_name: str = None):
     DB_PASSWORD = os.getenv("DB_PASSWORD")
     DB_HOST = os.getenv("DB_HOST")
     DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
     
     if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_PORT]):
         raise ValueError("Missing database configuration. Check your .env file.")
     
     if db_name:
         return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{db_name}"
-    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/postgres"
+    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = None
 SessionLocal = None
@@ -30,22 +31,21 @@ def init_db(db_name: str):
     global engine, SessionLocal
     try:
         # Primero nos conectamos a la base de datos postgres para crear la nueva base de datos si no existe
-        postgres_engine = create_engine(get_db_url())
+        database_url = get_db_url("postgres")  # Conectar a la base de datos postgres por defecto
+        postgres_engine = create_engine(database_url)
+        
         with postgres_engine.connect() as conn:
+            # Desactivar la verificación de nuevas conexiones durante la creación de la base de datos
+            conn.execute(text("COMMIT"))
+            
             # Verificar si la base de datos existe
             result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'"))
             exists = result.scalar()
             
             if not exists:
-                # Necesitamos cerrar todas las conexiones antes de crear la base de datos
-                conn.execute(text("COMMIT"))
+                # Crear la base de datos si no existe
                 conn.execute(text(f"CREATE DATABASE {db_name}"))
                 print(f"Base de datos '{db_name}' creada exitosamente")
-                
-                # Solo reiniciar secuencias si es una base de datos nueva
-                should_reset_sequences = True
-            else:
-                should_reset_sequences = False
         
         postgres_engine.dispose()
         
@@ -57,11 +57,6 @@ def init_db(db_name: str):
         # Crear todas las tablas si no existen
         Base.metadata.create_all(bind=engine)
         print("Tablas creadas/verificadas exitosamente")
-        
-        # Verificar la conexión
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            print("Conexión a la base de datos verificada")
         
         return engine
     except Exception as e:
