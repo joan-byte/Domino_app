@@ -1,18 +1,38 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { mesaService } from '../services/api';
+import { mesaService, resultadoService } from '../services/api';
 
 export const useMesaStore = defineStore('mesa', () => {
     const mesas = ref([]);
     const error = ref(null);
     const loading = ref(false);
 
-    const fetchMesas = async (campeonatoId, partida) => {
+    const obtenerMesas = async (campeonatoId, partida) => {
         loading.value = true;
         try {
-            const response = await mesaService.obtenerMesas(campeonatoId);
-            mesas.value = response;
-            return response;
+            const mesasData = await mesaService.obtenerMesas(campeonatoId, partida);
+            
+            // Obtener los resultados para cada mesa
+            const mesasConResultados = await Promise.all(mesasData.map(async mesa => {
+                try {
+                    const resultados = await resultadoService.obtenerPorMesa(mesa.id, partida);
+                    return {
+                        ...mesa,
+                        tiene_resultado: resultados && resultados.length > 0,
+                        resultados: resultados || []
+                    };
+                } catch (e) {
+                    console.error(`Error al cargar resultados para mesa ${mesa.id}:`, e);
+                    return {
+                        ...mesa,
+                        tiene_resultado: false,
+                        resultados: []
+                    };
+                }
+            }));
+
+            mesas.value = mesasConResultados;
+            return mesasConResultados;
         } catch (e) {
             error.value = e.response?.data?.detail || 'Error al obtener las mesas';
             mesas.value = [];
@@ -51,29 +71,23 @@ export const useMesaStore = defineStore('mesa', () => {
     };
 
     const puedeCrearMesas = (parejas) => {
-        const parejasActivas = parejas.filter(p => p.activa);
-        if (parejasActivas.length < 4) {
-            error.value = 'Se necesitan al menos 4 parejas activas para crear las mesas';
-            return false;
-        }
-        return true;
+        if (!parejas || parejas.length === 0) return false;
+        return parejas.length >= 2;
     };
 
     const todasMesasConResultados = () => {
-        return mesas.value.every(mesa => {
-            return mesa.resultados && mesa.resultados.length > 0;
-        });
+        return mesas.value.every(mesa => mesa.tiene_resultado);
     };
 
     const getMesaById = (id) => {
-        return mesas.value.find(m => m.id === id);
+        return mesas.value.find(mesa => mesa.id === id);
     };
 
     return {
         mesas,
         error,
         loading,
-        fetchMesas,
+        obtenerMesas,
         crearMesasPorSorteo,
         eliminarMesas,
         puedeCrearMesas,

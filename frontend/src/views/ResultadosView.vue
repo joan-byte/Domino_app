@@ -2,7 +2,7 @@
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Ranking Completo</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Ranking</h1>
         <h2 class="text-lg text-gray-600">{{ campeonato?.nombre || 'Cargando...' }}</h2>
       </div>
       <div class="text-xl font-semibold text-gray-800">
@@ -49,12 +49,6 @@
               PP
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              RT
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              MG
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Pareja
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -87,12 +81,6 @@
               {{ pareja.pp }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.rt !== undefined ? pareja.rt : 0 }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.mg !== undefined ? pareja.mg : 0 }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ pareja.numero }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -104,78 +92,24 @@
           </tr>
         </tbody>
       </table>
-      <!-- Indicador de página -->
-      <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
-        Página {{ paginaActual + 1 }} de {{ totalPaginas }}
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useCampeonatoStore } from '../stores/campeonato';
 import { useResultadoStore } from '../stores/resultado';
-import { resultadoService } from '../services/api';
-import { useRoute } from 'vue-router';
 
 const campeonatoStore = useCampeonatoStore();
 const resultadoStore = useResultadoStore();
-const route = useRoute();
 
 const { campeonato } = storeToRefs(campeonatoStore);
 const { ranking } = storeToRefs(resultadoStore);
 
 const loading = ref(false);
 const error = ref(null);
-
-const PAREJAS_POR_PAGINA = 15;
-const INTERVALO_CAMBIO = 10000; // 10 segundos
-
-const paginaActual = ref(0);
-const intervalId = ref(null);
-
-// Computed properties para la paginación
-const totalPaginas = computed(() => 
-  Math.ceil((ranking.value?.length || 0) / PAREJAS_POR_PAGINA)
-);
-
-const parejasVisibles = computed(() => {
-  if (!ranking.value) return [];
-  const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
-  const fin = inicio + PAREJAS_POR_PAGINA;
-  return ranking.value.slice(inicio, fin);
-});
-
-// Funciones para la paginación
-const cambiarPagina = () => {
-  if (totalPaginas.value > 0) {
-    // Si estamos en la última página, volver a la primera
-    if (paginaActual.value >= totalPaginas.value - 1) {
-      paginaActual.value = 0;
-    } else {
-      paginaActual.value++;
-    }
-  }
-};
-
-const iniciarRotacionPaginas = () => {
-  // Detener el intervalo existente si hay uno
-  detenerRotacionPaginas();
-  
-  // Solo iniciar si hay más de una página
-  if (totalPaginas.value > 1) {
-    intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
-  }
-};
-
-const detenerRotacionPaginas = () => {
-  if (intervalId.value) {
-    clearInterval(intervalId.value);
-    intervalId.value = null;
-  }
-};
 
 const cargarRanking = async () => {
   if (!campeonato.value?.id) {
@@ -204,33 +138,5 @@ onMounted(async () => {
   }
   
   await cargarRanking();
-  iniciarRotacionPaginas();
-  
-  // Manejar visibilidad de la página
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      cargarRanking();
-      iniciarRotacionPaginas();
-    } else {
-      detenerRotacionPaginas();
-    }
-  });
 });
-
-watch(route, (to, from) => {
-  if (to.name === 'ranking') {
-    cargarRanking();
-  }
-}, { deep: true });
-
-onUnmounted(() => {
-  detenerRotacionPaginas();
-  document.removeEventListener('visibilitychange', () => {});
-});
-</script>
-
-<style scoped>
-.bg-yellow-50 {
-  background-color: rgb(254, 252, 232);
-}
-</style> 
+</script> 

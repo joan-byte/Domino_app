@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import campeonato, pareja, mesa, resultado
+from .routes import campeonato, pareja, mesa, resultados, ranking
 from .database import Base, engine, init_db, get_db_url
 import os
 from dotenv import load_dotenv
@@ -30,8 +30,9 @@ engine = init_db(DB_NAME)
 # Crear tablas
 Base.metadata.create_all(bind=engine)
 
-# Incluir routers - los routers son directamente los objetos APIRouter, no necesitamos acceder a .router
+# Incluir routers
 app.include_router(campeonato)
 app.include_router(pareja)
 app.include_router(mesa)
-app.include_router(resultado) 
+app.include_router(resultados)
+app.include_router(ranking) 

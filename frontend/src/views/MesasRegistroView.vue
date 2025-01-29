@@ -103,48 +103,89 @@
               </div>
             </div>
 
+            <!-- Alerta de RT superiores a PM -->
+            <div v-if="ambosRTSuperanPM" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-yellow-700">
+                    ¡Atención! Los resultados totales (RT) de ambas parejas no pueden ser superiores a {{ campeonato?.pm || 300 }} puntos.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Pareja 1 -->
             <div v-if="mesaSeleccionada.pareja1" class="space-y-2">
               <div class="text-lg mb-4">
                 {{ mesaSeleccionada.pareja1.id }} - {{ mesaSeleccionada.pareja1.nombre }}
               </div>
               
-              <div class="grid grid-cols-3 gap-8">
+              <div class="grid grid-cols-5 gap-4">
+                <!-- Resultado Total (RT) -->
                 <div class="flex flex-col">
                   <label 
-                    for="rp_pareja1" 
+                    for="rt_pareja1" 
                     class="block text-sm text-gray-600 h-6"
                   >
-                    Resultado Partida (RP)
+                    Resultado Total (RT)
                   </label>
                   <div v-if="!mesaSeleccionada.pareja2" class="px-3 py-2 bg-gray-100 rounded-md">
                     150
                   </div>
                   <input
                     v-else
-                    id="rp_pareja1"
-                    name="rp_pareja1"
-                    v-model.number="resultado.puntos_pareja1"
+                    id="rt_pareja1"
+                    name="rt_pareja1"
+                    :value="resultadoMostrado.rt_pareja1"
+                    @input="e => resultado.rt_pareja1 = Number(e.target.value)"
                     type="number"
                     required
                     min="0"
-                    max="300"
-                    @input="() => {
-                      if (resultado.puntos_pareja1 > 300) {
-                        error = 'Los resultados no pueden ser mayores a 300';
-                      } else if (resultado.puntos_pareja1 === resultado.puntos_pareja2 && (resultado.puntos_pareja1 !== 0 || resultado.puntos_pareja2 !== 0)) {
-                        error = 'Los resultados no pueden ser iguales';
-                      } else {
-                        error = '';
-                      }
-                    }"
+                    :readonly="!mesaSeleccionada?.pareja2"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    :class="{
-                      'border-red-500': resultado.puntos_pareja1 > 300 || 
-                        (resultado.puntos_pareja1 === resultado.puntos_pareja2 && (resultado.puntos_pareja1 !== 0 || resultado.puntos_pareja2 !== 0))
-                    }"
                   />
                 </div>
+
+                <!-- Manos Ganadas (MG) -->
+                <div class="flex flex-col">
+                  <label 
+                    for="mg_pareja1" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
+                    Manos Ganadas (MG)
+                  </label>
+                  <div v-if="!mesaSeleccionada.pareja2" class="px-3 py-2 bg-gray-100 rounded-md">
+                    5
+                  </div>
+                  <input
+                    v-else
+                    id="mg_pareja1"
+                    name="mg_pareja1"
+                    v-model.number="resultado.mg_pareja1"
+                    type="number"
+                    required
+                    min="0"
+                    :readonly="!mesaSeleccionada?.pareja2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <!-- Resultado Partida (RP) -->
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Resultado Partida (RP)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.rp1 }}
+                  </div>
+                </div>
+                
+                <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
                     Partidas Ganadas (PG)
@@ -153,6 +194,8 @@
                     {{ !mesaSeleccionada.pareja2 ? 1 : calculos.pg1 }}
                   </div>
                 </div>
+                
+                <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
                     Puntos Partida (PP)
@@ -170,38 +213,58 @@
                 {{ mesaSeleccionada.pareja2.id }} - {{ mesaSeleccionada.pareja2.nombre }}
               </div>
               
-              <div class="grid grid-cols-3 gap-8">
+              <div class="grid grid-cols-5 gap-4">
+                <!-- Resultado Total (RT) -->
                 <div class="flex flex-col">
                   <label 
-                    for="rp_pareja2" 
+                    for="rt_pareja2" 
                     class="block text-sm text-gray-600 h-6"
                   >
-                    Resultado Partida (RP)
+                    Resultado Total (RT)
                   </label>
                   <input
-                    id="rp_pareja2"
-                    name="rp_pareja2"
-                    v-model.number="resultado.puntos_pareja2"
+                    id="rt_pareja2"
+                    name="rt_pareja2"
+                    v-model.number="resultado.rt_pareja2"
                     type="number"
                     required
                     min="0"
-                    max="300"
-                    @input="() => {
-                      if (resultado.puntos_pareja2 > 300) {
-                        error = 'Los resultados no pueden ser mayores a 300';
-                      } else if (resultado.puntos_pareja2 === resultado.puntos_pareja1 && (resultado.puntos_pareja2 !== 0 || resultado.puntos_pareja1 !== 0)) {
-                        error = 'Los resultados no pueden ser iguales';
-                      } else {
-                        error = '';
-                      }
-                    }"
+                    :readonly="!mesaSeleccionada?.pareja2"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    :class="{
-                      'border-red-500': resultado.puntos_pareja2 > 300 || 
-                        (resultado.puntos_pareja2 === resultado.puntos_pareja1 && (resultado.puntos_pareja2 !== 0 || resultado.puntos_pareja1 !== 0))
-                    }"
                   />
                 </div>
+
+                <!-- Manos Ganadas (MG) -->
+                <div class="flex flex-col">
+                  <label 
+                    for="mg_pareja2" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
+                    Manos Ganadas (MG)
+                  </label>
+                  <input
+                    id="mg_pareja2"
+                    name="mg_pareja2"
+                    v-model.number="resultado.mg_pareja2"
+                    type="number"
+                    required
+                    min="0"
+                    :readonly="!mesaSeleccionada?.pareja2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <!-- Resultado Partida (RP) -->
+                <div class="flex flex-col">
+                  <span class="block text-sm text-gray-600 h-6">
+                    Resultado Partida (RP)
+                  </span>
+                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                    {{ calculos.rp2 }}
+                  </div>
+                </div>
+                
+                <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
                     Partidas Ganadas (PG)
@@ -210,6 +273,8 @@
                     {{ calculos.pg2 }}
                   </div>
                 </div>
+                
+                <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
                     Puntos Partida (PP)
@@ -221,19 +286,19 @@
               </div>
             </div>
 
-            <div class="flex justify-end space-x-3 mt-6">
+            <!-- Botones -->
+            <div class="flex justify-end space-x-3 pt-6">
               <button
                 type="button"
-                id="btn_cancelar"
                 @click="cerrarModal"
-                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                id="btn_guardar"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                :disabled="!!error || !esValido"
               >
                 Guardar
               </button>
@@ -247,59 +312,66 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { campeonatoService, mesaService, resultadoService } from '../services/api';
 import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { useCampeonatoStore } from '../stores/campeonato';
+import { useMesaStore } from '../stores/mesa';
+import { useResultadoStore } from '../stores/resultado';
+import { resultadoService } from '../services/api';
 
-const campeonato = ref(null);
-const mesas = ref([]);
-const error = ref(null);
+const router = useRouter();
+
+// Stores
+const campeonatoStore = useCampeonatoStore();
+const mesaStore = useMesaStore();
+const resultadoStore = useResultadoStore();
+
+// Store refs
+const { campeonato } = storeToRefs(campeonatoStore);
+const { mesas } = storeToRefs(mesaStore);
+
+// Estado local
+const error = ref('');
 const mostrarModal = ref(false);
 const mesaSeleccionada = ref(null);
 const resultado = ref({
-  puntos_pareja1: 0,
-  puntos_pareja2: 0
+  rt_pareja1: 0,
+  rt_pareja2: 0,
+  mg_pareja1: 0,
+  mg_pareja2: 0
 });
-const router = useRouter();
 
-const MESAS_POR_PAGINA = 15;
+// Constantes
+const MESAS_POR_PAGINA = 10;
 const INTERVALO_CAMBIO = 10000; // 10 segundos
-
 const paginaActual = ref(0);
 const intervalId = ref(null);
 
 // Computed properties para los cálculos
 const calculos = computed(() => {
-  const rp1 = resultado.value.puntos_pareja1;
-  const rp2 = resultado.value.puntos_pareja2;
+  const rt1 = resultado.value.rt_pareja1;
+  const rt2 = resultado.value.rt_pareja2;
+  const pm = campeonato.value?.pm || 300;
 
-  // Validar límites y empates
-  if (rp1 > 300 || rp2 > 300) {
-    error.value = 'Los resultados no pueden ser mayores a 300';
-    return {
-      pg1: 0,
-      pg2: 0,
-      pp1: 0,
-      pp2: 0
-    };
-  } else if (rp1 === rp2 && rp1 !== 0) {
-    error.value = 'Los resultados no pueden ser iguales';
-    return {
-      pg1: 0,
-      pg2: 0,
-      pp1: 0,
-      pp2: 0
-    };
-  } else {
-    error.value = '';
-  }
+  // Calcular RP basado en RT y PM
+  const rp1 = rt1 > pm ? pm : rt1;
+  const rp2 = rt2 > pm ? pm : rt2;
+
+  // Calcular PG
+  const pg1 = rt1 > rt2 ? 1 : 0;
+  const pg2 = rt2 > rt1 ? 1 : 0;
+
+  // Calcular PP basado en RP (no en RT)
+  const pp1 = rp1 - rp2;
+  const pp2 = rp2 - rp1;
 
   return {
-    // Partidas Ganadas: 1 para el ganador, 0 para el perdedor
-    pg1: rp1 > rp2 ? 1 : 0,
-    pg2: rp2 > rp1 ? 1 : 0,
-    // Puntos Partida: RP propio - RP contrario
-    pp1: rp1 - rp2,  // PP de pareja 1 = RP de pareja 1 - RP de pareja 2
-    pp2: rp2 - rp1   // PP de pareja 2 = RP de pareja 2 - RP de pareja 1
+    rp1,
+    rp2,
+    pg1,
+    pg2,
+    pp1,
+    pp2
   };
 });
 
@@ -339,44 +411,14 @@ const detenerRotacionPaginas = () => {
 
 const cargarDatos = async () => {
   try {
-    // Cargar el campeonato actual
-    campeonato.value = await campeonatoService.obtenerActual();
+    await campeonatoStore.obtenerActual();
     if (!campeonato.value) {
       error.value = 'No hay campeonato activo';
       return;
     }
 
-    // Cargar las mesas de la partida actual
-    const mesasData = await mesaService.obtenerMesas(
-      campeonato.value.id,
-      campeonato.value.partida_actual
-    );
-
-    // Agregar propiedad tiene_resultado
-    mesas.value = await Promise.all(mesasData.map(async mesa => {
-      try {
-        const resultados = await resultadoService.obtenerPorMesa(
-          mesa.id,
-          campeonato.value.partida_actual
-        );
-        return {
-          ...mesa,
-          tiene_resultado: resultados && resultados.length > 0,
-          resultados: resultados || []
-        };
-      } catch (e) {
-        console.error(`Error al cargar resultados para mesa ${mesa.id}:`, e);
-        return {
-          ...mesa,
-          tiene_resultado: false,
-          resultados: []
-        };
-      }
-    }));
-
-    // Iniciar la rotación de páginas si hay más de MESAS_POR_PAGINA mesas
+    await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
     iniciarRotacionPaginas();
-
   } catch (e) {
     console.error('Error al cargar los datos:', e);
     error.value = 'Error al cargar los datos';
@@ -387,24 +429,31 @@ const validarResultado = () => {
   // Reiniciar mensaje de error
   error.value = '';
 
-  const rp1 = resultado.value.puntos_pareja1;
-  const rp2 = resultado.value.puntos_pareja2;
+  const rt1 = resultado.value.rt_pareja1;
+  const rt2 = resultado.value.rt_pareja2;
+  const pm = campeonato.value?.pm || 300;
 
   // Verificar que los valores son números
-  if (isNaN(rp1) || isNaN(rp2)) {
+  if (isNaN(rt1) || isNaN(rt2)) {
     error.value = 'Los resultados deben ser números válidos';
     return false;
   }
 
-  // Verificar que los valores están entre 0 y 300
-  if (rp1 < 0 || rp1 > 300 || rp2 < 0 || rp2 > 300) {
-    error.value = 'Los resultados deben estar entre 0 y 300';
+  // Verificar que los valores son positivos
+  if (rt1 < 0 || rt2 < 0) {
+    error.value = 'Los resultados no pueden ser negativos';
     return false;
   }
 
   // Verificar que los valores son diferentes (no hay empate), excepto cuando ambos son 0
-  if (rp1 === rp2 && (rp1 !== 0 || rp2 !== 0)) {
+  if (rt1 === rt2 && (rt1 !== 0 || rt2 !== 0)) {
     error.value = 'Los resultados no pueden ser iguales';
+    return false;
+  }
+
+  // Verificar que no ambos RT sean superiores al PM
+  if (rt1 > pm && rt2 > pm) {
+    error.value = `Los resultados totales (RT) no pueden ser ambos superiores a ${pm}`;
     return false;
   }
 
@@ -417,25 +466,46 @@ const abrirFormularioResultado = async (mesa) => {
   // Caso especial: Mesa con una sola pareja
   if (!mesa.pareja2) {
     resultado.value = {
-      puntos_pareja1: 150,
-      puntos_pareja2: 0
+      rt_pareja1: 150,
+      rt_pareja2: 0,
+      mg_pareja1: 5,
+      mg_pareja2: 0
     };
-  } else if (mesa.tiene_resultado && mesa.resultados.length > 0) {
-    resultado.value = {
-      puntos_pareja1: mesa.pareja1 ? mesa.resultados[0].rp : 0,
-      puntos_pareja2: mesa.pareja2 ? mesa.resultados[1].rp : 0
-    };
+    mostrarModal.value = true;
+    return;
+  }
+
+  if (mesa.tiene_resultado) {
+    try {
+      const resultados = await resultadoStore.obtenerResultadosPorMesa(mesa.id, campeonato.value.partida_actual);
+      if (resultados && resultados.length > 0) {
+        const res1 = resultados.find(r => r.pareja_id === mesa.pareja1.id);
+        const res2 = resultados.find(r => r.pareja_id === mesa.pareja2.id);
+
+        resultado.value = {
+          rt_pareja1: res1?.rt || 0,
+          rt_pareja2: res2?.rt || 0,
+          mg_pareja1: res1?.mg || 0,
+          mg_pareja2: res2?.mg || 0
+        };
+      }
+    } catch (e) {
+      console.error('Error al cargar resultados:', e);
+      error.value = 'Error al cargar los resultados existentes';
+    }
   } else {
     resultado.value = {
-      puntos_pareja1: mesa.pareja1 ? 0 : null,
-      puntos_pareja2: mesa.pareja2 ? 0 : null
+      rt_pareja1: 0,
+      rt_pareja2: 0,
+      mg_pareja1: 0,
+      mg_pareja2: 0
     };
   }
   mostrarModal.value = true;
   
   // Dar foco al primer campo de entrada después de que el modal se muestre
   setTimeout(() => {
-    const primerInput = document.getElementById('rp_pareja1');
+    const primerInput = document.getElementById('rt_pareja1');
     if (primerInput && mesa.pareja2) {
       primerInput.focus();
     }
@@ -446,100 +516,118 @@ const cerrarModal = () => {
   mostrarModal.value = false;
   mesaSeleccionada.value = null;
   resultado.value = {
-    puntos_pareja1: 0,
-    puntos_pareja2: 0
+    rt_pareja1: 0,
+    rt_pareja2: 0,
+    mg_pareja1: 0,
+    mg_pareja2: 0
   };
   error.value = null;
 };
 
-const guardarResultado = async () => {
-  try {
-    if (!mesaSeleccionada.value) {
-      error.value = 'Datos de mesa incompletos';
-      return;
-    }
-
-    // Caso especial: Mesa con una sola pareja
-    if (!mesaSeleccionada.value.pareja2) {
-      const resultado1 = {
-        mesa_id: mesaSeleccionada.value.id,
-        pareja_id: mesaSeleccionada.value.pareja1.id,
-        rp: 150,
-        pg: 1,
-        pp: 150,
-        partida: campeonato.value.partida_actual,
-        campeonato_id: campeonato.value.id
-      };
-
-      await resultadoService.crear(resultado1);
-      cerrarModal();
-      await cargarDatos();
-      return;
-    }
-
-    // Caso normal: Mesa con dos parejas
-    if (!validarResultado()) {
-      return;
-    }
-
-    const resultado1 = {
-      mesa_id: mesaSeleccionada.value.id,
-      pareja_id: mesaSeleccionada.value.pareja1.id,
-      rp: resultado.value.puntos_pareja1,
-      partida: campeonato.value.partida_actual,
-      campeonato_id: campeonato.value.id
+const calcularResultados = () => {
+  if (!mesaSeleccionada.value?.pareja2) {
+    resultado.value = {
+      rt_pareja1: 150,
+      rt_pareja2: 0,
+      mg_pareja1: 5,
+      mg_pareja2: 0
     };
-
-    const resultado2 = {
-      mesa_id: mesaSeleccionada.value.id,
-      pareja_id: mesaSeleccionada.value.pareja2.id,
-      rp: resultado.value.puntos_pareja2,
-      partida: campeonato.value.partida_actual,
-      campeonato_id: campeonato.value.id
-    };
-
-    if (mesaSeleccionada.value.tiene_resultado) {
-      await resultadoService.actualizarPorMesa(
-        mesaSeleccionada.value.id,
-        resultado1,
-        resultado2
-      );
-    } else {
-      await resultadoService.crear(resultado1, resultado2);
-    }
-
-    cerrarModal();
-    await cargarDatos();
-  } catch (e) {
-    console.error('Error al guardar el resultado:', e);
-    if (e.response?.data?.detail) {
-      error.value = Array.isArray(e.response.data.detail) 
-        ? e.response.data.detail[0].msg 
-        : e.response.data.detail;
-    } else {
-      error.value = 'Error al guardar el resultado';
-    }
+    return;
   }
 };
 
-// Agregar método para cerrar partida
-const cerrarPartida = async () => {
+const guardarResultado = async () => {
+  if (!esValido.value) return;
+
   try {
-    if (esUltimaPartida.value) {
-      router.push('/podium');
-      return;
+    const resultado1 = {
+      pareja_id: mesaSeleccionada.value.pareja1.id,
+      mesa_id: mesaSeleccionada.value.id,
+      partida: campeonato.value.partida_actual,
+      campeonato_id: campeonato.value.id,
+      rt: resultado.value.rt_pareja1,
+      mg: resultado.value.mg_pareja1,
+      rp: calculos.value.rp1,
+      pg: calculos.value.pg1,
+      pp: calculos.value.pp1,
+      gb: mesaSeleccionada.value.pareja1.gb
+    };
+
+    let resultado2 = null;
+    if (mesaSeleccionada.value.pareja2) {
+      resultado2 = {
+        pareja_id: mesaSeleccionada.value.pareja2.id,
+        mesa_id: mesaSeleccionada.value.id,
+        partida: campeonato.value.partida_actual,
+        campeonato_id: campeonato.value.id,
+        rt: resultado.value.rt_pareja2,
+        mg: resultado.value.mg_pareja2,
+        rp: calculos.value.rp2,
+        pg: calculos.value.pg2,
+        pp: calculos.value.pp2,
+        gb: mesaSeleccionada.value.pareja2.gb
+      };
     }
-    await mesaService.crearMesasPorRanking(campeonato.value.id);
-    await cargarDatos();
-    router.push('/mesas/asignacion');
+
+    if (mesaSeleccionada.value.tiene_resultado) {
+      // Usar el servicio directamente para actualizar
+      await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, resultado1, resultado2);
+    } else {
+      // Crear nuevos resultados
+      await resultadoStore.crear(resultado1, resultado2);
+    }
+
+    await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+    await resultadoStore.obtenerRanking(campeonato.value.id);
+    cerrarModal();
   } catch (e) {
-    console.error('Error al cerrar la partida:', e);
-    error.value = 'Error al cerrar la partida';
+    error.value = e.message || 'Error al guardar el resultado';
   }
 };
 
 const esUltimaPartida = computed(() => {
   return campeonato.value?.partida_actual === campeonato.value?.numero_partidas;
+});
+
+const esValido = computed(() => {
+  if (!mesaSeleccionada.value?.pareja2) return true;
+  
+  const rt1 = resultado.value.rt_pareja1;
+  const rt2 = resultado.value.rt_pareja2;
+  const mg1 = resultado.value.mg_pareja1;
+  const mg2 = resultado.value.mg_pareja2;
+  const pm = campeonato.value?.pm || 300;
+
+  return (
+    rt1 >= 0 && rt2 >= 0 &&
+    mg1 >= 0 && mg2 >= 0 &&
+    rt1 !== rt2 && // No pueden empatar
+    !(rt1 > pm && rt2 > pm) // No pueden ser ambos superiores al PM
+  );
+});
+
+// Computed property para controlar los valores por defecto
+const resultadoMostrado = computed(() => {
+  if (mesaSeleccionada.value && !mesaSeleccionada.value.pareja2) {
+    return {
+      rt_pareja1: 150,
+      rt_pareja2: 0,
+      mg_pareja1: 5,
+      mg_pareja2: 0
+    };
+  }
+  return resultado.value;
+});
+
+// Agregar la computed property para la alerta
+const ambosRTSuperanPM = computed(() => {
+  if (!mesaSeleccionada.value?.pareja2) return false;
+  
+  const rt1 = resultado.value.rt_pareja1;
+  const rt2 = resultado.value.rt_pareja2;
+  const pm = campeonato.value?.pm || 300;
+
+  return rt1 > pm && rt2 > pm;
 });
 
 // Lifecycle hooks

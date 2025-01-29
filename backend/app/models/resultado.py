@@ -14,6 +14,8 @@ class Resultado(Base):
     mesa_id = Column(Integer)
     partida = Column(Integer)
     campeonato_id = Column(Integer, ForeignKey("campeonatos.id", ondelete="CASCADE"))
+    rt = Column(Integer, default=0)  # Resultado Total
+    mg = Column(Integer, default=0)  # Manos Ganadas
     
     pareja = relationship("Pareja", back_populates="resultados")
     campeonato = relationship("Campeonato", back_populates="resultados") 

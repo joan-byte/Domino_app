@@ -15,7 +15,7 @@
           <p class="text-gray-500">{{ pareja1.nombre }}</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div>
             <label class="block text-sm font-medium text-gray-700">
               Resultado Partida (RP)
@@ -25,6 +25,22 @@
               v-model="form.pareja1.rp"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Manos Ganadas (MG)
+            </label>
+            <input
+              type="number"
+              v-model="form.pareja1.mg"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Resultado Total (RT)
+            </label>
+            <div class="mt-1 text-lg">{{ form.pareja1.rt }}</div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">
@@ -48,7 +64,7 @@
           <p class="text-gray-500">{{ pareja2.nombre }}</p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div>
             <label class="block text-sm font-medium text-gray-700">
               Resultado Partida (RP)
@@ -58,6 +74,22 @@
               v-model="form.pareja2.rp"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Manos Ganadas (MG)
+            </label>
+            <input
+              type="number"
+              v-model="form.pareja2.mg"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Resultado Total (RT)
+            </label>
+            <div class="mt-1 text-lg">{{ form.pareja2.rt }}</div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">
@@ -124,17 +156,21 @@ const resultadoStore = useResultadoStore();
 const form = ref({
   pareja1: {
     rp: 0,
+    mg: 0,
+    rt: 0,
     pg: 0,
     pp: 0
   },
   pareja2: {
     rp: 0,
+    mg: 0,
+    rt: 0,
     pg: 0,
     pp: 0
   }
 });
 
-// Calcular PG y PP basado en RP
+// Calcular PG, PP y RT basado en RP
 watch(() => [form.value.pareja1.rp, form.value.pareja2.rp], ([rp1, rp2]) => {
   // Convertir a números
   const resultado1 = parseInt(rp1) || 0;
@@ -144,9 +180,14 @@ watch(() => [form.value.pareja1.rp, form.value.pareja2.rp], ([rp1, rp2]) => {
   form.value.pareja1.pg = resultado1 > resultado2 ? 1 : 0;
   form.value.pareja2.pg = resultado2 > resultado1 ? 1 : 0;
 
-  // Calcular PP
-  form.value.pareja1.pp = resultado1;
-  form.value.pareja2.pp = resultado2;
+  // Calcular PP (diferencia entre RP de las parejas)
+  form.value.pareja1.pp = resultado1 - resultado2;
+  form.value.pareja2.pp = resultado2 - resultado1;
+
+  // Calcular RT (igual a RP si es menor que PM, sino igual a PM)
+  const PM = 150; // Puntuación máxima
+  form.value.pareja1.rt = Math.min(resultado1, PM);
+  form.value.pareja2.rt = Math.min(resultado2, PM);
 }, { immediate: true });
 
 const guardarResultado = async () => {

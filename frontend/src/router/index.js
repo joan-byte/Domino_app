@@ -5,6 +5,7 @@ import MesasAsignacionView from '../views/MesasAsignacionView.vue';
 import MesasRegistroView from '../views/MesasRegistroView.vue';
 import RankingView from '../views/RankingView.vue';
 import PodiumView from '../views/PodiumView.vue';
+import ResultadosView from '../views/ResultadosView.vue';
 import CrearParejaView from '../views/CrearParejaView.vue'
 import ModificarParejaView from '../views/ModificarParejaView.vue'
 import ModificarResultadoView from '../views/ModificarResultadoView.vue'
@@ -41,6 +42,11 @@ const router = createRouter({
       path: '/mesas/registro',
       name: 'mesas-registro',
       component: MesasRegistroView
+    },
+    {
+      path: '/resultados',
+      name: 'resultados',
+      component: ResultadosView
     },
     {
       path: '/ranking',

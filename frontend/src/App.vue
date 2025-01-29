@@ -156,9 +156,9 @@ onUnmounted(() => {
               >
                 <div class="py-1">
                   <router-link 
-                    to="/ranking" 
+                    to="/resultados" 
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    :class="{ 'bg-gray-100': $route.path === '/ranking' }"
+                    :class="{ 'bg-gray-100': $route.path === '/resultados' }"
                     @click="showResultadosMenu = false"
                   >
                     Ranking
@@ -170,6 +170,14 @@ onUnmounted(() => {
                     @click="showResultadosMenu = false"
                   >
                     Podium
+                  </router-link>
+                  <router-link 
+                    to="/ranking" 
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    :class="{ 'bg-gray-100': $route.path === '/ranking' }"
+                    @click="showResultadosMenu = false"
+                  >
+                    Ranking Completo
                   </router-link>
                 </div>
               </div>

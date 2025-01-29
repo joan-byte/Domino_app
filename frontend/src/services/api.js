@@ -12,7 +12,6 @@ const api = axios.create({
 api.interceptors.response.use(
   response => response,
   error => {
-    // Silenciosamente rechazar el error sin mostrar mensajes en la consola
     return Promise.reject(error);
   }
 );
@@ -162,6 +161,11 @@ export const resultadoService = {
       resultado2: resultado2
     };
     const response = await api.put(`/resultados/mesa/${mesaId}`, data);
+    return response.data;
+  },
+
+  async recalcularValores(campeonatoId) {
+    const response = await api.post(`/resultados/recalcular/${campeonatoId}`);
     return response.data;
   }
 };

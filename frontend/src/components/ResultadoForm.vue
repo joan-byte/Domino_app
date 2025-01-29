@@ -8,6 +8,8 @@
     <div v-if="!pareja2" class="mb-6 p-4 bg-blue-50 rounded-lg">
       <p class="text-blue-800">Esta mesa solo tiene una pareja. Se asignará automáticamente:</p>
       <ul class="list-disc list-inside mt-2 text-blue-700">
+        <li>RT = 150 puntos</li>
+        <li>MG = 5 manos</li>
         <li>RP = 150 puntos</li>
         <li>PG = 1 punto</li>
         <li>PP = 150 puntos</li>
@@ -24,32 +26,52 @@
         </div>
 
         <div class="flex gap-8">
-          <!-- Resultado Partida (RP) -->
+          <!-- Resultado Total (RT) -->
           <div class="flex-1">
-            <label class="block text-gray-600 mb-2">Resultado Partida (RP)</label>
+            <label class="block text-gray-600 mb-2">Resultado Total (RT)</label>
             <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">150</div>
             <input
               v-else
               type="number"
-              v-model.number="resultados.pareja1.rp"
+              v-model.number="resultados.pareja1.rt"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="0"
-              :max="300"
+              required
+              @input="calcularResultados"
+            />
+          </div>
+
+          <!-- Manos Ganadas (MG) -->
+          <div class="flex-1">
+            <label class="block text-gray-600 mb-2">Manos Ganadas (MG)</label>
+            <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">5</div>
+            <input
+              v-else
+              type="number"
+              v-model.number="resultados.pareja1.mg"
+              class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="0"
               required
               @input="calcularResultados"
             />
           </div>
           
+          <!-- Resultado Partida (RP) -->
+          <div class="flex-1">
+            <label class="block text-gray-600 mb-2">Resultado Partida (RP)</label>
+            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ resultados.pareja1.rp }}</div>
+          </div>
+          
           <!-- Partidas Ganadas (PG) -->
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Partidas Ganadas (PG)</label>
-            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ !pareja2 ? 1 : resultados.pareja1.pg }}</div>
+            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ resultados.pareja1.pg }}</div>
           </div>
           
           <!-- Puntos Partida (PP) -->
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Puntos Partida (PP)</label>
-            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ !pareja2 ? 150 : resultados.pareja1.pp }}</div>
+            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ resultados.pareja1.pp }}</div>
           </div>
         </div>
       </div>
@@ -62,18 +84,36 @@
         </div>
 
         <div class="flex gap-8">
-          <!-- Resultado Partida (RP) -->
+          <!-- Resultado Total (RT) -->
           <div class="flex-1">
-            <label class="block text-gray-600 mb-2">Resultado Partida (RP)</label>
+            <label class="block text-gray-600 mb-2">Resultado Total (RT)</label>
             <input
               type="number"
-              v-model.number="resultados.pareja2.rp"
+              v-model.number="resultados.pareja2.rt"
               class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="0"
-              :max="300"
               required
               @input="calcularResultados"
             />
+          </div>
+
+          <!-- Manos Ganadas (MG) -->
+          <div class="flex-1">
+            <label class="block text-gray-600 mb-2">Manos Ganadas (MG)</label>
+            <input
+              type="number"
+              v-model.number="resultados.pareja2.mg"
+              class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="0"
+              required
+              @input="calcularResultados"
+            />
+          </div>
+          
+          <!-- Resultado Partida (RP) -->
+          <div class="flex-1">
+            <label class="block text-gray-600 mb-2">Resultado Partida (RP)</label>
+            <div class="px-3 py-2 bg-gray-100 rounded-lg">{{ resultados.pareja2.rp }}</div>
           </div>
           
           <!-- Partidas Ganadas (PG) -->
@@ -113,6 +153,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import { useCampeonatoStore } from '../stores/campeonato';
+
+const campeonatoStore = useCampeonatoStore();
+const { campeonato } = storeToRefs(campeonatoStore);
 
 const props = defineProps({
   mesa: {
@@ -142,11 +186,15 @@ const emit = defineEmits(['guardar', 'cancelar']);
 // Inicializar resultados
 const resultados = ref({
   pareja1: {
+    rt: !props.pareja2 ? 150 : 0,
+    mg: !props.pareja2 ? 5 : 0,
     rp: !props.pareja2 ? 150 : 0,
     pg: !props.pareja2 ? 1 : 0,
     pp: !props.pareja2 ? 150 : 0
   },
   pareja2: props.pareja2 ? {
+    rt: 0,
+    mg: 0,
     rp: 0,
     pg: 0,
     pp: 0
@@ -156,12 +204,16 @@ const resultados = ref({
 // Si hay resultados iniciales, cargarlos
 if (props.resultadosIniciales?.length > 0) {
   resultados.value.pareja1 = {
+    rt: props.resultadosIniciales[0].rt,
+    mg: props.resultadosIniciales[0].mg,
     rp: props.resultadosIniciales[0].rp,
     pg: props.resultadosIniciales[0].pg,
     pp: props.resultadosIniciales[0].pp
   };
   if (props.pareja2 && props.resultadosIniciales[1]) {
     resultados.value.pareja2 = {
+      rt: props.resultadosIniciales[1].rt,
+      mg: props.resultadosIniciales[1].mg,
       rp: props.resultadosIniciales[1].rp,
       pg: props.resultadosIniciales[1].pg,
       pp: props.resultadosIniciales[1].pp
@@ -172,74 +224,76 @@ if (props.resultadosIniciales?.length > 0) {
 const calcularResultados = () => {
   if (!props.pareja2) return; // No calcular si solo hay una pareja
 
-  const rp1 = resultados.value.pareja1.rp;
-  const rp2 = resultados.value.pareja2.rp;
+  const rt1 = resultados.value.pareja1.rt;
+  const rt2 = resultados.value.pareja2.rt;
+  const pm = campeonato.value?.pm || 300;
+
+  // Calcular RP basado en RT y PM
+  resultados.value.pareja1.rp = rt1 > pm ? pm : rt1;
+  resultados.value.pareja2.rp = rt2 > pm ? pm : rt2;
 
   // Calcular PG
-  resultados.value.pareja1.pg = rp1 > rp2 ? 1 : 0;
-  resultados.value.pareja2.pg = rp2 > rp1 ? 1 : 0;
+  resultados.value.pareja1.pg = rt1 > rt2 ? 1 : 0;
+  resultados.value.pareja2.pg = rt2 > rt1 ? 1 : 0;
 
   // Calcular PP
-  resultados.value.pareja1.pp = rp1 - rp2;
-  resultados.value.pareja2.pp = rp2 - rp1;
+  resultados.value.pareja1.pp = rt1 - rt2;
+  resultados.value.pareja2.pp = rt2 - rt1;
 };
 
 const esValido = computed(() => {
   if (!props.pareja2) return true; // Siempre válido para una sola pareja
   
-  const rp1 = resultados.value.pareja1.rp;
-  const rp2 = resultados.value.pareja2.rp;
+  const rt1 = resultados.value.pareja1.rt;
+  const rt2 = resultados.value.pareja2.rt;
+  const mg1 = resultados.value.pareja1.mg;
+  const mg2 = resultados.value.pareja2.mg;
+
   return (
-    rp1 >= 0 && rp1 <= 300 &&
-    rp2 >= 0 && rp2 <= 300 &&
-    rp1 !== rp2 // No pueden empatar
+    rt1 >= 0 && rt2 >= 0 &&
+    mg1 >= 0 && mg2 >= 0 &&
+    rt1 !== rt2 // No pueden empatar
   );
 });
 
 const guardarResultado = () => {
   if (!esValido.value) return;
 
-  if (!props.pareja2) {
-    // Caso especial: Mesa con una sola pareja
-    const resultado = {
-      pareja_id: props.pareja1.id,
-      mesa_id: props.mesa.id,
-      partida: props.partida,
-      campeonato_id: props.mesa.campeonato_id,
-      rp: 150,
-      pg: 1,
-      pp: 150
-    };
-    emit('guardar', resultado);
-  } else {
-    // Caso normal: Mesa con dos parejas
-    const resultado1 = {
-      pareja_id: props.pareja1.id,
-      mesa_id: props.mesa.id,
-      partida: props.partida,
-      campeonato_id: props.mesa.campeonato_id,
-      rp: resultados.value.pareja1.rp,
-      pg: resultados.value.pareja1.pg,
-      pp: resultados.value.pareja1.pp
-    };
+  const resultado1 = {
+    pareja_id: props.pareja1.id,
+    mesa_id: props.mesa.id,
+    partida: props.partida,
+    campeonato_id: props.mesa.campeonato_id,
+    rt: resultados.value.pareja1.rt,
+    mg: resultados.value.pareja1.mg,
+    rp: resultados.value.pareja1.rp,
+    pg: resultados.value.pareja1.pg,
+    pp: resultados.value.pareja1.pp,
+    gb: props.pareja1.gb
+  };
 
-    const resultado2 = {
+  let resultado2 = null;
+  if (props.pareja2) {
+    resultado2 = {
       pareja_id: props.pareja2.id,
       mesa_id: props.mesa.id,
       partida: props.partida,
       campeonato_id: props.mesa.campeonato_id,
+      rt: resultados.value.pareja2.rt,
+      mg: resultados.value.pareja2.mg,
       rp: resultados.value.pareja2.rp,
       pg: resultados.value.pareja2.pg,
-      pp: resultados.value.pareja2.pp
+      pp: resultados.value.pareja2.pp,
+      gb: props.pareja2.gb
     };
-
-    emit('guardar', resultado1, resultado2);
   }
+
+  emit('guardar', resultado1, resultado2);
 };
 
 // Observar cambios en los resultados para recalcular
 watch(
-  () => [resultados.value.pareja1.rp, resultados.value.pareja2?.rp],
+  () => [resultados.value.pareja1.rt, resultados.value.pareja2?.rt],
   () => calcularResultados(),
   { immediate: true }
 );
