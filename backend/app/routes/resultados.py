@@ -105,4 +105,82 @@ async def actualizar_resultados_mesa(
         return {"message": "Resultados actualizados correctamente"}
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("")
+async def crear_resultados(
+    resultado1: ResultadoCreate,
+    resultado2: Optional[ResultadoCreate] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Crea nuevos resultados para una mesa
+    """
+    try:
+        # Crear el primer resultado
+        nuevo_resultado1 = Resultado(
+            pareja_id=resultado1.pareja_id,
+            mesa_id=resultado1.mesa_id,
+            partida=resultado1.partida,
+            campeonato_id=resultado1.campeonato_id,
+            rt=resultado1.rt,
+            mg=resultado1.mg,
+            rp=resultado1.rp,
+            pg=resultado1.pg,
+            pp=resultado1.pp,
+            gb=resultado1.gb
+        )
+        db.add(nuevo_resultado1)
+
+        # Si hay un segundo resultado, crearlo también
+        if resultado2:
+            nuevo_resultado2 = Resultado(
+                pareja_id=resultado2.pareja_id,
+                mesa_id=resultado2.mesa_id,
+                partida=resultado2.partida,
+                campeonato_id=resultado2.campeonato_id,
+                rt=resultado2.rt,
+                mg=resultado2.mg,
+                rp=resultado2.rp,
+                pg=resultado2.pg,
+                pp=resultado2.pp,
+                gb=resultado2.gb
+            )
+            db.add(nuevo_resultado2)
+
+        db.commit()
+        return {"message": "Resultados creados correctamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/campeonato/{campeonato_id}", response_model=List[ResultadoCreate])
+async def obtener_resultados_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
+    """
+    Obtiene todos los resultados de un campeonato
+    """
+    try:
+        resultados = db.query(Resultado).filter(
+            Resultado.campeonato_id == campeonato_id
+        ).all()
+        return resultados
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/mesa/{mesa_id}")
+async def obtener_resultados_mesa(
+    mesa_id: int,
+    partida: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene los resultados de una mesa específica para una partida
+    """
+    try:
+        resultados = db.query(Resultado).filter(
+            Resultado.mesa_id == mesa_id,
+            Resultado.partida == partida
+        ).all()
+        return resultados
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 

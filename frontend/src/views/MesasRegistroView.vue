@@ -630,6 +630,20 @@ const ambosRTSuperanPM = computed(() => {
   return rt1 > pm && rt2 > pm;
 });
 
+const cerrarPartida = async () => {
+  try {
+    // Crear mesas para la siguiente partida basadas en el ranking
+    const success = await mesaStore.crearMesasPorRanking(campeonato.value.id);
+    if (success) {
+      // Recargar los datos
+      await cargarDatos();
+    }
+  } catch (e) {
+    console.error('Error al cerrar la partida:', e);
+    error.value = 'Error al cerrar la partida';
+  }
+};
+
 // Lifecycle hooks
 onMounted(() => {
   cargarDatos();

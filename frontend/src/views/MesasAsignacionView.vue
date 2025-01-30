@@ -80,72 +80,94 @@ VALUES (
       </button>
     </div>
 
-    <!-- Formato de impresión (oculto normalmente) -->
+    <!-- Formato de impresión -->
     <div class="hidden print:block print:m-0 print-section">
       <div class="print-pages">
-        <template v-for="(mesa, index) in mesasParaImprimir" :key="index">
-          <div :class="{'page-break': index % 2 === 0 && index !== 0}" class="mesa-container">
-            <div class="border border-gray-300 h-full flex flex-col">
-              <!-- Contenido de la mesa igual que antes -->
-              <div class="border-b border-gray-300 p-4">
-                <div class="text-left font-bold text-2xl mb-1">CAMPEONATO</div>
-                <div class="text-left font-semibold text-xl mb-2">{{ campeonato?.nombre }}</div>
-                <div class="flex justify-end">
-                  <div class="text-right">
+        <div class="flex flex-wrap">
+          <template v-for="(mesa, index) in mesasParaImprimir" :key="index">
+            <div class="mesa-container">
+              <div class="border border-black h-full flex flex-col">
+                <!-- Cabecera -->
+                <div class="border-b border-black p-4">
+                  <div class="text-left font-bold text-2xl">CAMPEONATO</div>
+                  <div class="text-left text-xl">{{ campeonato?.nombre }}</div>
+                  <div class="flex justify-end">
                     <span class="mr-4">Partida {{ campeonato?.partida_actual }}</span>
                     <span>Mesa {{ mesa.id }}</span>
                   </div>
                 </div>
-              </div>
-              
-              <!-- Parejas de la mesa -->
-              <div class="divide-y divide-gray-300">
-                <div class="p-3">
-                  <div class="grid grid-cols-12">
-                    <div class="col-span-6">{{ mesa.pareja1.nombre }}</div>
-                    <div class="col-span-6">
-                      <span class="mr-4">PG {{ mesa.pareja1.pg || 0 }}</span>
-                      <span>PP {{ mesa.pareja1.pp || 0 }}</span>
+
+                <!-- Contenedor principal -->
+                <div class="flex flex-1 relative">
+                  <!-- Línea vertical divisoria -->
+                  <div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-black"></div>
+
+                  <!-- Columna izquierda -->
+                  <div class="w-1/2 flex flex-col p-2">
+                    <!-- Pareja 1 -->
+                    <div class="border border-black p-2 mb-2">
+                      <div class="nombre-pareja">{{ mesa.pareja1.nombre }}</div>
+                      <div class="info-pareja">
+                        <span class="mr-2">PG {{ mesa.pareja1.pg || 0 }}</span>
+                        <span>PP {{ mesa.pareja1.pp || 0 }}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Líneas numeradas en un solo recuadro -->
+                    <div class="border border-black flex-1 p-2">
+                      <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                        <span class="w-6 text-sm">{{ i }}</span>
+                        <div class="flex-1 border-b border-black ml-2"></div>
+                      </div>
+                    </div>
+                    
+                    <!-- Total y Firma -->
+                    <div class="mt-2">
+                      <div class="border border-black p-2 mb-2">
+                        <span class="font-bold">Total</span>
+                      </div>
+                      <div class="border border-black p-2">
+                        <span class="font-bold">Firma</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="p-3">
-                  <div class="grid grid-cols-12">
-                    <div class="col-span-6">{{ mesa.pareja2.nombre }}</div>
-                    <div class="col-span-6">
-                      <span class="mr-4">PG {{ mesa.pareja2.pg || 0 }}</span>
-                      <span>PP {{ mesa.pareja2.pp || 0 }}</span>
+
+                  <!-- Columna derecha -->
+                  <div class="w-1/2 flex flex-col p-2">
+                    <!-- Pareja 2 -->
+                    <div class="border border-black p-2 mb-2">
+                      <div class="nombre-pareja">{{ mesa.pareja2.nombre }}</div>
+                      <div class="info-pareja">
+                        <span class="mr-2">PG {{ mesa.pareja2.pg || 0 }}</span>
+                        <span>PP {{ mesa.pareja2.pp || 0 }}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Líneas numeradas en un solo recuadro -->
+                    <div class="border border-black flex-1 p-2">
+                      <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                        <span class="w-6 text-sm">{{ i }}</span>
+                        <div class="flex-1 border-b border-black ml-2"></div>
+                      </div>
+                    </div>
+                    
+                    <!-- Total y Firma -->
+                    <div class="mt-2">
+                      <div class="border border-black p-2 mb-2">
+                        <span class="font-bold">Total</span>
+                      </div>
+                      <div class="border border-black p-2">
+                        <span class="font-bold">Firma</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-              
-              <!-- Espacio para resultados -->
-              <div class="flex-grow px-3">
-                <div class="grid grid-cols-2 divide-x divide-gray-300">
-                  <div class="pr-2">
-                    <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6 flex items-center">
-                      <span class="w-6 text-sm text-gray-500">{{ i }}</span>
-                    </div>
-                  </div>
-                  <div class="pl-2">
-                    <div v-for="i in 15" :key="i" class="border-b border-gray-300 h-6 flex items-center">
-                      <span class="w-6 text-sm text-gray-500">{{ i }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Total -->
-              <div class="border-t border-gray-300 p-3">
-                <div class="grid grid-cols-2 divide-x divide-gray-300">
-                  <div class="pr-2">Total</div>
-                  <div class="pl-2">Total</div>
                 </div>
               </div>
             </div>
-          </div>
-        </template>
+            <!-- Forzar dos mesas por página -->
+            <div v-if="(index + 1) % 2 === 0" class="w-full page-break"></div>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -332,50 +354,191 @@ onUnmounted(() => {
   }
 
   .print-pages {
-    display: flex;
-    flex-wrap: wrap;
     width: 100%;
   }
 
   .mesa-container {
     width: 50%;
-    height: 21cm;
-    padding: 1.5%;
+    height: auto;
+    padding: 0.5cm;
     box-sizing: border-box;
+    float: left;
+    page-break-inside: avoid;
   }
 
   .mesa-container > div {
-    height: 97%;
+    height: auto;
+    border: 1px solid #000;
     display: flex;
     flex-direction: column;
-    border: 1px solid #ccc;
   }
 
-  .page-break {
-    break-before: always;
-    page-break-before: always;
+  /* Estilos de la cabecera */
+  .mesa-container .text-2xl {
+    font-size: 20px;
+    font-weight: bold;
   }
 
-  /* Ajustes de contenido interno */
-  .mesa-container .border-b {
-    border-bottom-width: 1px;
+  .mesa-container .text-xl {
+    font-size: 16px;
   }
 
-  .mesa-container .p-4 {
-    padding: 0.8rem;
+  /* Estilos para las parejas */
+  .nombre-pareja {
+    font-size: 13px;
+    line-height: 1.2;
   }
 
-  .mesa-container .p-3 {
-    padding: 0.6rem;
+  .info-pareja {
+    font-size: 12px;
+    line-height: 1.2;
   }
 
-  .mesa-container .flex-grow {
-    flex: 1;
-    overflow: hidden;
+  /* Estilos para las líneas numeradas */
+  .flex-1 {
+    flex: none;
   }
 
-  .mesa-container .grid > div {
-    height: 0.8cm;
+  .h-6 {
+    height: 1.5rem;
+  }
+
+  /* Contenedor de líneas numeradas */
+  .border.border-black.flex-1.p-2 {
+    flex: none;
+    padding: 0.3rem;
+  }
+
+  /* Ajustes de espaciado */
+  .p-2 {
+    padding: 0.3rem;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.3rem;
+  }
+
+  .mt-2 {
+    margin-top: 0.3rem;
+  }
+
+  .ml-2 {
+    margin-left: 0.3rem;
+  }
+
+  /* Bordes */
+  .border {
+    border: 1px solid #000;
+  }
+
+  .border-black {
+    border-color: #000;
+  }
+
+  /* Línea vertical */
+  .absolute {
+    position: absolute;
+  }
+
+  .w-[1px] {
+    width: 1px;
+    background-color: #000;
+  }
+
+  /* Contenedores */
+  .w-1/2 {
+    width: 50%;
+  }
+
+  .flex {
+    display: flex;
+  }
+
+  .flex-col {
+    flex-direction: column;
+  }
+
+  .items-center {
+    align-items: center;
+  }
+
+  /* Ajustes específicos para asegurar que todo quepa en una página */
+  .flex-1 {
+    min-height: 0;
+  }
+
+  .font-bold {
+    font-weight: bold;
+  }
+
+  /* Ajuste del contenedor principal para distribución vertical */
+  .flex.flex-1.relative {
+    flex: none;
+    display: flex;
+    position: relative;
+  }
+
+  /* Columnas */
+  .w-1/2 {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Contenedor de líneas numeradas */
+  .border.border-black.flex-1.p-2 {
+    flex: none;
+    padding: 0.3rem;
+  }
+
+  /* Ajustes de espaciado */
+  .p-2 {
+    padding: 0.3rem;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.3rem;
+  }
+
+  .mt-2 {
+    margin-top: 0.3rem;
+  }
+
+  /* Asegurar que dos mesas quepan en una página */
+  .print-pages {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  /* Estilos para Total y Firma */
+  .border.border-black.p-2.mb-2 {
+    padding: 0.3rem;
+    height: 3rem; /* Altura para el Total */
+    display: flex;
+    align-items: center;
+  }
+
+  /* Estilo específico para el recuadro de firma */
+  .border.border-black.p-2:last-child {
+    height: 6.75rem; /* 3 veces la altura actual de 2.25rem */
+    display: flex;
+    align-items: center;
+  }
+
+  /* Ajustes de espaciado para compensar la nueva altura */
+  .mt-2 {
+    margin-top: 0.25rem;
+  }
+
+  .mb-2 {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Asegurar que el texto esté centrado verticalmente */
+  .font-bold {
+    font-weight: bold;
+    margin: 0;
   }
 }
 

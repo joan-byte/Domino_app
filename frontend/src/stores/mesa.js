@@ -56,6 +56,20 @@ export const useMesaStore = defineStore('mesa', () => {
         }
     };
 
+    const crearMesasPorRanking = async (campeonatoId) => {
+        loading.value = true;
+        try {
+            const response = await mesaService.crearMesasPorRanking(campeonatoId);
+            mesas.value = response;
+            return true;
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al crear las mesas por ranking';
+            return false;
+        } finally {
+            loading.value = false;
+        }
+    };
+
     const eliminarMesas = async (campeonatoId) => {
         loading.value = true;
         try {
@@ -89,6 +103,7 @@ export const useMesaStore = defineStore('mesa', () => {
         loading,
         obtenerMesas,
         crearMesasPorSorteo,
+        crearMesasPorRanking,
         eliminarMesas,
         puedeCrearMesas,
         todasMesasConResultados,

@@ -197,7 +197,7 @@ const cerrarInscripcion = async () => {
 
     // Cerrar inscripción y crear mesas iniciales
     await campeonatoStore.cerrarInscripcion(campeonato.value.id);
-    await cargarDatos();
+    // Redirigir inmediatamente después de cerrar inscripción
     router.push('/mesas/asignacion');
   } catch (e) {
     console.error('Error al cerrar la inscripción:', e);
