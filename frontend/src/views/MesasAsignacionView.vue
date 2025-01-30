@@ -1,26 +1,6 @@
-INSERT INTO resultados (
-    id,
-    pareja_id,
-    gb,
-    rp,
-    pg,
-    pp,
-    mesa_id,
-    partida,
-    campeonato_id
-  )
-VALUES (
-    id:integer,
-    pareja_id:integer,
-    gb:boolean,
-    rp:integer,
-    pg:integer,
-    pp:integer,
-    mesa_id:integer,
-    partida:integer,
-    campeonato_id:integer
-  );<template>
-  <div class="container mx-auto px-4 py-8">
+<template>
+  <!-- Contenido normal -->
+  <div class="screen-only container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Asignación de Mesas</h1>
@@ -67,7 +47,6 @@ VALUES (
           </tr>
         </tbody>
       </table>
-      <!-- Indicador de página -->
       <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
         Página {{ paginaActual + 1 }} de {{ totalPaginas }}
       </div>
@@ -79,97 +58,234 @@ VALUES (
         Imprimir
       </button>
     </div>
+  </div>
 
-    <!-- Formato de impresión -->
-    <div class="hidden print:block print:m-0 print-section">
-      <div class="print-pages">
-        <div class="flex flex-wrap">
-          <template v-for="(mesa, index) in mesasParaImprimir" :key="index">
-            <div class="mesa-container">
-              <div class="border border-black h-full flex flex-col">
-                <!-- Cabecera -->
-                <div class="border-b border-black p-4">
+  <!-- Contenido de impresión -->
+  <div class="print-only">
+    <template v-for="(mesa, index) in mesasParaImprimir" :key="mesa.id">
+      <!-- Crear una nueva página cada dos mesas -->
+      <div v-if="index % 2 === 0" class="print-page">
+        <!-- Primera mesa de la página (siempre a la izquierda) -->
+        <div class="mesa-wrapper">
+          <div class="mesa-container">
+            <!-- Contenido de la mesa actual -->
+            <div class="border border-black h-full flex flex-col">
+              <!-- Cabecera -->
+              <div class="border-b border-black p-4">
+                <div class="flex flex-col h-full">
                   <div class="text-left font-bold text-2xl">CAMPEONATO</div>
-                  <div class="text-left text-xl">{{ campeonato?.nombre }}</div>
-                  <div class="flex justify-end">
-                    <span class="mr-4">Partida {{ campeonato?.partida_actual }}</span>
-                    <span>Mesa {{ mesa.id }}</span>
+                  <div class="flex justify-between items-center mt-1">
+                    <div class="text-xl">{{ campeonato?.nombre || '' }}</div>
+                    <div class="flex gap-8 text-md">
+                      <span>Partida {{ campeonato?.partida_actual || '' }}</span>
+                      <span>Mesa {{ mesa.id }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contenedor principal -->
+              <div class="flex flex-1 relative">
+                <!-- Línea vertical divisoria -->
+                <div class="absolute left-1\/2 top-0 bottom-0 w-[1px] bg-black"></div>
+
+                <!-- Columna izquierda -->
+                <div class="w-1\/2">
+                  <!-- Pareja 1 -->
+                  <div class="border border-black p-2">
+                    <div class="nombre-pareja">
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesa.pareja1?.nombre?.split('Y')[0]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PG</span>
+                          <span>{{ mesa.pareja1?.pg || 0 }}</span>
+                        </span>
+                      </div>
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesa.pareja1?.nombre?.split('Y')[1]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PP</span>
+                          <span>{{ mesa.pareja1?.pp || 0 }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Líneas numeradas -->
+                  <div class="border border-black flex-1 p-2">
+                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                      <span class="w-4 text-sm">{{ i }}</span>
+                      <div class="flex-1 border-b border-black ml-2"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Total y espacio dividido -->
+                  <div class="mt-2">
+                    <div class="border border-black p-2">
+                      <span class="font-bold">Total</span>
+                    </div>
+                    <div class="espacio-final">
+                      <div class="recuadro-firma">Firma</div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Contenedor principal -->
-                <div class="flex flex-1 relative">
-                  <!-- Línea vertical divisoria -->
-                  <div class="absolute left-1/2 top-0 bottom-0 w-[1px] bg-black"></div>
-
-                  <!-- Columna izquierda -->
-                  <div class="w-1/2 flex flex-col p-2">
-                    <!-- Pareja 1 -->
-                    <div class="border border-black p-2 mb-2">
-                      <div class="nombre-pareja">{{ mesa.pareja1.nombre }}</div>
-                      <div class="info-pareja">
-                        <span class="mr-2">PG {{ mesa.pareja1.pg || 0 }}</span>
-                        <span>PP {{ mesa.pareja1.pp || 0 }}</span>
+                <!-- Columna derecha -->
+                <div class="w-1\/2">
+                  <!-- Pareja 2 -->
+                  <div class="border border-black p-2">
+                    <div class="nombre-pareja">
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesa.pareja2?.nombre?.split('Y')[0]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PG</span>
+                          <span>{{ mesa.pareja2?.pg || 0 }}</span>
+                        </span>
                       </div>
-                    </div>
-                    
-                    <!-- Líneas numeradas en un solo recuadro -->
-                    <div class="border border-black flex-1 p-2">
-                      <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                        <span class="w-6 text-sm">{{ i }}</span>
-                        <div class="flex-1 border-b border-black ml-2"></div>
-                      </div>
-                    </div>
-                    
-                    <!-- Total y Firma -->
-                    <div class="mt-2">
-                      <div class="border border-black p-2 mb-2">
-                        <span class="font-bold">Total</span>
-                      </div>
-                      <div class="border border-black p-2">
-                        <span class="font-bold">Firma</span>
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesa.pareja2?.nombre?.split('Y')[1]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PP</span>
+                          <span>{{ mesa.pareja2?.pp || 0 }}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
-
-                  <!-- Columna derecha -->
-                  <div class="w-1/2 flex flex-col p-2">
-                    <!-- Pareja 2 -->
-                    <div class="border border-black p-2 mb-2">
-                      <div class="nombre-pareja">{{ mesa.pareja2.nombre }}</div>
-                      <div class="info-pareja">
-                        <span class="mr-2">PG {{ mesa.pareja2.pg || 0 }}</span>
-                        <span>PP {{ mesa.pareja2.pp || 0 }}</span>
-                      </div>
+                  
+                  <!-- Líneas numeradas -->
+                  <div class="border border-black flex-1 p-2">
+                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                      <span class="w-4 text-sm">{{ i }}</span>
+                      <div class="flex-1 border-b border-black ml-2"></div>
                     </div>
-                    
-                    <!-- Líneas numeradas en un solo recuadro -->
-                    <div class="border border-black flex-1 p-2">
-                      <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                        <span class="w-6 text-sm">{{ i }}</span>
-                        <div class="flex-1 border-b border-black ml-2"></div>
-                      </div>
+                  </div>
+                  
+                  <!-- Total y espacio dividido -->
+                  <div class="mt-2">
+                    <div class="border border-black p-2">
+                      <span class="font-bold">Total</span>
                     </div>
-                    
-                    <!-- Total y Firma -->
-                    <div class="mt-2">
-                      <div class="border border-black p-2 mb-2">
-                        <span class="font-bold">Total</span>
-                      </div>
-                      <div class="border border-black p-2">
-                        <span class="font-bold">Firma</span>
-                      </div>
+                    <div class="espacio-final">
+                      <div class="recuadro-firma">Firma</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <!-- Forzar dos mesas por página -->
-            <div v-if="(index + 1) % 2 === 0" class="w-full page-break"></div>
-          </template>
+          </div>
+        </div>
+        
+        <!-- Segunda mesa de la página (si existe) -->
+        <div v-if="index + 1 < mesasParaImprimir.length" class="mesa-wrapper">
+          <div class="mesa-container">
+            <!-- Contenido de la siguiente mesa -->
+            <div class="border border-black h-full flex flex-col">
+              <!-- Cabecera -->
+              <div class="border-b border-black p-4">
+                <div class="flex flex-col h-full">
+                  <div class="text-left font-bold text-2xl">CAMPEONATO</div>
+                  <div class="flex justify-between items-center mt-1">
+                    <div class="text-xl">{{ campeonato?.nombre || '' }}</div>
+                    <div class="flex gap-8 text-md">
+                      <span>Partida {{ campeonato?.partida_actual || '' }}</span>
+                      <span>Mesa {{ mesasParaImprimir[index + 1].id }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contenedor principal -->
+              <div class="flex flex-1 relative">
+                <!-- Línea vertical divisoria -->
+                <div class="absolute left-1\/2 top-0 bottom-0 w-[1px] bg-black"></div>
+
+                <!-- Columna izquierda -->
+                <div class="w-1\/2">
+                  <!-- Pareja 1 -->
+                  <div class="border border-black p-2">
+                    <div class="nombre-pareja">
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja1?.nombre?.split('Y')[0]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PG</span>
+                          <span>{{ mesasParaImprimir[index + 1].pareja1?.pg || 0 }}</span>
+                        </span>
+                      </div>
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja1?.nombre?.split('Y')[1]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PP</span>
+                          <span>{{ mesasParaImprimir[index + 1].pareja1?.pp || 0 }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Líneas numeradas -->
+                  <div class="border border-black flex-1 p-2">
+                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                      <span class="w-4 text-sm">{{ i }}</span>
+                      <div class="flex-1 border-b border-black ml-2"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Total y espacio dividido -->
+                  <div class="mt-2">
+                    <div class="border border-black p-2">
+                      <span class="font-bold">Total</span>
+                    </div>
+                    <div class="espacio-final">
+                      <div class="recuadro-firma">Firma</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Columna derecha -->
+                <div class="w-1\/2">
+                  <!-- Pareja 2 -->
+                  <div class="border border-black p-2">
+                    <div class="nombre-pareja">
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja2?.nombre?.split('Y')[0]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PG</span>
+                          <span>{{ mesasParaImprimir[index + 1].pareja2?.pg || 0 }}</span>
+                        </span>
+                      </div>
+                      <div class="jugador-linea">
+                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja2?.nombre?.split('Y')[1]?.trim() || '' }}</span>
+                        <span class="stats">
+                          <span>PP</span>
+                          <span>{{ mesasParaImprimir[index + 1].pareja2?.pp || 0 }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Líneas numeradas -->
+                  <div class="border border-black flex-1 p-2">
+                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
+                      <span class="w-4 text-sm">{{ i }}</span>
+                      <div class="flex-1 border-b border-black ml-2"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Total y espacio dividido -->
+                  <div class="mt-2">
+                    <div class="border border-black p-2">
+                      <span class="font-bold">Total</span>
+                    </div>
+                    <div class="espacio-final">
+                      <div class="recuadro-firma">Firma</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -217,12 +333,14 @@ const detenerRotacionPaginas = () => {
 };
 
 const mesasParaImprimir = computed(() => {
+  if (!parejasMesas.value?.length || !campeonato.value) return [];
+  
   const mesasCompletas = [];
   const mesas = new Map();
   
-  // Agrupar parejas por mesa
+  // Primero, agrupar las parejas por mesa
   parejasMesas.value.forEach(pareja => {
-    if (pareja.mesa !== '-') {
+    if (pareja?.mesa && pareja.mesa !== '-') {
       if (!mesas.has(pareja.mesa)) {
         mesas.set(pareja.mesa, {
           id: pareja.mesa,
@@ -230,63 +348,55 @@ const mesasParaImprimir = computed(() => {
         });
       }
       
-      // Obtener los sumatorios de PG y PP de la base de datos
-      const resultadosPareja = resultados.value.filter(r => r.pareja_id === pareja.id);
+      const resultadosPareja = resultados.value?.filter(r => r.pareja_id === pareja.id) || [];
       const pg = resultadosPareja.reduce((sum, r) => sum + (r.pg || 0), 0);
       const pp = resultadosPareja.reduce((sum, r) => sum + (r.pp || 0), 0);
       
       mesas.get(pareja.mesa).parejas.push({
-        nombre: pareja.nombre,
+        nombre: pareja.nombre || '',
         pg: pg,
         pp: pp
       });
     }
   });
 
-  // Filtrar solo mesas con dos parejas
-  mesas.forEach(mesa => {
+  // Filtrar solo las mesas con exactamente 2 parejas
+  mesas.forEach((mesa, id) => {
     if (mesa.parejas.length === 2) {
       mesasCompletas.push({
-        id: mesa.id,
+        id: id,
         pareja1: mesa.parejas[0],
         pareja2: mesa.parejas[1]
       });
     }
   });
 
-  return mesasCompletas.sort((a, b) => a.id - b.id);
+  // Ordenar por número de mesa
+  return mesasCompletas.sort((a, b) => Number(a.id) - Number(b.id));
 });
 
 const cargarDatos = async () => {
   try {
-    // Cargar el campeonato actual
     campeonato.value = await campeonatoService.obtenerActual();
     if (!campeonato.value) {
       error.value = 'No hay campeonato activo';
       return;
     }
 
-    // Cargar todas las parejas del campeonato
     const parejas = await parejaService.obtenerParejas(campeonato.value.id);
-    
-    // Cargar las mesas de la partida actual
     const mesas = await mesaService.obtenerMesas(
       campeonato.value.id,
       campeonato.value.partida_actual
     );
-
-    // Cargar los resultados del campeonato usando el servicio directamente
     const resultadosData = await resultadoService.obtenerResultadosCampeonato(campeonato.value.id);
     resultados.value = resultadosData;
 
-    // Crear un mapa de mesa por pareja
     const mesaPorPareja = new Map();
     mesas.forEach(mesa => {
       if (mesa.pareja1_id) mesaPorPareja.set(mesa.pareja1_id, mesa.id);
       if (mesa.pareja2_id) mesaPorPareja.set(mesa.pareja2_id, mesa.id);
     });
 
-    // Transformar los datos para la tabla
     parejasMesas.value = parejas
       .filter(pareja => pareja.activa)
       .map(pareja => ({
@@ -298,7 +408,6 @@ const cargarDatos = async () => {
       }))
       .sort((a, b) => a.id - b.id);
 
-    // Iniciar la rotación de páginas si hay más de PAREJAS_POR_PAGINA parejas
     iniciarRotacionPaginas();
 
   } catch (e) {
@@ -311,10 +420,8 @@ const imprimir = () => {
   window.print();
 };
 
-// Lifecycle hooks
 onMounted(() => {
   cargarDatos();
-  // Reiniciar la rotación cuando la pestaña vuelve a estar visible
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       iniciarRotacionPaginas();
@@ -336,223 +443,146 @@ onUnmounted(() => {
     size: A4 landscape;
     margin: 0;
   }
-  
-  body * {
-    visibility: hidden;
-  }
-  
-  .print-section,
-  .print-section * {
-    visibility: visible;
-  }
-  
-  .print-section {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+
+  /* Ocultar contenido de pantalla */
+  .screen-only {
+    display: none !important;
   }
 
-  .print-pages {
-    width: 100%;
+  /* Contenedor principal de impresión */
+  .print-only {
+    display: block !important;
   }
 
-  .mesa-container {
-    width: 50%;
-    height: auto;
-    padding: 0.5cm;
+  /* Página de impresión */
+  .print-page {
+    width: 297mm;
+    height: 210mm;
+    display: flex;
+    justify-content: space-between;
+    padding: 15mm 15mm;
     box-sizing: border-box;
-    float: left;
-    page-break-inside: avoid;
+    background: white;
+    page-break-after: always;
   }
 
-  .mesa-container > div {
-    height: auto;
+  /* Contenedor de mesa */
+  .mesa-wrapper {
+    width: 128.5mm;
+    height: 180mm;
+    background: white;
+  }
+
+  /* Contenedor interno de mesa */
+  .mesa-container {
+    height: 100%;
+    width: 128.5mm;
     border: 1px solid #000;
     display: flex;
     flex-direction: column;
   }
 
-  /* Estilos de la cabecera */
-  .mesa-container .text-2xl {
-    font-size: 20px;
-    font-weight: bold;
+  /* Cabecera */
+  .border-b.border-black.p-4 {
+    border-bottom: 1px solid #000;
+    padding: 4mm;
+    height: 25mm;
   }
 
-  .mesa-container .text-xl {
-    font-size: 16px;
-  }
-
-  /* Estilos para las parejas */
-  .nombre-pareja {
-    font-size: 13px;
-    line-height: 1.2;
-  }
-
-  .info-pareja {
-    font-size: 12px;
-    line-height: 1.2;
-  }
-
-  /* Estilos para las líneas numeradas */
-  .flex-1 {
-    flex: none;
-  }
-
-  .h-6 {
-    height: 1.5rem;
-  }
-
-  /* Contenedor de líneas numeradas */
-  .border.border-black.flex-1.p-2 {
-    flex: none;
-    padding: 0.3rem;
-  }
-
-  /* Ajustes de espaciado */
-  .p-2 {
-    padding: 0.3rem;
-  }
-
-  .mb-2 {
-    margin-bottom: 0.3rem;
-  }
-
-  .mt-2 {
-    margin-top: 0.3rem;
-  }
-
-  .ml-2 {
-    margin-left: 0.3rem;
-  }
-
-  /* Bordes */
-  .border {
-    border: 1px solid #000;
-  }
-
-  .border-black {
-    border-color: #000;
-  }
-
-  /* Línea vertical */
-  .absolute {
-    position: absolute;
-  }
-
-  .w-[1px] {
-    width: 1px;
-    background-color: #000;
-  }
-
-  /* Contenedores */
-  .w-1/2 {
-    width: 50%;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-col {
-    flex-direction: column;
-  }
-
-  .items-center {
-    align-items: center;
-  }
-
-  /* Ajustes específicos para asegurar que todo quepa en una página */
-  .flex-1 {
-    min-height: 0;
-  }
-
-  .font-bold {
-    font-weight: bold;
-  }
-
-  /* Ajuste del contenedor principal para distribución vertical */
+  /* Contenedor principal de las parejas */
   .flex.flex-1.relative {
-    flex: none;
     display: flex;
-    position: relative;
+    height: calc(100% - 25mm);
+    width: 128.5mm;
   }
 
-  /* Columnas */
-  .w-1/2 {
-    width: 50%;
+  /* Mitades izquierda y derecha */
+  .w-1\/2 {
+    width: 64.25mm;
+    min-width: 64.25mm;
+    max-width: 64.25mm;
     display: flex;
     flex-direction: column;
   }
 
-  /* Contenedor de líneas numeradas */
+  /* Información de pareja */
+  .border.border-black.p-2 {
+    width: 64.25mm;
+    min-width: 64.25mm;
+    max-width: 64.25mm;
+    border: 1px solid #000;
+    padding: 2mm;
+    box-sizing: border-box;
+  }
+
+  /* Líneas numeradas */
   .border.border-black.flex-1.p-2 {
-    flex: none;
-    padding: 0.3rem;
+    width: 64.25mm;
+    min-width: 64.25mm;
+    max-width: 64.25mm;
+    flex: 1;
+    border: 1px solid #000;
+    padding: 2mm;
+    box-sizing: border-box;
   }
 
-  /* Ajustes de espaciado */
-  .p-2 {
-    padding: 0.3rem;
-  }
-
-  .mb-2 {
-    margin-bottom: 0.3rem;
-  }
-
+  /* Total y espacio final */
   .mt-2 {
-    margin-top: 0.3rem;
+    width: 64.25mm;
+    min-width: 64.25mm;
+    max-width: 64.25mm;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
   }
 
-  /* Asegurar que dos mesas quepan en una página */
-  .print-pages {
+  .border.border-black.p-2 {
+    width: 64.25mm;
+    min-width: 64.25mm;
+    max-width: 64.25mm;
+    border: 1px solid #000;
+    padding: 2mm;
+    box-sizing: border-box;
+  }
+
+  .espacio-final {
+    flex: 1;
+    display: flex;
+    border: 1px solid #000;
+    border-top: none;
+    min-height: 25mm;
+  }
+
+  .recuadro-firma {
     width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-  }
-
-  /* Estilos para Total y Firma */
-  .border.border-black.p-2.mb-2 {
-    padding: 0.3rem;
-    height: 3rem; /* Altura para el Total */
-    display: flex;
-    align-items: center;
-  }
-
-  /* Estilo específico para el recuadro de firma */
-  .border.border-black.p-2:last-child {
-    height: 6.75rem; /* 3 veces la altura actual de 2.25rem */
-    display: flex;
-    align-items: center;
-  }
-
-  /* Ajustes de espaciado para compensar la nueva altura */
-  .mt-2 {
-    margin-top: 0.25rem;
-  }
-
-  .mb-2 {
-    margin-bottom: 0.25rem;
-  }
-
-  /* Asegurar que el texto esté centrado verticalmente */
-  .font-bold {
+    height: 100%;
+    padding: 2mm;
     font-weight: bold;
-    margin: 0;
   }
-}
 
-@page {
-  size: A4 landscape;
-  margin: 0;
-}
-
-/* Estilos específicos para la vista previa de impresión */
-@media print {
-  html, body {
+  /* Ajustes para PG/PP */
+  .jugador-linea {
     width: 100%;
-    margin: 0;
-    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 4mm;
   }
+
+  .stats {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 3mm;
+    margin-left: auto;
+  }
+}
+
+/* Estilos normales */
+.print-only {
+  display: none;
+}
+
+.screen-only {
+  display: block;
 }
 </style> 

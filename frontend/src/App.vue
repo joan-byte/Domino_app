@@ -201,3 +201,44 @@ onUnmounted(() => {
   transition: transform 0.2s ease-in-out;
 }
 </style>
+
+<style>
+/* Estilos globales para impresión */
+@media print {
+  /* Ocultar elementos de navegación */
+  nav, 
+  header, 
+  footer, 
+  .navbar, 
+  .nav-menu {
+    display: none !important;
+  }
+
+  /* Ajustes básicos */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pt-16 {
+    padding-top: 0 !important;
+  }
+
+  .max-w-7xl {
+    max-width: none !important;
+  }
+
+  .px-4,
+  .sm\:px-6,
+  .lg\:px-8 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+</style>
