@@ -20,62 +20,121 @@
     </div>
 
     <!-- Lista de Mesas -->
-    <div class="space-y-4">
-      <div v-for="mesa in mesasVisibles" :key="mesa.id" 
-           class="bg-white shadow rounded-lg p-4">
-        <div class="grid grid-cols-12 items-center gap-4">
-          <!-- Número de Mesa -->
-          <div class="col-span-1">
-            <span class="text-lg font-medium">Mesa {{ mesa.id }}</span>
-          </div>
+    <div class="space-y-8">
+      <!-- Grupo A -->
+      <div v-if="mesasGrupoA.length > 0" class="space-y-4">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Grupo A</h3>
+        <div v-for="mesa in mesasGrupoA" :key="mesa.id" 
+             class="bg-white shadow rounded-lg p-4">
+          <div class="grid grid-cols-12 items-center gap-4">
+            <!-- Número de Mesa -->
+            <div class="col-span-1">
+              <span class="text-lg font-medium">Mesa {{ mesa.id }}</span>
+            </div>
 
-          <!-- Pareja 1 -->
-          <div class="col-span-4">
-            <div class="flex justify-end">
-              <div class="w-[300px]">
-                <div v-if="mesa.pareja1" class="text-gray-700">
-                  {{ mesa.pareja1.id }} - {{ mesa.pareja1.nombre }}
+            <!-- Pareja 1 -->
+            <div class="col-span-4">
+              <div class="flex justify-end">
+                <div class="w-[300px]">
+                  <div v-if="mesa.pareja1" class="text-gray-700">
+                    {{ mesa.pareja1.id }} - {{ mesa.pareja1.nombre }}
+                  </div>
+                  <div v-else class="text-gray-400">Descansa</div>
                 </div>
-                <div v-else class="text-gray-400">Descansa</div>
               </div>
             </div>
-          </div>
 
-          <!-- VS -->
-          <div class="col-span-2 text-center">
-            <span class="text-gray-500 font-medium">vs</span>
-          </div>
+            <!-- VS -->
+            <div class="col-span-2 text-center">
+              <span class="text-gray-500 font-medium">vs</span>
+            </div>
 
-          <!-- Pareja 2 -->
-          <div class="col-span-4">
-            <div class="flex justify-start">
-              <div class="w-[300px]">
-                <div v-if="mesa.pareja2" class="text-gray-700">
-                  {{ mesa.pareja2.id }} - {{ mesa.pareja2.nombre }}
+            <!-- Pareja 2 -->
+            <div class="col-span-4">
+              <div class="flex justify-start">
+                <div class="w-[300px]">
+                  <div v-if="mesa.pareja2" class="text-gray-700">
+                    {{ mesa.pareja2.id }} - {{ mesa.pareja2.nombre }}
+                  </div>
+                  <div v-else class="text-gray-400">Descansa</div>
                 </div>
-                <div v-else class="text-gray-400">Descansa</div>
               </div>
             </div>
-          </div>
 
-          <!-- Botón -->
-          <div class="col-span-1 text-right">
-            <button 
-              v-if="mesa.pareja1 || mesa.pareja2"
-              @click="abrirFormularioResultado(mesa)"
-              class="px-4 py-2 rounded text-white font-medium min-w-[100px]"
-              :class="mesa.tiene_resultado ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-500 hover:bg-blue-600'"
-            >
-              {{ mesa.tiene_resultado ? 'Modificar' : 'Registrar' }}
-            </button>
+            <!-- Botón -->
+            <div class="col-span-1 text-right">
+              <button 
+                v-if="mesa.pareja1 || mesa.pareja2"
+                @click="abrirFormularioResultado(mesa)"
+                class="px-4 py-2 rounded text-white font-medium min-w-[100px]"
+                :class="mesa.tiene_resultado ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-500 hover:bg-blue-600'"
+              >
+                {{ mesa.tiene_resultado ? 'Modificar' : 'Registrar' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Indicador de página -->
-    <div class="mt-4 px-6 py-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-      Página {{ paginaActual + 1 }} de {{ totalPaginas }}
+      <!-- Grupo B -->
+      <div v-if="mesasGrupoB.length > 0" class="space-y-4">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+          Grupo B
+          <span class="ml-2 px-2 py-1 text-sm bg-yellow-100 text-yellow-800 rounded">GB</span>
+        </h3>
+        <div v-for="mesa in mesasGrupoB" :key="mesa.id" 
+             class="bg-white shadow rounded-lg p-4 border-l-4 border-yellow-400">
+          <div class="grid grid-cols-12 items-center gap-4">
+            <!-- Número de Mesa -->
+            <div class="col-span-1">
+              <span class="text-lg font-medium">Mesa {{ mesa.id }}</span>
+            </div>
+
+            <!-- Pareja 1 -->
+            <div class="col-span-4">
+              <div class="flex justify-end">
+                <div class="w-[300px]">
+                  <div v-if="mesa.pareja1" class="text-gray-700 flex items-center justify-end">
+                    <span>{{ mesa.pareja1.id }} - {{ mesa.pareja1.nombre }}</span>
+                    <span class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
+                  </div>
+                  <div v-else class="text-gray-400">Descansa</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VS -->
+            <div class="col-span-2 text-center">
+              <span class="text-gray-500 font-medium">vs</span>
+            </div>
+
+            <!-- Pareja 2 -->
+            <div class="col-span-4">
+              <div class="flex justify-start">
+                <div class="w-[300px]">
+                  <div v-if="mesa.pareja2" class="text-gray-700 flex items-center">
+                    <span>{{ mesa.pareja2.id }} - {{ mesa.pareja2.nombre }}</span>
+                    <span class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
+                  </div>
+                  <div v-else class="text-gray-400">Descansa</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón -->
+            <div class="col-span-1 text-right">
+              <button 
+                v-if="mesa.pareja1 || mesa.pareja2"
+                @click="abrirFormularioResultado(mesa)"
+                class="px-4 py-2 rounded text-white font-medium min-w-[100px]"
+                :class="mesa.tiene_resultado ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-500 hover:bg-blue-600'"
+              >
+                {{ mesa.tiene_resultado ? 'Modificar' : 'Registrar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Modal de Registro de Resultado -->
@@ -341,13 +400,46 @@ const resultado = ref({
   mg_pareja2: 0
 });
 
-// Constantes
-const MESAS_POR_PAGINA = 10;
-const INTERVALO_CAMBIO = 10000; // 10 segundos
-const paginaActual = ref(0);
-const intervalId = ref(null);
+// Funciones
+const cargarDatos = async () => {
+  try {
+    await campeonatoStore.obtenerActual();
+    campeonato.value = campeonatoStore.campeonato;
+    
+    if (!campeonato.value) {
+      error.value = 'No hay campeonato activo';
+      return;
+    }
 
-// Computed properties para los cálculos
+    await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+  } catch (e) {
+    console.error('Error al cargar los datos:', e);
+    error.value = 'Error al cargar los datos';
+  }
+};
+
+// Computed properties
+const mesasGrupoA = computed(() => {
+  return mesas.value.filter(mesa => 
+    (!mesa.pareja1?.gb && !mesa.pareja2?.gb) || // Ambas parejas son GB=A
+    (!mesa.pareja2 && !mesa.pareja1?.gb) // Solo una pareja y es GB=A
+  );
+});
+
+const mesasGrupoB = computed(() => {
+  return mesas.value.filter(mesa => 
+    (mesa.pareja1?.gb || mesa.pareja2?.gb) // Al menos una pareja es GB=B
+  );
+});
+
+const todasMesasTienenResultado = computed(() => {
+  return mesaStore.todasMesasConResultados();
+});
+
+const esUltimaPartida = computed(() => {
+  return campeonato.value?.partida_actual === campeonato.value?.numero_partidas;
+});
+
 const calculos = computed(() => {
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
@@ -374,56 +466,6 @@ const calculos = computed(() => {
     pp2
   };
 });
-
-// Computed property para verificar si todas las mesas tienen resultados
-const todasMesasTienenResultado = computed(() => {
-  return mesas.value.length > 0 && mesas.value.every(mesa => mesa.tiene_resultado);
-});
-
-// Computed properties para la paginación
-const totalPaginas = computed(() => 
-  Math.ceil(mesas.value.length / MESAS_POR_PAGINA)
-);
-
-const mesasVisibles = computed(() => {
-  const inicio = paginaActual.value * MESAS_POR_PAGINA;
-  const fin = inicio + MESAS_POR_PAGINA;
-  return mesas.value.slice(inicio, fin);
-});
-
-// Funciones para la paginación
-const cambiarPagina = () => {
-  paginaActual.value = (paginaActual.value + 1) % totalPaginas.value;
-};
-
-const iniciarRotacionPaginas = () => {
-  if (mesas.value.length > MESAS_POR_PAGINA) {
-    intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
-  }
-};
-
-const detenerRotacionPaginas = () => {
-  if (intervalId.value) {
-    clearInterval(intervalId.value);
-    intervalId.value = null;
-  }
-};
-
-const cargarDatos = async () => {
-  try {
-    await campeonatoStore.obtenerActual();
-    if (!campeonato.value) {
-      error.value = 'No hay campeonato activo';
-      return;
-    }
-
-    await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
-    iniciarRotacionPaginas();
-  } catch (e) {
-    console.error('Error al cargar los datos:', e);
-    error.value = 'Error al cargar los datos';
-  }
-};
 
 const validarResultado = () => {
   // Reiniciar mensaje de error
@@ -570,10 +612,8 @@ const guardarResultado = async () => {
     }
 
     if (mesaSeleccionada.value.tiene_resultado) {
-      // Usar el servicio directamente para actualizar
       await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, resultado1, resultado2);
     } else {
-      // Crear nuevos resultados
       await resultadoStore.crear(resultado1, resultado2);
     }
 
@@ -584,10 +624,6 @@ const guardarResultado = async () => {
     error.value = e.message || 'Error al guardar el resultado';
   }
 };
-
-const esUltimaPartida = computed(() => {
-  return campeonato.value?.partida_actual === campeonato.value?.numero_partidas;
-});
 
 const esValido = computed(() => {
   if (!mesaSeleccionada.value?.pareja2) return true;
@@ -644,21 +680,12 @@ const cerrarPartida = async () => {
   }
 };
 
-// Lifecycle hooks
-onMounted(() => {
-  cargarDatos();
-  // Reiniciar la rotación cuando la pestaña vuelve a estar visible
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      iniciarRotacionPaginas();
-    } else {
-      detenerRotacionPaginas();
-    }
-  });
+// Ciclo de vida del componente
+onMounted(async () => {
+  await cargarDatos();
 });
 
 onUnmounted(() => {
-  detenerRotacionPaginas();
   document.removeEventListener('visibilitychange', () => {});
 });
 </script> 

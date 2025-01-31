@@ -12,6 +12,7 @@ class Campeonato(Base):
     dias_duracion = Column(Integer, nullable=False)
     numero_partidas = Column(Integer, nullable=False)
     gb = Column(Boolean, default=False)
+    gb_valor = Column(Integer, nullable=True)
     activo = Column(Boolean, default=True)
     partida_actual = Column(Integer, default=0)
     pm = Column(Integer, default=300)

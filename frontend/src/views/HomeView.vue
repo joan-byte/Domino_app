@@ -42,6 +42,7 @@
           <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
           <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
           <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
+          <p v-if="campeonato.gb"><span class="font-medium">GBP:</span> {{ campeonato.gb_valor }}</p>
           <p><span class="font-medium">PM:</span> {{ campeonato.pm }}</p>
           <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
         </div>
@@ -131,6 +132,21 @@
               <label for="gb" class="ml-2 block text-sm text-gray-900">GB</label>
             </div>
 
+            <!-- Campo GBP Valor -->
+            <div v-if="nuevoCampeonato.gb">
+              <label for="gb_valor" class="block text-sm font-medium text-gray-700">GBP</label>
+              <input
+                id="gb_valor"
+                name="gb_valor"
+                v-model.number="nuevoCampeonato.gb_valor"
+                type="number"
+                required
+                min="1"
+                max="999"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
             <div class="flex justify-end space-x-3 mt-6">
               <button
                 type="button"
@@ -180,7 +196,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { campeonatoService } from '../services/api';
 
@@ -196,6 +212,7 @@ const nuevoCampeonato = ref({
   dias_duracion: 1,
   numero_partidas: 1,
   gb: false,
+  gb_valor: null,
   pm: 300
 });
 
@@ -231,6 +248,7 @@ const mostrarFormularioCreacion = () => {
     dias_duracion: 1,
     numero_partidas: 1,
     gb: false,
+    gb_valor: null,
     pm: 300
   };
 };
@@ -244,6 +262,7 @@ const mostrarFormularioEdicion = () => {
     dias_duracion: campeonato.value.dias_duracion,
     numero_partidas: campeonato.value.numero_partidas,
     gb: campeonato.value.gb,
+    gb_valor: campeonato.value.gb_valor,
     pm: campeonato.value.pm
   };
 };
@@ -257,6 +276,7 @@ const cerrarModal = () => {
     dias_duracion: 1,
     numero_partidas: 1,
     gb: false,
+    gb_valor: null,
     pm: 300
   };
 };
@@ -308,6 +328,15 @@ const eliminarCampeonato = async () => {
 const navegarAParejas = () => router.push('/parejas');
 const navegarAMesas = () => router.push('/mesas');
 const navegarARanking = () => router.push('/ranking');
+
+// Watcher para actualizar gb_valor cuando cambia numero_partidas o gb
+watch([() => nuevoCampeonato.value.numero_partidas, () => nuevoCampeonato.value.gb], ([numPartidas, gb]) => {
+  if (gb && (!nuevoCampeonato.value.gb_valor || nuevoCampeonato.value.gb_valor === 0)) {
+    nuevoCampeonato.value.gb_valor = Math.floor(numPartidas / 2);
+  } else if (!gb) {
+    nuevoCampeonato.value.gb_valor = null;
+  }
+});
 
 onMounted(cargarCampeonatoActual);
 </script> 

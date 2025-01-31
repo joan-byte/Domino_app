@@ -97,6 +97,24 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         # Eliminar todas las mesas existentes del campeonato
         db.query(Mesa).filter(Mesa.campeonato_id == campeonato_id).delete()
 
+        # Verificar si estamos en la partida GBP y necesitamos asignar GB=B
+        if campeonato.gb and campeonato.partida_actual == campeonato.gb_valor:
+            # Obtener todas las mesas de la partida actual ordenadas por ID
+            mesas_actuales = db.query(Mesa).filter(
+                Mesa.campeonato_id == campeonato_id,
+                Mesa.partida == campeonato.partida_actual
+            ).order_by(Mesa.id).all()
+
+            # Calcular el índice de la mesa desde donde empiezan las parejas GB=B
+            indice_gb_b = len(mesas_actuales) // 2
+
+            # Marcar todas las parejas de las mesas inferiores como GB=B
+            for mesa in mesas_actuales[indice_gb_b:]:
+                if mesa.pareja1_id:
+                    db.query(Pareja).filter(Pareja.id == mesa.pareja1_id).update({"gb": True})
+                if mesa.pareja2_id:
+                    db.query(Pareja).filter(Pareja.id == mesa.pareja2_id).update({"gb": True})
+
         # Obtener parejas activas ordenadas por ranking actual (GB, PG, PP)
         parejas_ranking = db.query(
             Pareja,
@@ -105,143 +123,66 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             func.bool_or(Resultado.gb).label('gb')
         ).join(
             Resultado,
-            Pareja.id == Resultado.pareja_id
+            Pareja.id == Resultado.pareja_id,
+            isouter=True  # Usar outer join para incluir parejas sin resultados
         ).filter(
             Pareja.campeonato_id == campeonato_id,
             Pareja.activa == True
         ).group_by(
             Pareja.id
         ).order_by(
-            func.coalesce(func.bool_or(Resultado.gb), False),  # GB ascendente (A antes que B)
+            Pareja.gb,  # Primero ordenar por GB (False antes que True)
             func.coalesce(func.sum(Resultado.pg), 0).desc(),  # Total PG descendente
             func.coalesce(func.sum(Resultado.pp), 0).desc()   # Total PP descendente
         ).all()
 
         # Separar parejas por GB
-        parejas_gb_a = [p for p in parejas_ranking if not p[3]]  # GB = False (A)
-        parejas_gb_b = [p for p in parejas_ranking if p[3]]      # GB = True (B)
+        parejas_gb_a = [p for p in parejas_ranking if not p[0].gb]  # GB = False (A)
+        parejas_gb_b = [p for p in parejas_ranking if p[0].gb]      # GB = True (B)
 
-        parejas_para_mesas = []
-        es_ultima_partida = campeonato.partida_actual + 1 == campeonato.numero_partidas
+        # Crear mesas separadas para cada grupo
+        mesas = []
+        nueva_partida = campeonato.partida_actual + 1
+        mesa_id = 1
 
-        if len(parejas_ranking) >= 2:
-            if es_ultima_partida:
-                # Lógica especial para la última partida
-                # Verificar diferencia entre las dos primeras parejas del grupo A
-                if len(parejas_gb_a) >= 2:
-                    primera_pareja_a = parejas_gb_a[0]
-                    segunda_pareja_a = parejas_gb_a[1]
-                    
-                    pg_primera_a = primera_pareja_a[1] or 0
-                    pg_segunda_a = segunda_pareja_a[1] or 0
-                    pp_primera_a = primera_pareja_a[2] or 0
-                    pp_segunda_a = segunda_pareja_a[2] or 0
-                    
-                    diferencia_pg_a = pg_primera_a - pg_segunda_a
-                    diferencia_pp_a = pp_primera_a - pp_segunda_a
-                    
-                    if diferencia_pg_a >= 2 or diferencia_pp_a > (2 * campeonato.pm):
-                        # La primera pareja del grupo A es campeona
-                        nuevo_resultado_a = Resultado(
-                            pareja_id=primera_pareja_a[0].id,
-                            pg=1,
-                            pp=0,
-                            rp=0,
-                            gb=False,
-                            mesa_id=None,
-                            partida=campeonato.partida_actual + 1,
-                            campeonato_id=campeonato_id
-                        )
-                        db.add(nuevo_resultado_a)
-                        parejas_gb_a = parejas_gb_a[1:]  # Excluir la primera pareja
-
-                # Verificar diferencia entre las dos primeras parejas del grupo B
-                if len(parejas_gb_b) >= 2:
-                    primera_pareja_b = parejas_gb_b[0]
-                    segunda_pareja_b = parejas_gb_b[1]
-                    
-                    pg_primera_b = primera_pareja_b[1] or 0
-                    pg_segunda_b = segunda_pareja_b[1] or 0
-                    pp_primera_b = primera_pareja_b[2] or 0
-                    pp_segunda_b = segunda_pareja_b[2] or 0
-                    
-                    diferencia_pg_b = pg_primera_b - pg_segunda_b
-                    diferencia_pp_b = pp_primera_b - pp_segunda_b
-                    
-                    if diferencia_pg_b >= 2 or diferencia_pp_b > (2 * campeonato.pm):
-                        # La primera pareja del grupo B es campeona
-                        nuevo_resultado_b = Resultado(
-                            pareja_id=primera_pareja_b[0].id,
-                            pg=1,
-                            pp=0,
-                            rp=0,
-                            gb=True,
-                            mesa_id=None,
-                            partida=campeonato.partida_actual + 1,
-                            campeonato_id=campeonato_id
-                        )
-                        db.add(nuevo_resultado_b)
-                        parejas_gb_b = parejas_gb_b[1:]  # Excluir la primera pareja
-
-            # Crear mesas separadas para cada grupo
-            mesas = []
-            nueva_partida = campeonato.partida_actual + 1
-            mesa_id = 1
-
-            # Crear mesas para grupo A
-            for i in range(0, len(parejas_gb_a), 2):
-                pareja1 = parejas_gb_a[i][0]
-                pareja2 = parejas_gb_a[i + 1][0] if i + 1 < len(parejas_gb_a) else None
-                
-                mesa = Mesa(
-                    id=mesa_id,
-                    partida=nueva_partida,
-                    pareja1_id=pareja1.id,
-                    pareja2_id=pareja2.id if pareja2 else None,
-                    campeonato_id=campeonato_id
-                )
-                db.add(mesa)
-                mesas.append(mesa)
-                mesa_id += 1
-
-            # Crear mesas para grupo B
-            for i in range(0, len(parejas_gb_b), 2):
-                pareja1 = parejas_gb_b[i][0]
-                pareja2 = parejas_gb_b[i + 1][0] if i + 1 < len(parejas_gb_b) else None
-                
-                mesa = Mesa(
-                    id=mesa_id,
-                    partida=nueva_partida,
-                    pareja1_id=pareja1.id,
-                    pareja2_id=pareja2.id if pareja2 else None,
-                    campeonato_id=campeonato_id
-                )
-                db.add(mesa)
-                mesas.append(mesa)
-                mesa_id += 1
-
-            # Actualizar partida actual del campeonato
-            campeonato.partida_actual = nueva_partida
+        # Crear mesas para grupo A
+        for i in range(0, len(parejas_gb_a), 2):
+            pareja1 = parejas_gb_a[i][0]
+            pareja2 = parejas_gb_a[i + 1][0] if i + 1 < len(parejas_gb_a) else None
             
-            db.commit()
-            return mesas
+            mesa = Mesa(
+                id=mesa_id,
+                partida=nueva_partida,
+                pareja1_id=pareja1.id,
+                pareja2_id=pareja2.id if pareja2 else None,
+                campeonato_id=campeonato_id
+            )
+            db.add(mesa)
+            mesas.append(mesa)
+            mesa_id += 1
+
+        # Crear mesas para grupo B
+        for i in range(0, len(parejas_gb_b), 2):
+            pareja1 = parejas_gb_b[i][0]
+            pareja2 = parejas_gb_b[i + 1][0] if i + 1 < len(parejas_gb_b) else None
             
-        else:
-            # Si hay menos de 2 parejas, crear una mesa con la pareja solitaria
-            if len(parejas_ranking) == 1:
-                mesa = Mesa(
-                    id=1,
-                    partida=campeonato.partida_actual + 1,
-                    pareja1_id=parejas_ranking[0][0].id,
-                    pareja2_id=None,
-                    campeonato_id=campeonato_id
-                )
-                db.add(mesa)
-                campeonato.partida_actual += 1
-                db.commit()
-                return [mesa]
-            return []
+            mesa = Mesa(
+                id=mesa_id,
+                partida=nueva_partida,
+                pareja1_id=pareja1.id,
+                pareja2_id=pareja2.id if pareja2 else None,
+                campeonato_id=campeonato_id
+            )
+            db.add(mesa)
+            mesas.append(mesa)
+            mesa_id += 1
+
+        # Actualizar partida actual del campeonato
+        campeonato.partida_actual = nueva_partida
         
+        db.commit()
+        return mesas
+            
     except Exception as e:
         db.rollback()
         raise HTTPException(

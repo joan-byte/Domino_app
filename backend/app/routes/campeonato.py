@@ -85,8 +85,10 @@ def crear_campeonato(campeonato: CampeonatoCreate, db: Session = Depends(get_db)
             dias_duracion=campeonato.dias_duracion,
             numero_partidas=campeonato.numero_partidas,
             gb=campeonato.gb,
+            gb_valor=campeonato.gb_valor,
             activo=True,
-            partida_actual=0
+            partida_actual=0,
+            pm=campeonato.pm
         )
         db.add(db_campeonato)
         db.commit()
@@ -115,9 +117,21 @@ def actualizar_campeonato(campeonato_id: int, campeonato: CampeonatoUpdate, db: 
                 detail="Campeonato no encontrado"
             )
         
-        # Actualizar campos
-        for key, value in campeonato.dict(exclude_unset=True).items():
-            setattr(db_campeonato, key, value)
+        # Actualizar campos del campeonato
+        if campeonato.nombre is not None:
+            db_campeonato.nombre = campeonato.nombre
+        if campeonato.fecha_inicio is not None:
+            db_campeonato.fecha_inicio = campeonato.fecha_inicio
+        if campeonato.dias_duracion is not None:
+            db_campeonato.dias_duracion = campeonato.dias_duracion
+        if campeonato.numero_partidas is not None:
+            db_campeonato.numero_partidas = campeonato.numero_partidas
+        if campeonato.gb is not None:
+            db_campeonato.gb = campeonato.gb
+        if campeonato.gb_valor is not None:
+            db_campeonato.gb_valor = campeonato.gb_valor
+        if campeonato.pm is not None:
+            db_campeonato.pm = campeonato.pm
         
         db.commit()
         db.refresh(db_campeonato)
