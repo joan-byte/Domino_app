@@ -83,8 +83,12 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
                 detail="La primera partida debe ser por sorteo"
             )
         
+        # Si es la última partida, no crear nuevas mesas
+        if campeonato.partida_actual == campeonato.numero_partidas:
+            return []
+
         # Verificar que no se excede el número de partidas
-        if campeonato.partida_actual >= campeonato.numero_partidas:
+        if campeonato.partida_actual > campeonato.numero_partidas:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Ya se han jugado todas las partidas del campeonato"
