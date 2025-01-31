@@ -11,7 +11,7 @@ class ResultadoBase(BaseModel):
 
 class ResultadoCreate(ResultadoBase):
     pareja_id: int
-    mesa_id: int
+    mesa_id: Optional[int] = None
     partida: int
     campeonato_id: int
 

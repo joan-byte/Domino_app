@@ -13,13 +13,13 @@
     <!-- Podium -->
     <div class="flex justify-center items-end gap-12 mb-16 h-72">
       <!-- Segundo lugar -->
-      <div v-if="ranking.length >= 2" class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 2" class="w-[40rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🥈</div>
-        <div class="bg-gray-100 p-8 rounded-t-lg w-full text-center h-40">
-          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[1]?.numero }}</div>
-          <div class="text-xl mb-4">{{ ranking[1]?.nombre }}</div>
-          <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ ranking[1]?.club }}</div>
+        <div class="bg-slate-100 p-6 rounded-t-lg w-full text-center h-40">
+          <div class="font-bold text-xl mb-1">Pareja {{ ranking[1]?.numero }}</div>
+          <div class="text-lg mb-2 truncate">{{ ranking[1]?.nombre }}</div>
+          <div class="flex justify-between items-center text-base">
+            <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[1]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[1]?.gb ? 'B' : 'A' }}</span>
               <span>PG: {{ ranking[1]?.pg }} | PP: {{ ranking[1]?.pp }}</span>
@@ -29,13 +29,13 @@
       </div>
 
       <!-- Primer lugar -->
-      <div v-if="ranking.length >= 1" class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 1" class="w-[40rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🏆</div>
-        <div class="bg-yellow-100 p-8 rounded-t-lg w-full text-center h-48">
-          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[0]?.numero }}</div>
-          <div class="text-xl mb-4">{{ ranking[0]?.nombre }}</div>
-          <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ ranking[0]?.club }}</div>
+        <div class="bg-yellow-100 p-6 rounded-t-lg w-full text-center h-48">
+          <div class="font-bold text-xl mb-1">Pareja {{ ranking[0]?.numero }}</div>
+          <div class="text-lg mb-2 truncate">{{ ranking[0]?.nombre }}</div>
+          <div class="flex justify-between items-center text-base">
+            <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[0]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[0]?.gb ? 'B' : 'A' }}</span>
               <span>PG: {{ ranking[0]?.pg }} | PP: {{ ranking[0]?.pp }}</span>
@@ -45,13 +45,13 @@
       </div>
 
       <!-- Tercer lugar -->
-      <div v-if="ranking.length >= 3" class="w-[32rem] flex flex-col items-center">
+      <div v-if="ranking.length >= 3" class="w-[40rem] flex flex-col items-center">
         <div class="text-3xl mb-2">🥉</div>
-        <div class="bg-orange-100 p-8 rounded-t-lg w-full text-center h-36">
-          <div class="font-bold text-2xl mb-2">Pareja {{ ranking[2]?.numero }}</div>
-          <div class="text-xl mb-4">{{ ranking[2]?.nombre }}</div>
-          <div class="flex justify-between items-center text-lg">
-            <div class="text-gray-600">{{ ranking[2]?.club }}</div>
+        <div class="bg-orange-100 p-6 rounded-t-lg w-full text-center h-36">
+          <div class="font-bold text-xl mb-1">Pareja {{ ranking[2]?.numero }}</div>
+          <div class="text-lg mb-2 truncate">{{ ranking[2]?.nombre }}</div>
+          <div class="flex justify-between items-center text-base">
+            <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[2]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[2]?.gb ? 'B' : 'A' }}</span>
               <span>PG: {{ ranking[2]?.pg }} | PP: {{ ranking[2]?.pp }}</span>
@@ -67,7 +67,7 @@
         <h2 class="text-xl font-semibold">Ranking Final</h2>
       </div>
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
+        <table class="min-w-full divide-y divide-gray-200 ranking-table">
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -93,16 +93,20 @@
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="divide-y divide-gray-200">
             <tr v-for="(pareja, index) in parejasVisibles" :key="pareja.id"
-                :class="{
-                  'bg-yellow-50': index + paginaActual * PAREJAS_POR_PAGINA === 0 || 
-                                 (obtenerPosicionPrimerGrupoB() === index + paginaActual * PAREJAS_POR_PAGINA), 
-                  'bg-gray-50': index + paginaActual * PAREJAS_POR_PAGINA === 1 || 
-                               (obtenerPosicionPrimerGrupoB() + 1 === index + paginaActual * PAREJAS_POR_PAGINA),
-                  'bg-orange-50': index + paginaActual * PAREJAS_POR_PAGINA === 2 || 
-                                 (obtenerPosicionPrimerGrupoB() + 2 === index + paginaActual * PAREJAS_POR_PAGINA)
-                }">
+                :class="[
+                  index + paginaActual * PAREJAS_POR_PAGINA === 0 || 
+                  obtenerPosicionPrimerGrupoB() === index + paginaActual * PAREJAS_POR_PAGINA
+                    ? 'bg-yellow-100'
+                    : index + paginaActual * PAREJAS_POR_PAGINA === 1 || 
+                      obtenerPosicionPrimerGrupoB() + 1 === index + paginaActual * PAREJAS_POR_PAGINA
+                        ? 'bg-slate-100'
+                        : index + paginaActual * PAREJAS_POR_PAGINA === 2 || 
+                          obtenerPosicionPrimerGrupoB() + 2 === index + paginaActual * PAREJAS_POR_PAGINA
+                            ? 'bg-orange-50'
+                            : ''
+                ]">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <span class="text-sm font-medium text-gray-900">{{ index + 1 + paginaActual * PAREJAS_POR_PAGINA }}</span>
@@ -227,4 +231,16 @@ onUnmounted(() => {
   detenerRotacionPaginas();
   document.removeEventListener('visibilitychange', () => {});
 });
-</script> 
+</script>
+
+<style scoped>
+.ranking-table tr.bg-yellow-100 {
+  background-color: rgb(254, 249, 195) !important;
+}
+.ranking-table tr.bg-slate-100 {
+  background-color: rgb(241, 245, 249) !important;
+}
+.ranking-table tr.bg-orange-50 {
+  background-color: rgb(255, 247, 237) !important;
+}
+</style> 
