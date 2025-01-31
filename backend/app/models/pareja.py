@@ -9,6 +9,7 @@ class Pareja(Base):
     nombre = Column(String)
     club_pertenencia = Column(String)
     activa = Column(Boolean, default=True)
+    gb = Column(Boolean, default=False)
     campeonato_id = Column(Integer, ForeignKey("campeonatos.id"))
     
     jugadores = relationship("Jugador", back_populates="pareja")

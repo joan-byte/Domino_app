@@ -94,61 +94,86 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
                 detail="Ya se han jugado todas las partidas del campeonato"
             )
 
+        nueva_partida = campeonato.partida_actual + 1
+
         # Eliminar todas las mesas existentes del campeonato
         db.query(Mesa).filter(Mesa.campeonato_id == campeonato_id).delete()
 
         # Verificar si estamos en la partida GBP y necesitamos asignar GB=B
         if campeonato.gb and campeonato.partida_actual == campeonato.gb_valor:
-            # Obtener todas las mesas de la partida actual ordenadas por ID
-            mesas_actuales = db.query(Mesa).filter(
-                Mesa.campeonato_id == campeonato_id,
-                Mesa.partida == campeonato.partida_actual
-            ).order_by(Mesa.id).all()
+            # Obtener todas las parejas ordenadas por ranking actual
+            parejas_ranking = db.query(
+                Pareja,
+                func.coalesce(func.sum(Resultado.pg), 0).label('total_pg'),
+                func.coalesce(func.sum(Resultado.pp), 0).label('total_pp')
+            ).outerjoin(
+                Resultado,
+                (Pareja.id == Resultado.pareja_id) & 
+                (Resultado.partida <= campeonato.partida_actual)
+            ).filter(
+                Pareja.campeonato_id == campeonato_id,
+                Pareja.activa == True
+            ).group_by(
+                Pareja.id
+            ).order_by(
+                func.coalesce(func.sum(Resultado.pg), 0).desc(),
+                func.coalesce(func.sum(Resultado.pp), 0).desc()
+            ).all()
 
-            # Calcular el índice de la mesa desde donde empiezan las parejas GB=B
-            indice_gb_b = len(mesas_actuales) // 2
+            # Calcular el índice desde donde empiezan las parejas GB=B
+            total_parejas = len(parejas_ranking)
+            indice_gb_b = total_parejas // 2
 
-            # Marcar todas las parejas de las mesas inferiores como GB=B
-            for mesa in mesas_actuales[indice_gb_b:]:
-                if mesa.pareja1_id:
-                    db.query(Pareja).filter(Pareja.id == mesa.pareja1_id).update({"gb": True})
-                if mesa.pareja2_id:
-                    db.query(Pareja).filter(Pareja.id == mesa.pareja2_id).update({"gb": True})
+            # Marcar parejas como GB=B
+            for pareja_info in parejas_ranking[indice_gb_b:]:
+                pareja = pareja_info[0]
+                db.query(Pareja).filter(Pareja.id == pareja.id).update({"gb": True})
 
-        # Obtener parejas activas ordenadas por ranking actual (GB, PG, PP)
+        # Obtener parejas activas ordenadas por ranking actual
         parejas_ranking = db.query(
             Pareja,
-            func.sum(Resultado.pg).label('total_pg'),
-            func.sum(Resultado.pp).label('total_pp'),
-            func.bool_or(Resultado.gb).label('gb')
-        ).join(
+            func.coalesce(func.sum(Resultado.pg), 0).label('total_pg'),
+            func.coalesce(func.sum(Resultado.pp), 0).label('total_pp')
+        ).outerjoin(
             Resultado,
-            Pareja.id == Resultado.pareja_id,
-            isouter=True  # Usar outer join para incluir parejas sin resultados
+            (Pareja.id == Resultado.pareja_id) & 
+            (Resultado.partida <= campeonato.partida_actual)
         ).filter(
             Pareja.campeonato_id == campeonato_id,
             Pareja.activa == True
         ).group_by(
             Pareja.id
         ).order_by(
-            Pareja.gb,  # Primero ordenar por GB (False antes que True)
-            func.coalesce(func.sum(Resultado.pg), 0).desc(),  # Total PG descendente
-            func.coalesce(func.sum(Resultado.pp), 0).desc()   # Total PP descendente
+            Pareja.gb.asc(),  # False antes que True
+            func.coalesce(func.sum(Resultado.pg), 0).desc(),
+            func.coalesce(func.sum(Resultado.pp), 0).desc()
         ).all()
 
-        # Separar parejas por GB
-        parejas_gb_a = [p for p in parejas_ranking if not p[0].gb]  # GB = False (A)
-        parejas_gb_b = [p for p in parejas_ranking if p[0].gb]      # GB = True (B)
+        if not parejas_ranking:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No hay parejas activas para crear mesas"
+            )
 
-        # Crear mesas separadas para cada grupo
+        # Separar parejas por GB
+        parejas_gb_a = []
+        parejas_gb_b = []
+        
+        for pareja_info in parejas_ranking:
+            pareja = pareja_info[0]
+            if pareja.gb:
+                parejas_gb_b.append(pareja)
+            else:
+                parejas_gb_a.append(pareja)
+
+        # Crear mesas
         mesas = []
-        nueva_partida = campeonato.partida_actual + 1
         mesa_id = 1
 
         # Crear mesas para grupo A
         for i in range(0, len(parejas_gb_a), 2):
-            pareja1 = parejas_gb_a[i][0]
-            pareja2 = parejas_gb_a[i + 1][0] if i + 1 < len(parejas_gb_a) else None
+            pareja1 = parejas_gb_a[i]
+            pareja2 = parejas_gb_a[i + 1] if i + 1 < len(parejas_gb_a) else None
             
             mesa = Mesa(
                 id=mesa_id,
@@ -163,8 +188,8 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
 
         # Crear mesas para grupo B
         for i in range(0, len(parejas_gb_b), 2):
-            pareja1 = parejas_gb_b[i][0]
-            pareja2 = parejas_gb_b[i + 1][0] if i + 1 < len(parejas_gb_b) else None
+            pareja1 = parejas_gb_b[i]
+            pareja2 = parejas_gb_b[i + 1] if i + 1 < len(parejas_gb_b) else None
             
             mesa = Mesa(
                 id=mesa_id,
@@ -185,9 +210,10 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             
     except Exception as e:
         db.rollback()
+        print(f"Error al crear mesas por ranking: {str(e)}")  # Agregar log del error
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error al crear mesas por ranking: {str(e)}"
         )
 
 @router.get("/", response_model=List[MesaSchema])

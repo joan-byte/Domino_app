@@ -36,7 +36,7 @@ Sistema integral para la gestión de campeonatos de dominó que facilita la orga
 ### 1. Configuración Inicial
 ```bash
 # Clonar el repositorio
-git clone [url-del-repositorio]
+git clone [https://github.com/joan-byte/Domino_app]
 cd domino_app
 
 # Crear y activar entorno virtual
