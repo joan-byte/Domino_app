@@ -136,7 +136,7 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
                     diferencia_pg_a = pg_primera_a - pg_segunda_a
                     diferencia_pp_a = pp_primera_a - pp_segunda_a
                     
-                    if diferencia_pg_a >= 2 or diferencia_pp_a > 300:
+                    if diferencia_pg_a >= 2 or diferencia_pp_a > (2 * campeonato.pm):
                         # La primera pareja del grupo A es campeona
                         nuevo_resultado_a = Resultado(
                             pareja_id=primera_pareja_a[0].id,
@@ -164,7 +164,7 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
                     diferencia_pg_b = pg_primera_b - pg_segunda_b
                     diferencia_pp_b = pp_primera_b - pp_segunda_b
                     
-                    if diferencia_pg_b >= 2 or diferencia_pp_b > 300:
+                    if diferencia_pg_b >= 2 or diferencia_pp_b > (2 * campeonato.pm):
                         # La primera pareja del grupo B es campeona
                         nuevo_resultado_b = Resultado(
                             pareja_id=primera_pareja_b[0].id,
