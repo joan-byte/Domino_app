@@ -99,7 +99,12 @@ export const parejaService = {
 
 export const mesaService = {
   async obtenerMesas(campeonatoId, partida) {
-    const response = await api.get(`/mesas?campeonato_id=${campeonatoId}&partida=${partida}`);
+    const response = await api.get(`/mesas`, {
+      params: {
+        campeonato_id: campeonatoId,
+        partida: partida
+      }
+    });
     return response.data;
   },
 
@@ -119,7 +124,11 @@ export const mesaService = {
   },
 
   async crearMesasPorRanking(campeonatoId) {
-    const response = await api.post(`/mesas/ranking?campeonato_id=${campeonatoId}`);
+    const response = await api.post(`/mesas/ranking`, {
+      params: {
+        campeonato_id: campeonatoId
+      }
+    });
     return response.data;
   }
 };

@@ -21,8 +21,15 @@
 
     <!-- Lista de Mesas -->
     <div class="space-y-8">
+      <!-- Debug info -->
+      <div class="text-sm text-gray-500">
+        Total mesas: {{ mesas.length }}
+        Grupo A: {{ mesasGrupoA.length }}
+        Grupo B: {{ mesasGrupoB.length }}
+      </div>
+
       <!-- Grupo A -->
-      <div v-if="mesasGrupoA.length > 0" class="space-y-4">
+      <div class="space-y-4">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Grupo A</h3>
         <div v-for="mesa in mesasGrupoA" :key="mesa.id" 
              class="bg-white shadow rounded-lg p-4">
@@ -78,7 +85,7 @@
 
       <!-- Grupo B -->
       <div v-if="mesasGrupoB.length > 0" class="space-y-4">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">
           Grupo B
           <span class="ml-2 px-2 py-1 text-sm bg-yellow-100 text-yellow-800 rounded">GB</span>
         </h3>
@@ -96,7 +103,7 @@
                 <div class="w-[300px]">
                   <div v-if="mesa.pareja1" class="text-gray-700 flex items-center justify-end">
                     <span>{{ mesa.pareja1.id }} - {{ mesa.pareja1.nombre }}</span>
-                    <span class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
+                    <span v-if="mesa.pareja1.gb" class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
                   </div>
                   <div v-else class="text-gray-400">Descansa</div>
                 </div>
@@ -114,7 +121,7 @@
                 <div class="w-[300px]">
                   <div v-if="mesa.pareja2" class="text-gray-700 flex items-center">
                     <span>{{ mesa.pareja2.id }} - {{ mesa.pareja2.nombre }}</span>
-                    <span class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
+                    <span v-if="mesa.pareja2.gb" class="ml-2 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded">GB</span>
                   </div>
                   <div v-else class="text-gray-400">Descansa</div>
                 </div>
@@ -420,16 +427,21 @@ const cargarDatos = async () => {
 
 // Computed properties
 const mesasGrupoA = computed(() => {
-  return mesas.value.filter(mesa => 
-    (!mesa.pareja1?.gb && !mesa.pareja2?.gb) || // Ambas parejas son GB=A
-    (!mesa.pareja2 && !mesa.pareja1?.gb) // Solo una pareja y es GB=A
-  );
+  console.log('Mesas totales:', mesas.value);
+  const mesasA = mesas.value.filter(mesa => {
+    console.log('Mesa:', mesa.id, 'Pareja1 GB:', mesa.pareja1?.gb, 'Pareja2 GB:', mesa.pareja2?.gb);
+    return mesa.pareja1 && !mesa.pareja1.gb && (!mesa.pareja2 || !mesa.pareja2.gb);
+  });
+  console.log('Mesas Grupo A:', mesasA);
+  return mesasA;
 });
 
 const mesasGrupoB = computed(() => {
-  return mesas.value.filter(mesa => 
-    (mesa.pareja1?.gb || mesa.pareja2?.gb) // Al menos una pareja es GB=B
-  );
+  const mesasB = mesas.value.filter(mesa => {
+    return mesa.pareja1 && mesa.pareja1.gb || (mesa.pareja2 && mesa.pareja2.gb);
+  });
+  console.log('Mesas Grupo B:', mesasB);
+  return mesasB;
 });
 
 const todasMesasTienenResultado = computed(() => {

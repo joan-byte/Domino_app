@@ -6,6 +6,7 @@ class ParejaBase(BaseModel):
     nombre: str
     club_pertenencia: str
     activa: bool = True
+    gb: bool = False
 
 class ParejaCreate(ParejaBase):
     campeonato_id: int

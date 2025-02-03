@@ -216,14 +216,14 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             detail=f"Error al crear mesas por ranking: {str(e)}"
         )
 
-@router.get("/", response_model=List[MesaSchema])
+@router.get("", response_model=List[MesaSchema])
 def get_mesas(campeonato_id: int, partida: int, db: Session = Depends(get_db)):
     return db.query(Mesa).filter(
         Mesa.campeonato_id == campeonato_id,
         Mesa.partida == partida
     ).options(
-        joinedload(Mesa.pareja1),
-        joinedload(Mesa.pareja2)
+        joinedload(Mesa.pareja1).load_only(Pareja.id, Pareja.nombre, Pareja.gb),
+        joinedload(Mesa.pareja2).load_only(Pareja.id, Pareja.nombre, Pareja.gb)
     ).order_by(Mesa.id.asc()).all()
 
 @router.get("/{mesa_id}", response_model=MesaSchema)
