@@ -575,6 +575,39 @@ onUnmounted(() => {
     gap: 3mm;
     margin-left: auto;
   }
+
+  /* Ajustes para nombres largos */
+  .jugador-nombre {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(64.25mm - 50pt); /* Ancho total menos espacio para PG/PP */
+    display: inline-block;
+  }
+
+  .jugador-linea {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 4mm;
+    min-height: 16pt;
+    max-height: 16pt;
+    overflow: hidden;
+  }
+
+  .stats {
+    flex: 0 0 40pt; /* Ancho fijo para PG/PP */
+    display: flex;
+    gap: 3mm;
+    margin-left: 4mm;
+  }
+
+  .nombre-pareja {
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+  }
 }
 
 /* Estilos normales */
