@@ -62,6 +62,7 @@ const navigationItems = [
 ];
 
 const resultadosItems = [
+  { name: 'Ranking', to: '/resultados' },
   { name: 'Podium', to: '/podium' },
   { name: 'Ranking Completo', to: '/ranking' }
 ];

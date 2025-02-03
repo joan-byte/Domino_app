@@ -12,7 +12,7 @@ router = APIRouter(prefix="/resultados", tags=["resultados"])
 async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
     """
     Obtiene el ranking actual del campeonato, ordenado según los siguientes criterios:
-    1. GB (último valor) ascendente
+    1. GB (valor actual de la tabla parejas) ascendente
     2. PG (suma) descendente
     3. PP (suma) descendente
     4. RT (suma) descendente
@@ -26,8 +26,7 @@ async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         func.coalesce(func.sum(Resultado.pp), 0).label('pp'),
         func.coalesce(func.sum(Resultado.pg), 0).label('pg'),
         func.max(Resultado.partida).label('ultima_partida'),
-        func.count(Resultado.id).label('partidas_jugadas'),
-        func.bool_or(Resultado.gb).label('gb')  # Obtiene el último valor de GB
+        func.count(Resultado.id).label('partidas_jugadas')
     ).filter(
         Resultado.campeonato_id == campeonato_id
     ).group_by(
@@ -39,7 +38,7 @@ async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         Pareja.id.label('numero'),
         Pareja.nombre.label('nombre'),
         Pareja.club_pertenencia.label('club'),
-        func.coalesce(resultados_subquery.c.gb, False).label('gb'),  # Si no hay resultados, asume GB = False (Grupo A)
+        Pareja.gb.label('gb'),  # Usar el valor de GB directamente de la tabla parejas
         func.coalesce(resultados_subquery.c.pp, 0).label('pp'),
         func.coalesce(resultados_subquery.c.rt, 0).label('rt'),
         func.coalesce(resultados_subquery.c.mg, 0).label('mg'),
@@ -50,9 +49,10 @@ async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         resultados_subquery,
         Pareja.id == resultados_subquery.c.pareja_id
     ).filter(
-        Pareja.campeonato_id == campeonato_id
+        Pareja.campeonato_id == campeonato_id,
+        Pareja.activa == True  # Solo incluir parejas activas
     ).order_by(
-        asc(func.coalesce(resultados_subquery.c.gb, False)),
+        asc(Pareja.gb),  # Ordenar por GB directamente de la tabla parejas
         desc(func.coalesce(resultados_subquery.c.pg, 0)),
         desc(func.coalesce(resultados_subquery.c.pp, 0)),
         desc(func.coalesce(resultados_subquery.c.rt, 0)),

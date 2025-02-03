@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { mesaService, resultadoService } from '../services/api';
+import { useResultadoStore } from './resultado';
 
 export const useMesaStore = defineStore('mesa', () => {
     const mesas = ref([]);
     const error = ref(null);
     const loading = ref(false);
+    const resultadoStore = useResultadoStore();
 
     const obtenerMesas = async (campeonatoId, partida) => {
         loading.value = true;
@@ -60,7 +62,11 @@ export const useMesaStore = defineStore('mesa', () => {
         loading.value = true;
         try {
             const response = await mesaService.crearMesasPorRanking(campeonatoId);
-            mesas.value = response;
+            if (response.ranking_actualizado) {
+                // Actualizar el ranking en todas las vistas
+                await resultadoStore.obtenerRanking(campeonatoId);
+            }
+            mesas.value = response.mesas;
             return true;
         } catch (e) {
             error.value = e.response?.data?.detail || 'Error al crear las mesas por ranking';

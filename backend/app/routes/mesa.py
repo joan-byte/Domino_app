@@ -65,7 +65,7 @@ def crear_mesas_sorteo(campeonato_id: int, db: Session = Depends(get_db)):
     db.commit()
     return mesas
 
-@router.post("/ranking", response_model=List[MesaSchema])
+@router.post("/ranking")
 def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
     try:
         # Verificar que existe el campeonato
@@ -85,7 +85,7 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         
         # Si es la última partida, no crear nuevas mesas
         if campeonato.partida_actual == campeonato.numero_partidas:
-            return []
+            return {"mesas": [], "ranking_actualizado": True}
 
         # Verificar que no se excede el número de partidas
         if campeonato.partida_actual > campeonato.numero_partidas:
@@ -206,7 +206,7 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         campeonato.partida_actual = nueva_partida
         
         db.commit()
-        return mesas
+        return {"mesas": mesas, "ranking_actualizado": True}
             
     except Exception as e:
         db.rollback()
