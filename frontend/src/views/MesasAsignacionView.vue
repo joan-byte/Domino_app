@@ -6,57 +6,47 @@
         <h1 class="text-2xl font-bold text-gray-900">Asignación de Mesas</h1>
         <h2 class="text-lg text-gray-600">{{ campeonato?.nombre || 'Cargando...' }}</h2>
       </div>
-      <div class="text-xl font-semibold text-gray-800">
-        Partida {{ campeonato?.partida_actual || 1 }}
+      <div class="flex items-center gap-4">
+        <div class="text-xl font-semibold text-gray-800">
+          Partida {{ campeonato?.partida_actual || 1 }}
+        </div>
+        <button @click="imprimir" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
+          Imprimir
+        </button>
       </div>
     </div>
 
     <!-- Tabla de asignación -->
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Número
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Nombre
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Club
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Mesa
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="(pareja, index) in parejasVisibles" :key="pareja.id" :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.numero }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.nombre }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.club_pertenencia }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ pareja.mesa }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="px-6 py-4 bg-gray-50 text-center text-sm text-gray-600">
+    <div class="flex-grow flex flex-col">
+      <div class="h-[calc(15*2.5rem)] overflow-auto bg-white shadow-lg rounded-lg">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 sticky top-0">
+            <tr>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número</th>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Club</th>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="(pareja, index) in parejasVisibles" :key="pareja.id" :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.numero }}</td>
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.nombre }}</td>
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.club_pertenencia }}</td>
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.mesa }}</td>
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm">
+                <span :class="pareja.activa ? 'text-green-600' : 'text-red-600'">
+                  {{ pareja.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="px-6 py-3 bg-gray-50 text-center text-sm text-gray-600 border-t">
         Página {{ paginaActual + 1 }} de {{ totalPaginas }}
       </div>
-    </div>
-    
-    <!-- Botón de imprimir -->
-    <div class="flex justify-end mt-4">
-      <button @click="imprimir" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-        Imprimir
-      </button>
     </div>
   </div>
 
@@ -305,9 +295,9 @@ const INTERVALO_CAMBIO = 10000; // 10 segundos en milisegundos
 const resultadoStore = useResultadoStore();
 const resultados = ref([]);
 
-const totalPaginas = computed(() => 
-  Math.ceil(parejasMesas.value.length / PAREJAS_POR_PAGINA)
-);
+const totalPaginas = computed(() => {
+  return Math.ceil(parejasMesas.value.length / PAREJAS_POR_PAGINA);
+});
 
 const parejasVisibles = computed(() => {
   const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
@@ -316,11 +306,17 @@ const parejasVisibles = computed(() => {
 });
 
 const cambiarPagina = () => {
-  paginaActual.value = (paginaActual.value + 1) % totalPaginas.value;
+  const maxPagina = totalPaginas.value - 1;
+  if (paginaActual.value >= maxPagina) {
+    paginaActual.value = 0;
+  } else {
+    paginaActual.value++;
+  }
 };
 
 const iniciarRotacionPaginas = () => {
-  if (parejasMesas.value.length > PAREJAS_POR_PAGINA) {
+  detenerRotacionPaginas();
+  if (totalPaginas.value > 1) {
     intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
   }
 };
@@ -398,16 +394,17 @@ const cargarDatos = async () => {
     });
 
     parejasMesas.value = parejas
-      .filter(pareja => pareja.activa)
       .map(pareja => ({
         id: pareja.id,
         numero: pareja.id,
         nombre: pareja.nombre,
         club_pertenencia: pareja.club_pertenencia,
-        mesa: mesaPorPareja.get(pareja.id) || '-'
+        mesa: mesaPorPareja.get(pareja.id) || '-',
+        activa: pareja.activa
       }))
       .sort((a, b) => a.id - b.id);
 
+    paginaActual.value = 0;
     iniciarRotacionPaginas();
 
   } catch (e) {
