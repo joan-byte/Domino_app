@@ -67,7 +67,10 @@
                 <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">
                   {{ index + 1 + (paginaActual * PAREJAS_POR_PAGINA) }}
                 </td>
-                <td class="px-0.5 py-2 whitespace-nowrap text-sm text-red-600">
+                <td class="px-0.5 py-2 whitespace-nowrap text-sm" :class="{
+                  'text-gray-900': pareja.ultima_partida === campeonato?.partida_actual,
+                  'text-red-600': pareja.ultima_partida < campeonato?.partida_actual
+                }">
                   {{ pareja.ultima_partida }}
                 </td>
                 <td class="px-0.5 py-2 whitespace-nowrap text-sm">

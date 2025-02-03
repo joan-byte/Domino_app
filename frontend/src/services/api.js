@@ -124,9 +124,7 @@ export const mesaService = {
   },
 
   async crearMesasPorRanking(campeonatoId) {
-    const response = await api.post(`/mesas/ranking`, {
-      campeonato_id: campeonatoId
-    });
+    const response = await api.post(`/mesas/ranking?campeonato_id=${campeonatoId}`);
     return response.data;
   }
 };
