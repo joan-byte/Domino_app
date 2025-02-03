@@ -26,6 +26,7 @@
               <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
               <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Club</th>
               <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
+              <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
@@ -34,6 +35,11 @@
               <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.nombre }}</td>
               <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.club_pertenencia }}</td>
               <td class="px-0.5 py-2 whitespace-nowrap text-sm text-gray-900">{{ pareja.mesa }}</td>
+              <td class="px-0.5 py-2 whitespace-nowrap text-sm">
+                <span :class="pareja.activa ? 'text-green-600' : 'text-red-600'">
+                  {{ pareja.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -388,13 +394,13 @@ const cargarDatos = async () => {
     });
 
     parejasMesas.value = parejas
-      .filter(pareja => pareja.activa)
       .map(pareja => ({
         id: pareja.id,
         numero: pareja.id,
         nombre: pareja.nombre,
         club_pertenencia: pareja.club_pertenencia,
-        mesa: mesaPorPareja.get(pareja.id) || '-'
+        mesa: mesaPorPareja.get(pareja.id) || '-',
+        activa: pareja.activa
       }))
       .sort((a, b) => a.id - b.id);
 
