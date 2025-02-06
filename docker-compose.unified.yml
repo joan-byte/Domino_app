@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  domino_app:
+    container_name: domino-parejas
+    image: joanalba/domino_app:latest
+    ports:
+      - "80:80"      # frontend
+      - "8000:8000"  # backend
+      - "5432:5432"  # database
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - ENV=production
+      - VIRTUAL_HOST=backend
+      - APP_ENV=production
+      - ENV_FILE=.env.prod
+    secrets:
+      - db_password
+      - secret_key
+      - jwt_secret_key
+    networks:
+      domino_net:
+        aliases:
+          - backend
+
+volumes:
+  db_data:
+    name: domino_prod_data
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  secret_key:
+    file: ./secrets/secret_key.txt
+  jwt_secret_key:
+    file: ./secrets/jwt_secret_key.txt
+
+networks:
+  domino_net:
+    name: domino_network 

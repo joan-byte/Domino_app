@@ -151,20 +151,32 @@ def actualizar_campeonato(campeonato_id: int, campeonato: CampeonatoUpdate, db: 
 @router.get("/actual", response_model=CampeonatoResponse)
 def obtener_campeonato_actual(db: Session = Depends(get_db)):
     try:
-        logger.info("Intentando obtener campeonato actual")
         campeonato = db.query(Campeonato).filter(Campeonato.activo == True).first()
+        
         if not campeonato:
-            logger.info("No se encontró ningún campeonato activo")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No hay campeonato activo"
             )
-        logger.info(f"Campeonato actual encontrado: {campeonato.id}")
-        return campeonato
+        
+        # Convertir el modelo SQLAlchemy a un diccionario
+        campeonato_dict = {
+            "id": campeonato.id,
+            "nombre": campeonato.nombre,
+            "fecha_inicio": campeonato.fecha_inicio,
+            "dias_duracion": campeonato.dias_duracion,
+            "numero_partidas": campeonato.numero_partidas,
+            "gb": campeonato.gb,
+            "gb_valor": campeonato.gb_valor,
+            "activo": campeonato.activo,
+            "partida_actual": campeonato.partida_actual,
+            "pm": campeonato.pm
+        }
+        
+        return campeonato_dict
     except HTTPException as he:
         raise he
     except Exception as e:
-        logger.error(f"Error al obtener campeonato actual: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al obtener el campeonato actual: {str(e)}"

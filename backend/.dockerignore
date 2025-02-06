@@ -1,0 +1,12 @@
+# .dockerignore para el backend
+
+# Entornos virtuales y cachés
+venv/
+__pycache__/
+*.pyc
+
+# Control de versiones
+.git
+.gitignore
+
+docker-compose* 

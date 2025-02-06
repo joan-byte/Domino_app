@@ -233,7 +233,6 @@ const cargarCampeonatoActual = async () => {
       campeonato.value = null;
       error.value = null;
     } else {
-      console.error('Error:', e);
       error.value = 'Error al cargar el campeonato';
     }
   }

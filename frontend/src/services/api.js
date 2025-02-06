@@ -12,6 +12,16 @@ const api = axios.create({
 api.interceptors.response.use(
   response => response,
   error => {
+    console.error('Error en la petición:', error);
+    if (error.response) {
+      console.error('Datos de la respuesta:', error.response.data);
+      console.error('Estado:', error.response.status);
+      console.error('Headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('No se recibió respuesta:', error.request);
+    } else {
+      console.error('Error al configurar la petición:', error.message);
+    }
     return Promise.reject(error);
   }
 );

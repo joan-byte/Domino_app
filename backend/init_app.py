@@ -4,7 +4,12 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+env = os.getenv("ENV", "development")
+if env.lower() == "production":
+    dotenv_path = ".env.prod"
+else:
+    dotenv_path = ".env.dev"
+load_dotenv(dotenv_path=dotenv_path)
 
 def init_database():
     """
