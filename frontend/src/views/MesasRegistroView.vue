@@ -6,6 +6,25 @@
         <h2 class="text-lg text-gray-600">{{ campeonato?.nombre }}</h2>
       </div>
       <div class="flex items-center gap-4">
+        <div class="flex items-center space-x-4">
+          <!-- Control de segunda pantalla -->
+          <div class="flex items-center space-x-2">
+            <button
+              @click="toggleSecondScreen('ranking')"
+              class="px-4 py-2 text-sm font-medium rounded-md"
+              :class="secondScreenView === 'ranking' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+            >
+              Ranking
+            </button>
+            <button
+              @click="toggleSecondScreen('mesas')"
+              class="px-4 py-2 text-sm font-medium rounded-md"
+              :class="secondScreenView === 'mesas' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'"
+            >
+              Mesas
+            </button>
+          </div>
+        </div>
         <div class="text-xl font-semibold text-gray-800">
           Partida {{ campeonato?.partida_actual || 1 }}
         </div>
@@ -384,6 +403,7 @@ import { useCampeonatoStore } from '../stores/campeonato';
 import { useMesaStore } from '../stores/mesa';
 import { useResultadoStore } from '../stores/resultado';
 import { resultadoService } from '../services/api';
+import { windowManager } from '../services/windowManager';
 
 const router = useRouter();
 
@@ -406,6 +426,7 @@ const resultado = ref({
   mg_pareja1: 0,
   mg_pareja2: 0
 });
+const secondScreenView = ref('ranking');
 
 // Funciones
 const cargarDatos = async () => {
@@ -691,13 +712,51 @@ const ambosRTSuperanPM = computed(() => {
   return rt1 > pm && rt2 > pm;
 });
 
+// Función para alternar la vista de la segunda pantalla
+const toggleSecondScreen = (view) => {
+  secondScreenView.value = view;
+  const baseUrl = window.location.origin;
+  
+  if (view === 'ranking') {
+    windowManager.openSecondWindow(`${baseUrl}/ranking`, 'Ranking');
+  } else if (view === 'mesas') {
+    windowManager.openSecondWindow(`${baseUrl}/mesas/asignacion`, 'Asignación de Mesas');
+  } else if (view === 'podium') {
+    windowManager.openSecondWindow(`${baseUrl}/podium`, 'Podium del Campeonato');
+  }
+};
+
+// Cerrar la ventana secundaria cuando se desmonte el componente
+onUnmounted(() => {
+  // Solo cerrar la ventana si no estamos finalizando el campeonato
+  if (!esUltimaPartida.value) {
+    windowManager.closeSecondWindow();
+  }
+});
+
+// Modificar la función cerrarPartida para actualizar la segunda pantalla
 const cerrarPartida = async () => {
   try {
-    // Crear mesas para la siguiente partida basadas en el ranking
-    const success = await mesaStore.crearMesasPorRanking(campeonato.value.id);
-    if (success) {
-      // Recargar los datos
-      await cargarDatos();
+    if (esUltimaPartida.value) {
+      // Si es la última partida, mostrar el podium en la segunda pantalla
+      toggleSecondScreen('podium');
+      
+      // Guardar en localStorage que estamos mostrando el podium
+      localStorage.setItem('showPodium', 'true');
+      
+      // Redirigir la pantalla principal al home
+      router.push('/');
+    } else {
+      // Crear mesas para la siguiente partida basadas en el ranking
+      const success = await mesaStore.crearMesasPorRanking(campeonato.value.id);
+      if (success) {
+        // Si la segunda pantalla está mostrando el ranking, cambiar a mesas
+        if (secondScreenView.value === 'ranking') {
+          toggleSecondScreen('mesas');
+        }
+        // Recargar los datos
+        await cargarDatos();
+      }
     }
   } catch (e) {
     console.error('Error al cerrar la partida:', e);
@@ -705,12 +764,10 @@ const cerrarPartida = async () => {
   }
 };
 
-// Ciclo de vida del componente
+// Abrir la segunda pantalla con el ranking al montar el componente
 onMounted(async () => {
   await cargarDatos();
-});
-
-onUnmounted(() => {
-  document.removeEventListener('visibilitychange', () => {});
+  // Iniciar con la vista de ranking en la segunda pantalla
+  toggleSecondScreen('ranking');
 });
 </script> 

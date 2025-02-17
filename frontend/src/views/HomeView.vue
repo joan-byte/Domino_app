@@ -199,6 +199,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { campeonatoService } from '../services/api';
+import { windowManager } from '../services/windowManager';
 
 const router = useRouter();
 const campeonato = ref(null);
@@ -337,5 +338,17 @@ watch([() => nuevoCampeonato.value.numero_partidas, () => nuevoCampeonato.value.
   }
 });
 
-onMounted(cargarCampeonatoActual);
+onMounted(async () => {
+  await cargarCampeonatoActual();
+  
+  // Verificar si venimos de finalizar un campeonato
+  const showPodium = localStorage.getItem('showPodium');
+  if (showPodium === 'true') {
+    // Mantener el podium en la segunda pantalla
+    const baseUrl = window.location.origin;
+    windowManager.openSecondWindow(`${baseUrl}/podium`, 'Podium del Campeonato');
+    // Limpiar el flag después de mostrar el podium
+    localStorage.removeItem('showPodium');
+  }
+});
 </script> 

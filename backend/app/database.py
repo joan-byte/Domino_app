@@ -36,13 +36,22 @@ def init_db(db_name: str):
         DATABASE_URL = get_db_url(db_name)
         logger.info(f"Intentando conectar a la base de datos con URL: {DATABASE_URL}")
         
-        engine = create_engine(DATABASE_URL, echo=False)  # Cambiamos echo=True a echo=False
+        # Configurar el engine con soporte UTF-8
+        engine = create_engine(
+            DATABASE_URL,
+            echo=False,
+            connect_args={
+                'client_encoding': 'utf8'
+            }
+        )
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         
         # Probar la conexión
         with engine.connect() as conn:
             logger.info("Conexión a la base de datos establecida exitosamente")
             conn.execute(text("SELECT 1"))
+            # Asegurar que la conexión use UTF-8
+            conn.execute(text("SET client_encoding TO 'UTF8'"))
         
         # Crear todas las tablas si no existen
         Base.metadata.create_all(bind=engine)
