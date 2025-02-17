@@ -49,6 +49,8 @@
                 v-model="form.jugador1.nombre"
                 @input="actualizarNombrePareja"
                 required
+                pattern="[A-Za-zÁáÀàÉéÈèÍíÌìÓóÒòÚúÙùÜüÑñ\s]+"
+                title="Ingrese un nombre válido (letras, espacios, acentos abiertos y cerrados permitidos)"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
               />
             </div>
@@ -62,6 +64,8 @@
                 v-model="form.jugador1.apellido"
                 @input="actualizarNombrePareja"
                 required
+                pattern="[A-Za-zÁáÀàÉéÈèÍíÌìÓóÒòÚúÙùÜüÑñ\s]+"
+                title="Ingrese un apellido válido (letras, espacios, acentos abiertos y cerrados permitidos)"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
               />
             </div>
@@ -82,6 +86,8 @@
                 v-model="form.jugador2.nombre"
                 @input="actualizarNombrePareja"
                 required
+                pattern="[A-Za-zÁáÀàÉéÈèÍíÌìÓóÒòÚúÙùÜüÑñ\s]+"
+                title="Ingrese un nombre válido (letras, espacios, acentos abiertos y cerrados permitidos)"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
               />
             </div>
@@ -95,6 +101,8 @@
                 v-model="form.jugador2.apellido"
                 @input="actualizarNombrePareja"
                 required
+                pattern="[A-Za-zÁáÀàÉéÈèÍíÌìÓóÒòÚúÙùÜüÑñ\s]+"
+                title="Ingrese un apellido válido (letras, espacios, acentos abiertos y cerrados permitidos)"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
               />
             </div>
@@ -158,7 +166,7 @@ const nombrePareja = computed(() => {
   const jugador2 = `${form.value.jugador2.nombre} ${form.value.jugador2.apellido}`.trim();
   
   if (jugador1 && jugador2) {
-    return `${jugador1} Y ${jugador2}`;
+    return `${jugador1} / ${jugador2}`;
   } else if (jugador1) {
     return jugador1;
   } else if (jugador2) {

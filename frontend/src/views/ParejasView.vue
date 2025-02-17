@@ -59,7 +59,11 @@
           <button 
             v-if="campeonato?.partida_actual === 0"
             @click="nuevaPareja"
-            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            @keyup.enter="nuevaPareja"
+            ref="nuevaParejaBtn"
+            tabindex="0"
+            autofocus
+            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Nueva Pareja
           </button>
@@ -131,6 +135,7 @@ const mostrarModalError = ref(false);
 const mensajeError = ref('');
 const loading = ref(false);
 const hayResultados = ref(false);
+const nuevaParejaBtn = ref(null);
 
 const verificarResultados = async () => {
   try {
@@ -154,6 +159,13 @@ const cargarDatos = async () => {
         } catch (e) {
           console.error('Error al verificar resultados:', e);
         }
+      } else {
+        // Si estamos en partida 0, establecer el foco después de cargar los datos
+        setTimeout(() => {
+          if (nuevaParejaBtn.value) {
+            nuevaParejaBtn.value.focus();
+          }
+        }, 100);
       }
     }
   } catch (e) {
@@ -221,7 +233,7 @@ const editarPareja = (pareja) => {
   router.push(`/parejas/${pareja.id}/editar`);
 };
 
-onMounted(() => {
-  cargarDatos();
+onMounted(async () => {
+  await cargarDatos();
 });
 </script> 
