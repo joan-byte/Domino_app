@@ -10,9 +10,6 @@
         <div class="text-xl font-semibold text-gray-800">
           Partida {{ campeonato?.partida_actual || 1 }}
         </div>
-        <button @click="imprimir" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-          Imprimir
-        </button>
       </div>
     </div>
 
@@ -504,10 +501,6 @@ const cargarDatos = async () => {
     console.error('Error al cargar los datos:', e);
     error.value = 'Error al cargar los datos';
   }
-};
-
-const imprimir = () => {
-  window.print();
 };
 
 onMounted(() => {

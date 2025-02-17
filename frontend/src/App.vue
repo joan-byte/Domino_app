@@ -7,6 +7,11 @@ const showMesasMenu = ref(false)
 const showResultadosMenu = ref(false)
 let closeTimeout = null
 
+// Función para imprimir las mesas
+const imprimir = () => {
+  window.print()
+}
+
 const closeMenus = (e) => {
   const mesasButton = document.getElementById('mesas-menu-button')
   const mesasDropdown = document.getElementById('mesas-dropdown')
@@ -123,6 +128,14 @@ onUnmounted(() => {
                     @click="showMesasMenu = false"
                   >
                     Registro
+                  </router-link>
+                  <router-link 
+                    to="/mesas/asignacion" 
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    :class="{ 'bg-gray-100': $route.path === '/mesas/asignacion' }"
+                    @click="showMesasMenu = false; imprimir()"
+                  >
+                    Imprimir
                   </router-link>
                 </div>
               </div>
