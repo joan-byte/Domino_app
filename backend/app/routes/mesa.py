@@ -133,7 +133,9 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         parejas_ranking = db.query(
             Pareja,
             func.coalesce(func.sum(Resultado.pg), 0).label('total_pg'),
-            func.coalesce(func.sum(Resultado.pp), 0).label('total_pp')
+            func.coalesce(func.sum(Resultado.pp), 0).label('total_pp'),
+            func.coalesce(func.sum(Resultado.rt), 0).label('total_rt'),
+            func.coalesce(func.sum(Resultado.mg), 0).label('total_mg')
         ).outerjoin(
             Resultado,
             (Pareja.id == Resultado.pareja_id) & 
@@ -146,7 +148,9 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         ).order_by(
             Pareja.gb.asc(),  # False antes que True
             func.coalesce(func.sum(Resultado.pg), 0).desc(),
-            func.coalesce(func.sum(Resultado.pp), 0).desc()
+            func.coalesce(func.sum(Resultado.pp), 0).desc(),
+            func.coalesce(func.sum(Resultado.rt), 0).desc(),
+            func.coalesce(func.sum(Resultado.mg), 0).asc()
         ).all()
 
         if not parejas_ranking:
@@ -155,41 +159,38 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
                 detail="No hay parejas activas para crear mesas"
             )
 
-        # Separar parejas por GB
-        parejas_gb_a = []
-        parejas_gb_b = []
-        
+        # Separar parejas por GB manteniendo el orden del ranking
+        parejas_ordenadas = []
         for pareja_info in parejas_ranking:
             pareja = pareja_info[0]
-            if pareja.gb:
-                parejas_gb_b.append(pareja)
-            else:
-                parejas_gb_a.append(pareja)
+            total_pg = pareja_info[1]
+            total_pp = pareja_info[2]
+            total_rt = pareja_info[3]
+            total_mg = pareja_info[4]
+            
+            parejas_ordenadas.append({
+                'pareja': pareja,
+                'total_pg': total_pg,
+                'total_pp': total_pp,
+                'total_rt': total_rt,
+                'total_mg': total_mg
+            })
 
-        # Crear mesas
+        # Crear mesas manteniendo el orden del ranking
         mesas = []
         mesa_id = 1
 
-        # Crear mesas para grupo A
-        for i in range(0, len(parejas_gb_a), 2):
-            pareja1 = parejas_gb_a[i]
-            pareja2 = parejas_gb_a[i + 1] if i + 1 < len(parejas_gb_a) else None
-            
-            mesa = Mesa(
-                id=mesa_id,
-                partida=nueva_partida,
-                pareja1_id=pareja1.id,
-                pareja2_id=pareja2.id if pareja2 else None,
-                campeonato_id=campeonato_id
-            )
-            db.add(mesa)
-            mesas.append(mesa)
-            mesa_id += 1
-
-        # Crear mesas para grupo B
-        for i in range(0, len(parejas_gb_b), 2):
-            pareja1 = parejas_gb_b[i]
-            pareja2 = parejas_gb_b[i + 1] if i + 1 < len(parejas_gb_b) else None
+        # Crear mesas emparejando parejas consecutivas
+        for i in range(0, len(parejas_ordenadas), 2):
+            # La pareja con ranking superior (i) va a la izquierda como pareja1
+            # La pareja con ranking inferior (i+1) va a la derecha como pareja2
+            if i + 1 < len(parejas_ordenadas):
+                pareja1 = parejas_ordenadas[i]['pareja']      # Ranking superior a la izquierda
+                pareja2 = parejas_ordenadas[i + 1]['pareja']  # Ranking inferior a la derecha
+            else:
+                # Si es la última pareja y está sola
+                pareja1 = parejas_ordenadas[i]['pareja']
+                pareja2 = None
             
             mesa = Mesa(
                 id=mesa_id,

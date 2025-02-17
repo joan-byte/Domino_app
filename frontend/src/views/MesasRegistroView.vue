@@ -623,32 +623,90 @@ const guardarResultado = async () => {
     const rp1 = rt1 > pm ? pm : rt1;
     const rp2 = rt2 > pm ? pm : rt2;
 
-    const resultado1 = {
-      pareja_id: mesaSeleccionada.value.pareja1.id,
-      mesa_id: mesaSeleccionada.value.id,
-      partida: campeonato.value.partida_actual,
-      campeonato_id: campeonato.value.id,
-      rt: rt1, // Enviamos el RT original
-      mg: resultado.value.mg_pareja1,
-      rp: rp1, // Enviamos el RP limitado por PM
-      pg: rt1 > rt2 ? 1 : 0,
-      pp: rp1 - rp2, // Calculamos PP basado en RP
-      gb: mesaSeleccionada.value.pareja1.gb || false
-    };
+    // En la primera partida, usamos el orden del sorteo inicial
+    const pareja1 = mesaSeleccionada.value.pareja1;
+    const pareja2 = mesaSeleccionada.value.pareja2;
 
-    let resultado2 = null;
-    if (mesaSeleccionada.value.pareja2) {
-      resultado2 = {
-        pareja_id: mesaSeleccionada.value.pareja2.id,
+    // Determinar qué pareja va primero basado en el orden del sorteo en la primera partida
+    let resultado1, resultado2;
+    if (campeonato.value?.partida_actual === 1) {
+      // La pareja con menor número va primero
+      if (pareja1.id < pareja2.id) {
+        resultado1 = {
+          pareja_id: pareja1.id,
+          mesa_id: mesaSeleccionada.value.id,
+          partida: campeonato.value.partida_actual,
+          campeonato_id: campeonato.value.id,
+          rt: rt1,
+          mg: resultado.value.mg_pareja1,
+          rp: rp1,
+          pg: rt1 > rt2 ? 1 : 0,
+          pp: rp1 - rp2,
+          gb: pareja1.gb || false
+        };
+        resultado2 = {
+          pareja_id: pareja2.id,
+          mesa_id: mesaSeleccionada.value.id,
+          partida: campeonato.value.partida_actual,
+          campeonato_id: campeonato.value.id,
+          rt: rt2,
+          mg: resultado.value.mg_pareja2,
+          rp: rp2,
+          pg: rt2 > rt1 ? 1 : 0,
+          pp: rp2 - rp1,
+          gb: pareja2.gb || false
+        };
+      } else {
+        resultado1 = {
+          pareja_id: pareja2.id,
+          mesa_id: mesaSeleccionada.value.id,
+          partida: campeonato.value.partida_actual,
+          campeonato_id: campeonato.value.id,
+          rt: rt2,
+          mg: resultado.value.mg_pareja2,
+          rp: rp2,
+          pg: rt2 > rt1 ? 1 : 0,
+          pp: rp2 - rp1,
+          gb: pareja2.gb || false
+        };
+        resultado2 = {
+          pareja_id: pareja1.id,
+          mesa_id: mesaSeleccionada.value.id,
+          partida: campeonato.value.partida_actual,
+          campeonato_id: campeonato.value.id,
+          rt: rt1,
+          mg: resultado.value.mg_pareja1,
+          rp: rp1,
+          pg: rt1 > rt2 ? 1 : 0,
+          pp: rp1 - rp2,
+          gb: pareja1.gb || false
+        };
+      }
+    } else {
+      // Para el resto de partidas, mantener el orden actual
+      resultado1 = {
+        pareja_id: pareja1.id,
         mesa_id: mesaSeleccionada.value.id,
         partida: campeonato.value.partida_actual,
         campeonato_id: campeonato.value.id,
-        rt: rt2, // Enviamos el RT original
+        rt: rt1,
+        mg: resultado.value.mg_pareja1,
+        rp: rp1,
+        pg: rt1 > rt2 ? 1 : 0,
+        pp: rp1 - rp2,
+        gb: pareja1.gb || false
+      };
+      resultado2 = {
+        pareja_id: pareja2.id,
+        mesa_id: mesaSeleccionada.value.id,
+        partida: campeonato.value.partida_actual,
+        campeonato_id: campeonato.value.id,
+        rt: rt2,
         mg: resultado.value.mg_pareja2,
-        rp: rp2, // Enviamos el RP limitado por PM
+        rp: rp2,
         pg: rt2 > rt1 ? 1 : 0,
-        pp: rp2 - rp1, // Calculamos PP basado en RP
-        gb: mesaSeleccionada.value.pareja2.gb || false
+        pp: rp2 - rp1,
+        gb: pareja2.gb || false
       };
     }
 
@@ -718,7 +776,7 @@ const toggleSecondScreen = (view) => {
   const baseUrl = window.location.origin;
   
   if (view === 'ranking') {
-    windowManager.openSecondWindow(`${baseUrl}/ranking`, 'Ranking');
+    windowManager.openSecondWindow(`${baseUrl}/resultados`, 'Clasificación');
   } else if (view === 'mesas') {
     windowManager.openSecondWindow(`${baseUrl}/mesas/asignacion`, 'Asignación de Mesas');
   } else if (view === 'podium') {

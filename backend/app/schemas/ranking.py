@@ -12,6 +12,7 @@ class RankingPareja(BaseModel):
     pg: int = Field(default=0, description="Partidas Ganadas (suma de todos los PG)")
     rt: int = Field(default=0, description="Resultado Total (suma de todos los RT)")
     mg: int = Field(default=0, description="Manos Ganadas (suma de todos los MG)")
+    ordenSorteo: int = Field(default=0, description="Orden del sorteo inicial para la primera partida")
     
     class Config:
         from_attributes = True
@@ -27,6 +28,7 @@ class RankingPareja(BaseModel):
                 "pp": 150,
                 "pg": 1,
                 "rt": 150,
-                "mg": 1
+                "mg": 1,
+                "ordenSorteo": 1
             }
         } 

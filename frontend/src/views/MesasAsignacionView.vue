@@ -46,274 +46,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Contenido de impresión -->
-  <div class="print-only">
-    <template v-for="(mesa, index) in mesasParaImprimir" :key="mesa.id">
-      <!-- Crear una nueva página cada dos mesas -->
-      <div v-if="index % 2 === 0" class="print-page">
-        <!-- Primera mesa de la página (siempre a la izquierda) -->
-        <div class="mesa-wrapper">
-          <div class="mesa-container">
-            <!-- Contenido de la mesa actual -->
-            <div class="border border-black h-full flex flex-col">
-              <!-- Cabecera -->
-              <div class="border-b border-black p-4">
-                <div class="flex flex-col h-full">
-                  <div class="text-left font-bold text-2xl">CAMPEONATO</div>
-                  <div class="flex justify-between items-center mt-1">
-                    <div class="text-xl">{{ campeonato?.nombre || '' }}</div>
-                    <div class="flex gap-8 text-md">
-                      <span>Partida {{ campeonato?.partida_actual || '' }}</span>
-                      <span>Mesa {{ mesa.id }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Contenedor principal -->
-              <div class="flex flex-1 relative">
-                <!-- Línea vertical divisoria -->
-                <div class="absolute left-1\/2 top-0 bottom-0 w-[1px] bg-black"></div>
-
-                <!-- Columna izquierda -->
-                <div class="w-1\/2">
-                  <!-- Pareja 1 -->
-                  <div class="border border-black p-2">
-                    <div class="nombre-pareja">
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesa.pareja1?.nombre?.split('Y')[0]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesa.pareja1?.nombre?.split('Y')[1]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion">Pos {{ mesa.pareja1?.posicion || '-' }}</span>
-                          <span class="stats">
-                            <span>PG</span>
-                            <span>{{ mesa.pareja1?.pg || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion"></span>
-                          <span class="stats">
-                            <span>Dif.</span>
-                            <span>{{ mesa.pareja1?.pp || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Líneas numeradas -->
-                  <div class="border border-black flex-1 p-2">
-                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                      <span class="w-4 text-sm">{{ i }}</span>
-                      <div class="flex-1 border-b border-black ml-2"></div>
-                    </div>
-                  </div>
-                  
-                  <!-- Total y espacio dividido -->
-                  <div class="mt-2">
-                    <div class="border border-black p-2">
-                      <span class="font-bold">Total</span>
-                    </div>
-                    <div class="espacio-final">
-                      <div class="recuadro-firma">Firma</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Columna derecha -->
-                <div class="w-1\/2">
-                  <!-- Pareja 2 -->
-                  <div class="border border-black p-2">
-                    <div class="nombre-pareja">
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesa.pareja2?.nombre?.split('Y')[0]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesa.pareja2?.nombre?.split('Y')[1]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion">Pos {{ mesa.pareja2?.posicion || '-' }}</span>
-                          <span class="stats">
-                            <span>PG</span>
-                            <span>{{ mesa.pareja2?.pg || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion"></span>
-                          <span class="stats">
-                            <span>Dif.</span>
-                            <span>{{ mesa.pareja2?.pp || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Líneas numeradas -->
-                  <div class="border border-black flex-1 p-2">
-                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                      <span class="w-4 text-sm">{{ i }}</span>
-                      <div class="flex-1 border-b border-black ml-2"></div>
-                    </div>
-                  </div>
-                  
-                  <!-- Total y espacio dividido -->
-                  <div class="mt-2">
-                    <div class="border border-black p-2">
-                      <span class="font-bold">Total</span>
-                    </div>
-                    <div class="espacio-final">
-                      <div class="recuadro-firma">Firma</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Segunda mesa de la página (si existe) -->
-        <div v-if="index + 1 < mesasParaImprimir.length" class="mesa-wrapper">
-          <div class="mesa-container">
-            <!-- Contenido de la siguiente mesa -->
-            <div class="border border-black h-full flex flex-col">
-              <!-- Cabecera -->
-              <div class="border-b border-black p-4">
-                <div class="flex flex-col h-full">
-                  <div class="text-left font-bold text-2xl">CAMPEONATO</div>
-                  <div class="flex justify-between items-center mt-1">
-                    <div class="text-xl">{{ campeonato?.nombre || '' }}</div>
-                    <div class="flex gap-8 text-md">
-                      <span>Partida {{ campeonato?.partida_actual || '' }}</span>
-                      <span>Mesa {{ mesasParaImprimir[index + 1].id }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Contenedor principal -->
-              <div class="flex flex-1 relative">
-                <!-- Línea vertical divisoria -->
-                <div class="absolute left-1\/2 top-0 bottom-0 w-[1px] bg-black"></div>
-
-                <!-- Columna izquierda -->
-                <div class="w-1\/2">
-                  <!-- Pareja 1 -->
-                  <div class="border border-black p-2">
-                    <div class="nombre-pareja">
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja1?.nombre?.split('Y')[0]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja1?.nombre?.split('Y')[1]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion">Pos {{ mesasParaImprimir[index + 1].pareja1?.posicion || '-' }}</span>
-                          <span class="stats">
-                            <span>PG</span>
-                            <span>{{ mesasParaImprimir[index + 1].pareja1?.pg || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion"></span>
-                          <span class="stats">
-                            <span>Dif.</span>
-                            <span>{{ mesasParaImprimir[index + 1].pareja1?.pp || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Líneas numeradas -->
-                  <div class="border border-black flex-1 p-2">
-                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                      <span class="w-4 text-sm">{{ i }}</span>
-                      <div class="flex-1 border-b border-black ml-2"></div>
-                    </div>
-                  </div>
-                  
-                  <!-- Total y espacio dividido -->
-                  <div class="mt-2">
-                    <div class="border border-black p-2">
-                      <span class="font-bold">Total</span>
-                    </div>
-                    <div class="espacio-final">
-                      <div class="recuadro-firma">Firma</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Columna derecha -->
-                <div class="w-1\/2">
-                  <!-- Pareja 2 -->
-                  <div class="border border-black p-2">
-                    <div class="nombre-pareja">
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja2?.nombre?.split('Y')[0]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <span class="jugador-nombre">{{ mesasParaImprimir[index + 1].pareja2?.nombre?.split('Y')[1]?.trim() || '' }}</span>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion">Pos {{ mesasParaImprimir[index + 1].pareja2?.posicion || '-' }}</span>
-                          <span class="stats">
-                            <span>PG</span>
-                            <span>{{ mesasParaImprimir[index + 1].pareja2?.pg || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                      <div class="jugador-linea">
-                        <div class="stats-container">
-                          <span class="posicion"></span>
-                          <span class="stats">
-                            <span>Dif.</span>
-                            <span>{{ mesasParaImprimir[index + 1].pareja2?.pp || 0 }}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Líneas numeradas -->
-                  <div class="border border-black flex-1 p-2">
-                    <div v-for="i in 15" :key="i" class="flex items-center h-6">
-                      <span class="w-4 text-sm">{{ i }}</span>
-                      <div class="flex-1 border-b border-black ml-2"></div>
-                    </div>
-                  </div>
-                  
-                  <!-- Total y espacio dividido -->
-                  <div class="mt-2">
-                    <div class="border border-black p-2">
-                      <span class="font-bold">Total</span>
-                    </div>
-                    <div class="espacio-final">
-                      <div class="recuadro-firma">Firma</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-  </div>
 </template>
 
 <script setup>
@@ -373,21 +105,53 @@ const mesasParaImprimir = computed(() => {
 
   // Obtener el ranking ordenado
   const rankingOrdenado = [...parejasMesas.value].sort((a, b) => {
+    // Si es la primera partida (después del sorteo), ordenar según las mesas
+    if (campeonato.value?.partida_actual === 1) {
+      // Obtener los números de mesa
+      const mesaA = Number(a.mesa);
+      const mesaB = Number(b.mesa);
+      
+      if (mesaA === mesaB) {
+        // Si están en la misma mesa, la pareja1 va primero (menor ID)
+        return a.id - b.id;
+      }
+      // Ordenar por número de mesa
+      return mesaA - mesaB;
+    }
+
+    // Para el resto de partidas, ordenar por criterios de ranking
     // Primero por GB (A antes que B)
     const aGB = a.gb ? 1 : 0;
     const bGB = b.gb ? 1 : 0;
     if (aGB !== bGB) return aGB - bGB;
     
-    // Luego por PG (descendente)
-    const aPG = resultados.value?.filter(r => r.pareja_id === a.id).reduce((sum, r) => sum + (r.pg || 0), 0) || 0;
-    const bPG = resultados.value?.filter(r => r.pareja_id === b.id).reduce((sum, r) => sum + (r.pg || 0), 0) || 0;
+    // Obtener todos los resultados de cada pareja
+    const resultadosA = resultados.value?.filter(r => r.pareja_id === a.id) || [];
+    const resultadosB = resultados.value?.filter(r => r.pareja_id === b.id) || [];
+    
+    // Calcular totales
+    const aPG = resultadosA.reduce((sum, r) => sum + (r.pg || 0), 0);
+    const bPG = resultadosB.reduce((sum, r) => sum + (r.pg || 0), 0);
+    const aPP = resultadosA.reduce((sum, r) => sum + (r.pp || 0), 0);
+    const bPP = resultadosB.reduce((sum, r) => sum + (r.pp || 0), 0);
+    const aRT = resultadosA.reduce((sum, r) => sum + (r.rt || 0), 0);
+    const bRT = resultadosB.reduce((sum, r) => sum + (r.rt || 0), 0);
+    const aMG = resultadosA.reduce((sum, r) => sum + (r.mg || 0), 0);
+    const bMG = resultadosB.reduce((sum, r) => sum + (r.mg || 0), 0);
+    
+    // Comparar en orden:
+    // 1. PG (descendente)
     if (aPG !== bPG) return bPG - aPG;
     
-    // Finalmente por PP (descendente)
-    const aPP = resultados.value?.filter(r => r.pareja_id === a.id).reduce((sum, r) => sum + (r.pp || 0), 0) || 0;
-    const bPP = resultados.value?.filter(r => r.pareja_id === b.id).reduce((sum, r) => sum + (r.pp || 0), 0) || 0;
+    // 2. PP (descendente)
     if (aPP !== bPP) return bPP - aPP;
-
+    
+    // 3. RT (descendente)
+    if (aRT !== bRT) return bRT - aRT;
+    
+    // 4. MG (ascendente)
+    if (aMG !== bMG) return aMG - bMG;
+    
     // Si todo es igual, ordenar por ID
     return a.id - b.id;
   });
@@ -397,16 +161,21 @@ const mesasParaImprimir = computed(() => {
   let posicionA = 1;
   let posicionB = 1;
   rankingOrdenado.forEach((pareja, index) => {
-    // Si la pareja es del grupo B y es la primera, reiniciar contador
-    if (pareja.gb && !rankingOrdenado[index - 1]?.gb) {
-      posicionB = 1;
-      posiciones.set(pareja.id, posicionB);
-    } else if (pareja.gb) {
-      posiciones.set(pareja.id, posicionB);
-      posicionB++;
+    // En la primera partida, la posición es el orden del sorteo
+    if (campeonato.value?.partida_actual === 1) {
+      posiciones.set(pareja.id, index + 1);
     } else {
-      posiciones.set(pareja.id, posicionA);
-      posicionA++;
+      // Para el resto de partidas, calcular posiciones por grupo
+      if (pareja.gb && !rankingOrdenado[index - 1]?.gb) {
+        posicionB = 1;
+        posiciones.set(pareja.id, posicionB);
+      } else if (pareja.gb) {
+        posiciones.set(pareja.id, posicionB);
+        posicionB++;
+      } else {
+        posiciones.set(pareja.id, posicionA);
+        posicionA++;
+      }
     }
   });
   
@@ -439,11 +208,11 @@ const mesasParaImprimir = computed(() => {
   // Filtrar solo las mesas con exactamente 2 parejas y ordenar las parejas por posición
   mesas.forEach((mesa, id) => {
     if (mesa.parejas.length === 2) {
-      // Ordenar las parejas por posición (menor posición a la izquierda)
+      // Ordenar las parejas: ranking superior (posición más baja) a la izquierda
       mesa.parejas.sort((a, b) => {
         // Si ambas son del mismo grupo (A o B), ordenar por posición
         if (a.gb === b.gb) {
-          return a.posicion - b.posicion;
+          return b.posicion - a.posicion; // Posición más baja (mejor ranking) va a la izquierda
         }
         // Si son de grupos diferentes, la del grupo A va primero
         return a.gb ? 1 : -1;
@@ -451,8 +220,8 @@ const mesasParaImprimir = computed(() => {
 
       mesasCompletas.push({
         id: id,
-        pareja1: mesa.parejas[0], // Menor posición
-        pareja2: mesa.parejas[1]  // Mayor posición
+        pareja1: mesa.parejas[0], // Ranking superior (Pos 1) a la izquierda
+        pareja2: mesa.parejas[1]  // Ranking inferior (Pos 2) a la derecha
       });
     }
   });

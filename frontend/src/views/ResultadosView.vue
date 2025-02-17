@@ -113,6 +113,7 @@ import { useCampeonatoStore } from '../stores/campeonato';
 import { useResultadoStore } from '../stores/resultado';
 import { resultadoService } from '../services/api';
 import { useRoute } from 'vue-router';
+import { mesaService } from '../services/api';
 
 const campeonatoStore = useCampeonatoStore();
 const resultadoStore = useResultadoStore();
@@ -134,20 +135,41 @@ const intervalRecargaId = ref(null);
 
 const sortedRanking = computed(() => {
   if (!ranking.value) return [];
+  
   return [...ranking.value].sort((a, b) => {
-    // GB ascendente: convertimos boolean a número (false=0, true=1)
+    // Si es la primera partida, mantener el orden exacto del sorteo inicial
+    if (campeonato.value?.partida_actual === 1) {
+      return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
+    }
+
+    // Para el resto de partidas:
+    // 1. GB ascendente (grupo A antes que B)
     const aGB = a.gb ? 1 : 0;
     const bGB = b.gb ? 1 : 0;
     if (aGB !== bGB) return aGB - bGB;
-    // PG descendente
+
+    // 2. PG total descendente
     const aPG = a.pg || 0;
     const bPG = b.pg || 0;
     if (aPG !== bPG) return bPG - aPG;
-    // PP descendente
+
+    // 3. PP/Dif total descendente
     const aPP = a.pp || 0;
     const bPP = b.pp || 0;
     if (aPP !== bPP) return bPP - aPP;
-    return 0;
+
+    // 4. PT/RT total descendente
+    const aRT = a.rt || 0;
+    const bRT = b.rt || 0;
+    if (aRT !== bRT) return bRT - aRT;
+
+    // 5. MG total ascendente
+    const aMG = a.mg || 0;
+    const bMG = b.mg || 0;
+    if (aMG !== bMG) return aMG - bMG;
+
+    // Si todo es igual, mantener el orden del sorteo inicial
+    return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
   });
 });
 
@@ -240,20 +262,79 @@ const cargarRanking = async () => {
   }
   
   loading.value = true;
+  error.value = null;
+  
   try {
     console.log('Iniciando carga de datos:', new Date().toLocaleTimeString());
     
-    // Obtener el campeonato actualizado
+    // 1. Obtener el campeonato actualizado y esperar a que se complete
     const campeonatoActualizado = await campeonatoStore.obtenerActual();
+    if (!campeonatoActualizado) {
+      throw new Error('No se pudo obtener el campeonato actualizado');
+    }
+    
+    // 2. Actualizar el store con el campeonato
     await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
 
-    // Obtener y actualizar el ranking
-    await resultadoStore.obtenerRanking(campeonatoActualizado.id);
+    // 3. Si es la primera partida, necesitamos el orden del sorteo
+    if (campeonatoActualizado.partida_actual === 1) {
+      // Obtener las mesas y esperar a que se complete
+      const mesasData = await mesaService.obtenerMesas(
+        campeonatoActualizado.id, 
+        campeonatoActualizado.partida_actual
+      );
+      
+      if (!mesasData || !mesasData.length) {
+        throw new Error('No se encontraron mesas para la primera partida');
+      }
 
-    console.log('Datos actualizados correctamente:', new Date().toLocaleTimeString());
+      // Ordenar las mesas por número
+      const mesasOrdenadas = [...mesasData].sort((a, b) => Number(a.id) - Number(b.id));
+
+      // Crear mapa de orden por pareja
+      const ordenPorPareja = new Map();
+      let posicion = 1;
+      
+      // Asignar posiciones a parejas1
+      mesasOrdenadas.forEach(mesa => {
+        if (mesa.pareja1_id) {
+          ordenPorPareja.set(mesa.pareja1_id, posicion++);
+        }
+      });
+      
+      // Asignar posiciones a parejas2
+      mesasOrdenadas.forEach(mesa => {
+        if (mesa.pareja2_id) {
+          ordenPorPareja.set(mesa.pareja2_id, posicion++);
+        }
+      });
+
+      // 4. Obtener el ranking y esperar a que se complete
+      const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
+      if (!rankingData) {
+        throw new Error('No se pudo obtener el ranking');
+      }
+
+      // 5. Actualizar el ranking con el orden del sorteo
+      ranking.value = rankingData.map(pareja => ({
+        ...pareja,
+        mesa: mesasData.find(m => m.pareja1_id === pareja.id || m.pareja2_id === pareja.id)?.id || '-',
+        ordenSorteo: ordenPorPareja.get(pareja.id) || 0
+      }));
+    } else {
+      // Para el resto de partidas, obtener el ranking directamente
+      const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
+      if (!rankingData) {
+        throw new Error('No se pudo obtener el ranking');
+      }
+      
+      ranking.value = rankingData;
+    }
+
+    console.log('Carga de datos completada:', new Date().toLocaleTimeString());
   } catch (e) {
-    console.error('Error al cargar el ranking:', e);
-    error.value = 'Error al cargar el ranking';
+    console.error('Error al cargar los datos:', e);
+    error.value = e.message || 'Error al cargar los datos';
   } finally {
     loading.value = false;
   }
