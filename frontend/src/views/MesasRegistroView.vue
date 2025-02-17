@@ -179,7 +179,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-yellow-700">
-                    ¡Atención! Los resultados totales (RT) de ambas parejas no pueden ser superiores a {{ campeonato?.pm || 300 }} puntos.
+                    ¡Atención! Los resultados totales (RT) de ambas parejas no pueden ser superiores a {{ campeonato?.pm || 350 }} puntos.
                   </p>
                 </div>
               </div>
@@ -455,7 +455,7 @@ const esUltimaPartida = computed(() => {
 const calculos = computed(() => {
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 300;
+  const pm = campeonato.value?.pm || 350;
 
   // Calcular RP basado en RT y PM
   const rp1 = rt1 > pm ? pm : rt1;
@@ -485,7 +485,7 @@ const validarResultado = () => {
 
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 300;
+  const pm = campeonato.value?.pm ?? 300; // Usar 300 como valor por defecto
 
   // Verificar que los valores son números
   if (isNaN(rt1) || isNaN(rt2)) {
@@ -507,7 +507,7 @@ const validarResultado = () => {
 
   // Verificar que no ambos RT sean superiores al PM
   if (rt1 > pm && rt2 > pm) {
-    error.value = `Los resultados totales (RT) no pueden ser ambos superiores a ${pm}`;
+    error.value = `Los resultados totales (RT) no pueden ser ambos superiores a ${pm} puntos`;
     return false;
   }
 
@@ -594,17 +594,25 @@ const guardarResultado = async () => {
   if (!esValido.value) return;
 
   try {
+    const rt1 = resultado.value.rt_pareja1;
+    const rt2 = resultado.value.rt_pareja2;
+    const pm = campeonato.value?.pm || 350;
+
+    // Calcular RP (resultado de la partida) limitado por PM
+    const rp1 = rt1 > pm ? pm : rt1;
+    const rp2 = rt2 > pm ? pm : rt2;
+
     const resultado1 = {
       pareja_id: mesaSeleccionada.value.pareja1.id,
       mesa_id: mesaSeleccionada.value.id,
       partida: campeonato.value.partida_actual,
       campeonato_id: campeonato.value.id,
-      rt: resultado.value.rt_pareja1,
+      rt: rt1, // Enviamos el RT original
       mg: resultado.value.mg_pareja1,
-      rp: calculos.value.rp1,
-      pg: calculos.value.pg1,
-      pp: calculos.value.pp1,
-      gb: mesaSeleccionada.value.pareja1.gb
+      rp: rp1, // Enviamos el RP limitado por PM
+      pg: rt1 > rt2 ? 1 : 0,
+      pp: rp1 - rp2, // Calculamos PP basado en RP
+      gb: mesaSeleccionada.value.pareja1.gb || false
     };
 
     let resultado2 = null;
@@ -614,12 +622,12 @@ const guardarResultado = async () => {
         mesa_id: mesaSeleccionada.value.id,
         partida: campeonato.value.partida_actual,
         campeonato_id: campeonato.value.id,
-        rt: resultado.value.rt_pareja2,
+        rt: rt2, // Enviamos el RT original
         mg: resultado.value.mg_pareja2,
-        rp: calculos.value.rp2,
-        pg: calculos.value.pg2,
-        pp: calculos.value.pp2,
-        gb: mesaSeleccionada.value.pareja2.gb
+        rp: rp2, // Enviamos el RP limitado por PM
+        pg: rt2 > rt1 ? 1 : 0,
+        pp: rp2 - rp1, // Calculamos PP basado en RP
+        gb: mesaSeleccionada.value.pareja2.gb || false
       };
     }
 
@@ -633,18 +641,23 @@ const guardarResultado = async () => {
     await resultadoStore.obtenerRanking(campeonato.value.id);
     cerrarModal();
   } catch (e) {
-    error.value = e.message || 'Error al guardar el resultado';
+    console.error('Error al guardar el resultado:', e);
+    if (e.response?.data?.detail) {
+      error.value = Array.isArray(e.response.data.detail) 
+        ? e.response.data.detail[0].msg 
+        : e.response.data.detail;
+    } else {
+      error.value = 'Error al guardar el resultado';
+    }
   }
 };
 
 const esValido = computed(() => {
-  if (!mesaSeleccionada.value?.pareja2) return true;
-  
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
   const mg1 = resultado.value.mg_pareja1;
   const mg2 = resultado.value.mg_pareja2;
-  const pm = campeonato.value?.pm || 300;
+  const pm = campeonato.value?.pm ?? 300; // Usar 300 como valor por defecto
 
   return (
     rt1 >= 0 && rt2 >= 0 &&
@@ -673,7 +686,7 @@ const ambosRTSuperanPM = computed(() => {
   
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 300;
+  const pm = campeonato.value?.pm || 350;
 
   return rt1 > pm && rt2 > pm;
 });

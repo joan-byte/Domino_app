@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..database import get_db
-from ..models import Resultado
+from ..models import Resultado, Campeonato
 from ..schemas.resultado import ResultadoCreate
 
 router = APIRouter(prefix="/resultados", tags=["resultados"])
@@ -41,7 +41,8 @@ async def actualizar_resultados_mesa(
 ):
     """
     Actualiza los resultados de una mesa, calculando automáticamente los campos derivados:
-    - RT: Es igual a RP si es inferior a PM, sino es PM
+    - RT: Es igual a RP si es inferior a PM, sino es PM (para mesas con dos parejas)
+    - RT: Es 150 para mesas con una sola pareja
     - MG: Se mantiene el valor del input
     - PP: Es RP de la pareja - RP de la pareja contraria
     - PG: Es 1 si PP es positivo, 0 si es negativo
@@ -52,29 +53,33 @@ async def actualizar_resultados_mesa(
         Resultado.partida == resultado1.partida
     ).all()
 
+    # Obtener el campeonato para acceder a su PM
+    campeonato = db.query(Campeonato).filter(
+        Campeonato.id == resultado1.campeonato_id
+    ).first()
+    if not campeonato:
+        raise HTTPException(status_code=404, detail="Campeonato no encontrado")
+
     def actualizar_resultado(resultado_existente, resultado_nuevo, rp_contrario=None):
         if resultado_existente:
             # Actualizar campos básicos
             for key, value in resultado_nuevo.dict().items():
                 setattr(resultado_existente, key, value)
             
-            # RT: Es igual a RP si es inferior a PM, sino es PM
-            resultado_existente.rt = min(resultado_existente.rp, 150)  # PM = 150
-            
-            # MG: Se mantiene el valor del input
-            # (no necesitamos hacer nada ya que se actualiza con el setattr)
-            
-            # PP: Si no hay pareja contraria (última partida con una sola pareja)
+            # Si no hay pareja contraria (mesa con una sola pareja)
             if rp_contrario is None:
-                resultado_existente.pp = 150  # PP = 150 en este caso
+                resultado_existente.rt = 150  # RT fijo de 150 para mesas con una pareja
+                resultado_existente.pp = 150  # PP fijo de 150 para mesas con una pareja
+                resultado_existente.pg = 1    # PG fijo de 1 para mesas con una pareja
             else:
+                # RT: Es igual a RP si es inferior a PM, sino es PM
+                resultado_existente.rt = min(resultado_existente.rp, campeonato.pm)
                 # PP: Es RP de la pareja - RP de la pareja contraria
                 resultado_existente.pp = resultado_existente.rp - rp_contrario
-            
-            # PG: Es 1 si PP es positivo, 0 si es negativo
-            resultado_existente.pg = 1 if resultado_existente.pp > 0 else 0
+                # PG: Es 1 si PP es positivo, 0 si es negativo
+                resultado_existente.pg = 1 if resultado_existente.pp > 0 else 0
 
-    # Si solo hay un resultado (última partida con una sola pareja)
+    # Si solo hay un resultado (mesa con una sola pareja)
     if resultado2 is None:
         resultado_1_existente = next(
             (r for r in resultados_existentes if r.pareja_id == resultado1.pareja_id),
@@ -114,36 +119,72 @@ async def crear_resultados(
     db: Session = Depends(get_db)
 ):
     """
-    Crea nuevos resultados para una mesa
+    Crea nuevos resultados para una mesa.
+    Para mesas con una sola pareja:
+    - RT = 150
+    - PP = 150
+    - PG = 1
+    Para mesas con dos parejas:
+    - RT = min(RP, PM del campeonato)
+    - PP = RP propio - RP contrario
+    - PG = 1 si PP > 0, 0 en caso contrario
     """
     try:
-        # Crear el primer resultado
-        nuevo_resultado1 = Resultado(
-            pareja_id=resultado1.pareja_id,
-            mesa_id=resultado1.mesa_id,
-            partida=resultado1.partida,
-            campeonato_id=resultado1.campeonato_id,
-            rt=resultado1.rt,
-            mg=resultado1.mg,
-            rp=resultado1.rp,
-            pg=resultado1.pg,
-            pp=resultado1.pp,
-            gb=resultado1.gb
-        )
-        db.add(nuevo_resultado1)
+        # Obtener el campeonato para acceder a su PM
+        campeonato = db.query(Campeonato).filter(
+            Campeonato.id == resultado1.campeonato_id
+        ).first()
+        if not campeonato:
+            raise HTTPException(status_code=404, detail="Campeonato no encontrado")
 
-        # Si hay un segundo resultado, crearlo también
-        if resultado2:
+        # Si solo hay una pareja, valores fijos
+        if resultado2 is None:
+            nuevo_resultado1 = Resultado(
+                pareja_id=resultado1.pareja_id,
+                mesa_id=resultado1.mesa_id,
+                partida=resultado1.partida,
+                campeonato_id=resultado1.campeonato_id,
+                rt=150,  # RT fijo para mesas con una pareja
+                mg=resultado1.mg,
+                rp=resultado1.rp,
+                pg=1,    # PG fijo para mesas con una pareja
+                pp=150,  # PP fijo para mesas con una pareja
+                gb=resultado1.gb
+            )
+            db.add(nuevo_resultado1)
+        else:
+            # Calcular RT, PP y PG para ambas parejas
+            rt1 = min(resultado1.rp, campeonato.pm)
+            rt2 = min(resultado2.rp, campeonato.pm)
+            pp1 = resultado1.rp - resultado2.rp
+            pp2 = resultado2.rp - resultado1.rp
+            pg1 = 1 if pp1 > 0 else 0
+            pg2 = 1 if pp2 > 0 else 0
+
+            nuevo_resultado1 = Resultado(
+                pareja_id=resultado1.pareja_id,
+                mesa_id=resultado1.mesa_id,
+                partida=resultado1.partida,
+                campeonato_id=resultado1.campeonato_id,
+                rt=rt1,
+                mg=resultado1.mg,
+                rp=resultado1.rp,
+                pg=pg1,
+                pp=pp1,
+                gb=resultado1.gb
+            )
+            db.add(nuevo_resultado1)
+
             nuevo_resultado2 = Resultado(
                 pareja_id=resultado2.pareja_id,
                 mesa_id=resultado2.mesa_id,
                 partida=resultado2.partida,
                 campeonato_id=resultado2.campeonato_id,
-                rt=resultado2.rt,
+                rt=rt2,
                 mg=resultado2.mg,
                 rp=resultado2.rp,
-                pg=resultado2.pg,
-                pp=resultado2.pp,
+                pg=pg2,
+                pp=pp2,
                 gb=resultado2.gb
             )
             db.add(nuevo_resultado2)

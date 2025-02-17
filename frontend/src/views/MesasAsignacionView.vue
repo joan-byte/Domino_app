@@ -389,13 +389,28 @@ const mesasParaImprimir = computed(() => {
     // Finalmente por PP (descendente)
     const aPP = resultados.value?.filter(r => r.pareja_id === a.id).reduce((sum, r) => sum + (r.pp || 0), 0) || 0;
     const bPP = resultados.value?.filter(r => r.pareja_id === b.id).reduce((sum, r) => sum + (r.pp || 0), 0) || 0;
-    return bPP - aPP;
+    if (aPP !== bPP) return bPP - aPP;
+
+    // Si todo es igual, ordenar por ID
+    return a.id - b.id;
   });
 
   // Crear mapa de posiciones
   const posiciones = new Map();
+  let posicionA = 1;
+  let posicionB = 1;
   rankingOrdenado.forEach((pareja, index) => {
-    posiciones.set(pareja.id, index + 1);
+    // Si la pareja es del grupo B y es la primera, reiniciar contador
+    if (pareja.gb && !rankingOrdenado[index - 1]?.gb) {
+      posicionB = 1;
+      posiciones.set(pareja.id, posicionB);
+    } else if (pareja.gb) {
+      posiciones.set(pareja.id, posicionB);
+      posicionB++;
+    } else {
+      posiciones.set(pareja.id, posicionA);
+      posicionA++;
+    }
   });
   
   // Primero, agrupar las parejas por mesa
@@ -411,24 +426,36 @@ const mesasParaImprimir = computed(() => {
       const resultadosPareja = resultados.value?.filter(r => r.pareja_id === pareja.id) || [];
       const pg = resultadosPareja.reduce((sum, r) => sum + (r.pg || 0), 0);
       const pp = resultadosPareja.reduce((sum, r) => sum + (r.pp || 0), 0);
+      const gb = resultadosPareja.some(r => r.gb) || false;
       
       mesas.get(pareja.mesa).parejas.push({
         id: pareja.id,
         nombre: pareja.nombre || '',
         pg: pg,
         pp: pp,
+        gb: gb,
         posicion: posiciones.get(pareja.id)
       });
     }
   });
 
-  // Filtrar solo las mesas con exactamente 2 parejas
+  // Filtrar solo las mesas con exactamente 2 parejas y ordenar las parejas por posición
   mesas.forEach((mesa, id) => {
     if (mesa.parejas.length === 2) {
+      // Ordenar las parejas por posición (menor posición a la izquierda)
+      mesa.parejas.sort((a, b) => {
+        // Si ambas son del mismo grupo (A o B), ordenar por posición
+        if (a.gb === b.gb) {
+          return a.posicion - b.posicion;
+        }
+        // Si son de grupos diferentes, la del grupo A va primero
+        return a.gb ? 1 : -1;
+      });
+
       mesasCompletas.push({
         id: id,
-        pareja1: mesa.parejas[0],
-        pareja2: mesa.parejas[1]
+        pareja1: mesa.parejas[0], // Menor posición
+        pareja2: mesa.parejas[1]  // Mayor posición
       });
     }
   });

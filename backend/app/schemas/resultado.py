@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 class ResultadoBase(BaseModel):
-    rp: int = Field(ge=0, lt=301)
+    rp: int = Field(ge=0)
     gb: bool = False
     pp: int = Field(default=0)
     pg: int = Field(default=0)

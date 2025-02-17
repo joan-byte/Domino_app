@@ -175,6 +175,10 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  campeonato: {
+    type: Object,
+    required: true
+  },
   resultadosIniciales: {
     type: Array,
     default: () => []
@@ -226,7 +230,7 @@ const calcularResultados = () => {
 
   const rt1 = resultados.value.pareja1.rt;
   const rt2 = resultados.value.pareja2.rt;
-  const pm = campeonato.value?.pm || 300;
+  const pm = props.campeonato?.pm ?? 300; // Usar 300 como valor por defecto
 
   // Calcular RP basado en RT y PM
   resultados.value.pareja1.rp = rt1 > pm ? pm : rt1;
@@ -236,9 +240,11 @@ const calcularResultados = () => {
   resultados.value.pareja1.pg = rt1 > rt2 ? 1 : 0;
   resultados.value.pareja2.pg = rt2 > rt1 ? 1 : 0;
 
-  // Calcular PP
-  resultados.value.pareja1.pp = rt1 - rt2;
-  resultados.value.pareja2.pp = rt2 - rt1;
+  // Calcular PP basado en RP (no en RT)
+  const rp1 = resultados.value.pareja1.rp;
+  const rp2 = resultados.value.pareja2.rp;
+  resultados.value.pareja1.pp = rp1 - rp2;
+  resultados.value.pareja2.pp = rp2 - rp1;
 };
 
 const esValido = computed(() => {

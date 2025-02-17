@@ -147,6 +147,10 @@ const props = defineProps({
   partida: {
     type: Number,
     required: true
+  },
+  campeonato: {
+    type: Object,
+    required: true
   }
 });
 
@@ -185,7 +189,7 @@ watch(() => [form.value.pareja1.rp, form.value.pareja2.rp], ([rp1, rp2]) => {
   form.value.pareja2.pp = resultado2 - resultado1;
 
   // Calcular RT (igual a RP si es menor que PM, sino igual a PM)
-  const PM = 150; // Puntuación máxima
+  const PM = props.campeonato.pm || 350; // Usamos el PM del campeonato con valor por defecto de 350
   form.value.pareja1.rt = Math.min(resultado1, PM);
   form.value.pareja2.rt = Math.min(resultado2, PM);
 }, { immediate: true });

@@ -144,10 +144,12 @@ const loading = ref(false);
 const error = ref(null);
 
 const PAREJAS_POR_PAGINA = 15;
-const INTERVALO_CAMBIO = 10000; // 10 segundos
+const INTERVALO_CAMBIO = 10000; // 10 segundos para cambio de página
+const INTERVALO_RECARGA = 10000; // 10 segundos para recargar datos
 
 const paginaActual = ref(0);
 const intervalId = ref(null);
+const intervalRecargaId = ref(null);
 
 const isRankingCompleto = computed(() => route.path === '/ranking');
 
@@ -187,15 +189,16 @@ const parejasVisibles = computed(() => {
   return data.slice(inicio, inicio + PAREJAS_POR_PAGINA);
 });
 
-// Funciones para la paginación
+// Funciones para la paginación y recarga
 const cambiarPagina = () => {
-  if (totalPaginas.value > 0) {
+  if (totalPaginas.value > 1) {
     // Si estamos en la última página, volver a la primera
     if (paginaActual.value >= totalPaginas.value - 1) {
       paginaActual.value = 0;
     } else {
       paginaActual.value++;
     }
+    console.log('Cambiando a página:', paginaActual.value + 1);
   }
 };
 
@@ -203,16 +206,59 @@ const iniciarRotacionPaginas = () => {
   // Detener el intervalo existente si hay uno
   detenerRotacionPaginas();
   
-  // Solo iniciar si hay más de una página
+  // Solo iniciar la rotación si hay más de una página
   if (totalPaginas.value > 1) {
+    console.log('Iniciando rotación de páginas, total páginas:', totalPaginas.value);
     intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
   }
 };
 
 const detenerRotacionPaginas = () => {
   if (intervalId.value) {
+    console.log('Deteniendo rotación de páginas');
     clearInterval(intervalId.value);
     intervalId.value = null;
+  }
+};
+
+const iniciarRecargaAutomatica = async () => {
+  try {
+    // Detener cualquier intervalo existente
+    detenerRecargaAutomatica();
+    
+    // Realizar la primera carga inmediatamente
+    await cargarRanking();
+    
+    // Configurar el nuevo intervalo usando una función async
+    intervalRecargaId.value = setInterval(async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          // Obtener el campeonato actualizado
+          const campeonatoActualizado = await campeonatoStore.obtenerActual();
+          await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
+
+          // Obtener y actualizar el ranking
+          const nuevosResultados = await resultadoService.obtenerRanking(campeonatoActualizado.id);
+          await resultadoStore.$patch({ ranking: nuevosResultados });
+
+          console.log('Actualización automática completada:', new Date().toLocaleTimeString());
+        } catch (error) {
+          console.error('Error en la actualización automática:', error);
+        }
+      }
+    }, INTERVALO_RECARGA);
+    
+    console.log('Recarga automática iniciada');
+  } catch (e) {
+    console.error('Error al iniciar la recarga automática:', e);
+  }
+};
+
+const detenerRecargaAutomatica = () => {
+  if (intervalRecargaId.value) {
+    console.log('Deteniendo intervalo de recarga');
+    clearInterval(intervalRecargaId.value);
+    intervalRecargaId.value = null;
   }
 };
 
@@ -228,48 +274,100 @@ const cargarRanking = async () => {
   
   loading.value = true;
   try {
-    await resultadoStore.obtenerRanking(campeonato.value.id);
+    console.log('Iniciando carga de datos:', new Date().toLocaleTimeString());
+    
+    // Obtener el campeonato actualizado
+    const campeonatoActualizado = await campeonatoStore.obtenerActual();
+    await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
+
+    // Obtener y actualizar el ranking
+    const nuevosResultados = await resultadoService.obtenerRanking(campeonatoActualizado.id);
+    await resultadoStore.$patch({ ranking: nuevosResultados });
+
+    console.log('Datos actualizados correctamente:', new Date().toLocaleTimeString());
   } catch (e) {
+    console.error('Error al cargar el ranking:', e);
     error.value = 'Error al cargar el ranking';
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(async () => {
-  if (!campeonato.value) {
-    try {
-      await campeonatoStore.obtenerActual();
-    } catch (e) {
-      error.value = 'Error al cargar el campeonato';
-      return;
-    }
-  }
-  
-  await cargarRanking();
-  iniciarRotacionPaginas();
-  
-  // Manejar visibilidad de la página
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      cargarRanking();
-      iniciarRotacionPaginas();
-    } else {
-      detenerRotacionPaginas();
-    }
-  });
-});
+// Añadir watches para asegurar la reactividad
+watch(() => campeonato.value, (newCampeonato) => {
+  console.log('Campeonato actualizado:', newCampeonato?.partida_actual);
+}, { deep: true });
 
-watch(route, (to, from) => {
-  if (to.name === 'ranking') {
-    cargarRanking();
+watch(() => ranking.value, (newRanking) => {
+  console.log('Ranking actualizado:', new Date().toLocaleTimeString());
+  
+  // Verificar si necesitamos iniciar/detener la rotación de páginas
+  if (totalPaginas.value > 1 && !intervalId.value) {
+    console.log('Iniciando rotación de páginas después de actualización');
+    iniciarRotacionPaginas();
+  } else if (totalPaginas.value <= 1 && intervalId.value) {
+    console.log('Deteniendo rotación de páginas después de actualización');
+    detenerRotacionPaginas();
   }
 }, { deep: true });
 
-onUnmounted(() => {
-  detenerRotacionPaginas();
-  document.removeEventListener('visibilitychange', () => {});
+onMounted(async () => {
+  try {
+    console.log('Componente montado, iniciando carga de datos');
+    
+    // Obtener el campeonato inicial
+    const campeonatoInicial = await campeonatoStore.obtenerActual();
+    await campeonatoStore.$patch({ campeonato: campeonatoInicial });
+    
+    // Iniciar la recarga automática
+    await iniciarRecargaAutomatica();
+    
+    // Verificar si necesitamos iniciar la rotación de páginas
+    if (totalPaginas.value > 1) {
+      console.log('Iniciando rotación de páginas inicial');
+      iniciarRotacionPaginas();
+    }
+    
+    // Configurar el evento de visibilidad
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Página visible, reiniciando actualizaciones');
+        await iniciarRecargaAutomatica();
+        if (totalPaginas.value > 1) {
+          iniciarRotacionPaginas();
+        }
+      } else {
+        console.log('Página oculta, deteniendo actualizaciones');
+        detenerRotacionPaginas();
+        detenerRecargaAutomatica();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Limpiar al desmontar
+    onUnmounted(() => {
+      console.log('Componente desmontado, limpiando intervalos y eventos');
+      detenerRotacionPaginas();
+      detenerRecargaAutomatica();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    });
+    
+  } catch (e) {
+    console.error('Error en la inicialización:', e);
+    error.value = 'Error al inicializar el ranking';
+  }
 });
+
+watch(route, async (to, from) => {
+  if (to.name === 'ranking') {
+    await iniciarRecargaAutomatica();
+    iniciarRotacionPaginas();
+  } else {
+    detenerRotacionPaginas();
+    detenerRecargaAutomatica();
+  }
+}, { deep: true });
 </script>
 
 <style scoped>
