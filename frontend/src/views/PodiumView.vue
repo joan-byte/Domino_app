@@ -22,7 +22,7 @@
             <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[1]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[1]?.gb ? 'B' : 'A' }}</span>
-              <span>PG: {{ ranking[1]?.pg }} | PP: {{ ranking[1]?.pp }}</span>
+              <span>PG: {{ ranking[1]?.pg }} | Dif.: {{ ranking[1]?.pp }}</span>
             </div>
           </div>
         </div>
@@ -38,7 +38,7 @@
             <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[0]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[0]?.gb ? 'B' : 'A' }}</span>
-              <span>PG: {{ ranking[0]?.pg }} | PP: {{ ranking[0]?.pp }}</span>
+              <span>PG: {{ ranking[0]?.pg }} | Dif.: {{ ranking[0]?.pp }}</span>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@
             <div class="text-gray-600 truncate max-w-[200px]">{{ ranking[2]?.club }}</div>
             <div class="flex gap-4">
               <span>GB: {{ ranking[2]?.gb ? 'B' : 'A' }}</span>
-              <span>PG: {{ ranking[2]?.pg }} | PP: {{ ranking[2]?.pp }}</span>
+              <span>PG: {{ ranking[2]?.pg }} | Dif.: {{ ranking[2]?.pp }}</span>
             </div>
           </div>
         </div>

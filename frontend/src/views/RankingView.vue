@@ -48,7 +48,7 @@
                   PG
                 </th>
                 <th class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  PP
+                  Dif.
                 </th>
                 <th v-if="isRankingCompleto" class="px-0.5 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   RT

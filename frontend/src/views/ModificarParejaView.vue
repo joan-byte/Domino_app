@@ -29,6 +29,7 @@
           <input
             type="text"
             id="club"
+            ref="clubInput"
             v-model="form.club"
             required
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
@@ -146,6 +147,7 @@ const router = useRouter();
 const route = useRoute();
 const parejasStore = useParejasStore();
 const error = ref(null);
+const clubInput = ref(null);
 
 const form = ref({
   nombre: '',
@@ -206,6 +208,13 @@ onMounted(async () => {
         apellido: pareja.jugadores[1].apellido
       }
     };
+
+    // Dar foco al campo club después de cargar los datos
+    setTimeout(() => {
+      if (clubInput.value) {
+        clubInput.value.focus();
+      }
+    }, 100);
   } catch (e) {
     console.error('Error al cargar la pareja:', e);
     error.value = e.message || 'Error al cargar la pareja';

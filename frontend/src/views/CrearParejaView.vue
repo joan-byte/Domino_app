@@ -24,6 +24,7 @@
           <input
             type="text"
             id="club"
+            ref="clubInput"
             v-model="form.club"
             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
           />
@@ -146,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useParejasStore } from '../stores/parejas';
 import { useCampeonatoStore } from '../stores/campeonato';
@@ -154,6 +155,7 @@ import { useCampeonatoStore } from '../stores/campeonato';
 const router = useRouter();
 const parejasStore = useParejasStore();
 const campeonatoStore = useCampeonatoStore();
+const clubInput = ref(null);
 
 const error = ref(null);
 const showErrorModal = ref(false);
@@ -239,4 +241,12 @@ const crearPareja = async () => {
 const cancelar = () => {
   router.push('/parejas');
 };
+
+// Agregar onMounted para establecer el foco
+onMounted(() => {
+  // Dar foco al campo club
+  if (clubInput.value) {
+    clubInput.value.focus();
+  }
+});
 </script> 

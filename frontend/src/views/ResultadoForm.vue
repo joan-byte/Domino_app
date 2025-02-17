@@ -50,7 +50,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">
-              Puntos Partida (PP)
+              Diferencia (Dif.)
             </label>
             <div class="mt-1 text-lg">{{ form.pareja1.pp }}</div>
           </div>
@@ -99,7 +99,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">
-              Puntos Partida (PP)
+              Diferencia (Dif.)
             </label>
             <div class="mt-1 text-lg">{{ form.pareja2.pp }}</div>
           </div>

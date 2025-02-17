@@ -264,7 +264,7 @@
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
-                    Puntos Partida (PP)
+                    Diferencia (Dif.)
                   </span>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ !mesaSeleccionada.pareja2 ? 150 : calculos.pp1 }}
@@ -343,7 +343,7 @@
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
                   <span class="block text-sm text-gray-600 h-6">
-                    Puntos Partida (PP)
+                    Diferencia (Dif.)
                   </span>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ calculos.pp2 }}
