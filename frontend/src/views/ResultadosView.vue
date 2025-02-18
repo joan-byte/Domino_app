@@ -134,11 +134,17 @@ const intervalId = ref(null);
 const intervalRecargaId = ref(null);
 
 const sortedRanking = computed(() => {
-  if (!ranking.value) return [];
+  if (!ranking.value || !Array.isArray(ranking.value)) {
+    console.error('ranking.value no es un array o es null:', ranking.value);
+    return [];
+  }
+  
+  console.log('Calculando sortedRanking con datos:', ranking.value);
   
   return [...ranking.value].sort((a, b) => {
     // Si es la primera partida, mantener el orden exacto del sorteo inicial
     if (campeonato.value?.partida_actual === 1) {
+      console.log('Primera partida, ordenando por sorteo');
       return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
     }
 
@@ -148,22 +154,22 @@ const sortedRanking = computed(() => {
     const bGB = b.gb ? 1 : 0;
     if (aGB !== bGB) return aGB - bGB;
 
-    // 2. PG total descendente
+    // 2. PG total descendente (sumatorio de PG)
     const aPG = a.pg || 0;
     const bPG = b.pg || 0;
     if (aPG !== bPG) return bPG - aPG;
 
-    // 3. PP/Dif total descendente
+    // 3. PP/Dif total descendente (sumatorio de PP)
     const aPP = a.pp || 0;
     const bPP = b.pp || 0;
     if (aPP !== bPP) return bPP - aPP;
 
-    // 4. PT/RT total descendente
+    // 4. PT/RT total descendente (sumatorio de RT)
     const aRT = a.rt || 0;
     const bRT = b.rt || 0;
     if (aRT !== bRT) return bRT - aRT;
 
-    // 5. MG total ascendente
+    // 5. MG total ascendente (sumatorio de MG)
     const aMG = a.mg || 0;
     const bMG = b.mg || 0;
     if (aMG !== bMG) return aMG - bMG;
@@ -174,9 +180,18 @@ const sortedRanking = computed(() => {
 });
 
 const parejasVisibles = computed(() => {
-  const data = sortedRanking.value || [];
+  const sorted = sortedRanking.value;
+  console.log('Calculando parejasVisibles con sortedRanking:', sorted);
+  
+  if (!sorted || !Array.isArray(sorted)) {
+    console.error('sortedRanking no es un array o es null:', sorted);
+    return [];
+  }
+  
   const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
-  return data.slice(inicio, inicio + PAREJAS_POR_PAGINA);
+  const parejas = sorted.slice(inicio, inicio + PAREJAS_POR_PAGINA);
+  console.log('Parejas visibles calculadas:', parejas);
+  return parejas;
 });
 
 // Funciones para la paginación
@@ -227,12 +242,24 @@ const iniciarRecargaAutomatica = async () => {
     intervalRecargaId.value = setInterval(async () => {
       if (document.visibilityState === 'visible') {
         try {
+          console.log('Iniciando actualización automática:', new Date().toLocaleTimeString());
+          
           // Obtener el campeonato actualizado
           const campeonatoActualizado = await campeonatoStore.obtenerActual();
+          if (!campeonatoActualizado) {
+            console.error('No se pudo obtener el campeonato en la actualización automática');
+            return;
+          }
+          
+          console.log('Campeonato actualizado en recarga:', campeonatoActualizado);
           await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
 
           // Obtener y actualizar el ranking
-          await resultadoStore.obtenerRanking(campeonatoActualizado.id);
+          const nuevosResultados = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
+          if (nuevosResultados) {
+            console.log('Nuevos resultados obtenidos:', nuevosResultados);
+            await resultadoStore.$patch({ ranking: nuevosResultados });
+          }
 
           console.log('Actualización automática completada:', new Date().toLocaleTimeString());
         } catch (error) {
@@ -257,6 +284,7 @@ const detenerRecargaAutomatica = () => {
 
 const cargarRanking = async () => {
   if (!campeonato.value?.id) {
+    console.error('No hay campeonato activo al intentar cargar el ranking');
     error.value = 'No hay campeonato activo';
     return;
   }
@@ -273,11 +301,14 @@ const cargarRanking = async () => {
       throw new Error('No se pudo obtener el campeonato actualizado');
     }
     
+    console.log('Campeonato actualizado obtenido:', campeonatoActualizado);
+    
     // 2. Actualizar el store con el campeonato
     await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
 
     // 3. Si es la primera partida, necesitamos el orden del sorteo
     if (campeonatoActualizado.partida_actual === 1) {
+      console.log('Primera partida, obteniendo orden del sorteo');
       // Obtener las mesas y esperar a que se complete
       const mesasData = await mesaService.obtenerMesas(
         campeonatoActualizado.id, 
@@ -287,6 +318,8 @@ const cargarRanking = async () => {
       if (!mesasData || !mesasData.length) {
         throw new Error('No se encontraron mesas para la primera partida');
       }
+
+      console.log('Mesas obtenidas:', mesasData);
 
       // Ordenar las mesas por número
       const mesasOrdenadas = [...mesasData].sort((a, b) => Number(a.id) - Number(b.id));
@@ -309,31 +342,47 @@ const cargarRanking = async () => {
         }
       });
 
+      console.log('Orden de parejas calculado:', Object.fromEntries(ordenPorPareja));
+
       // 4. Obtener el ranking y esperar a que se complete
       const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
       if (!rankingData) {
         throw new Error('No se pudo obtener el ranking');
       }
 
+      console.log('Ranking obtenido:', rankingData);
+
       // 5. Actualizar el ranking con el orden del sorteo
-      ranking.value = rankingData.map(pareja => ({
+      const rankingActualizado = rankingData.map(pareja => ({
         ...pareja,
         mesa: mesasData.find(m => m.pareja1_id === pareja.id || m.pareja2_id === pareja.id)?.id || '-',
         ordenSorteo: ordenPorPareja.get(pareja.id) || 0
       }));
+
+      console.log('Ranking actualizado con orden de sorteo:', rankingActualizado);
+      await resultadoStore.$patch({ ranking: rankingActualizado });
     } else {
+      console.log('Obteniendo ranking para partida:', campeonatoActualizado.partida_actual);
       // Para el resto de partidas, obtener el ranking directamente
       const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
       if (!rankingData) {
         throw new Error('No se pudo obtener el ranking');
       }
       
-      ranking.value = rankingData;
+      console.log('Ranking obtenido:', rankingData);
+      await resultadoStore.$patch({ ranking: rankingData });
     }
 
     console.log('Carga de datos completada:', new Date().toLocaleTimeString());
   } catch (e) {
     console.error('Error al cargar los datos:', e);
+    if (e.response) {
+      console.error('Detalles del error:', {
+        status: e.response.status,
+        data: e.response.data,
+        headers: e.response.headers
+      });
+    }
     error.value = e.message || 'Error al cargar los datos';
   } finally {
     loading.value = false;
@@ -360,14 +409,36 @@ watch(() => ranking.value, (newRanking) => {
 
 onMounted(async () => {
   try {
-    console.log('Componente montado, iniciando carga de datos');
+    console.log('Componente ResultadosView montado, iniciando carga de datos');
     
     // Obtener el campeonato inicial
     const campeonatoInicial = await campeonatoStore.obtenerActual();
+    console.log('Campeonato inicial obtenido:', campeonatoInicial);
+    
+    if (!campeonatoInicial) {
+      console.error('No se pudo obtener el campeonato inicial');
+      error.value = 'No hay campeonato activo';
+      return;
+    }
+    
+    if (!campeonatoInicial.id) {
+      console.error('El campeonato obtenido no tiene ID');
+      error.value = 'Campeonato inválido';
+      return;
+    }
+    
+    // Actualizar el store con el campeonato
     await campeonatoStore.$patch({ campeonato: campeonatoInicial });
+    console.log('Store de campeonato actualizado');
+    
+    // Realizar la carga inicial del ranking
+    console.log('Iniciando carga del ranking para campeonato:', campeonatoInicial.id);
+    const rankingInicial = await resultadoStore.obtenerRanking(campeonatoInicial.id);
+    console.log('Ranking inicial obtenido:', rankingInicial);
     
     // Iniciar la recarga automática
     await iniciarRecargaAutomatica();
+    console.log('Recarga automática iniciada');
     
     // Verificar si necesitamos iniciar la rotación de páginas
     if (totalPaginas.value > 1) {
@@ -402,7 +473,14 @@ onMounted(async () => {
     
   } catch (e) {
     console.error('Error en la inicialización:', e);
-    error.value = 'Error al inicializar el ranking';
+    if (e.response) {
+      console.error('Detalles del error:', {
+        status: e.response.status,
+        data: e.response.data,
+        headers: e.response.headers
+      });
+    }
+    error.value = e.message || 'Error al inicializar el ranking';
   }
 });
 

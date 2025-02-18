@@ -4,38 +4,60 @@ services:
   domino_app:
     container_name: domino-parejas
     image: joanalba/domino_app:latest
+    platform: linux/amd64
     ports:
       - "80:80"      # frontend
       - "8000:8000"  # backend
-      - "5432:5432"  # database
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./secrets:/app/secrets:ro
     environment:
       - ENV=production
-      - VIRTUAL_HOST=backend
       - APP_ENV=production
-      - ENV_FILE=.env.prod
-    secrets:
-      - db_password
-      - secret_key
-      - jwt_secret_key
+      - DATABASE_URL=postgresql://postgres:$$(cat /app/secrets/db_password.txt)@db:5432/domino
+      - CORS_ORIGINS=http://localhost,http://localhost:80
+      - SECRET_KEY=$$(cat /app/secrets/secret_key.txt)
+      - JWT_SECRET_KEY=$$(cat /app/secrets/jwt_secret_key.txt)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
     networks:
-      domino_net:
-        aliases:
-          - backend
+      - domino_net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    platform: linux/amd64
+    container_name: domino-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=$$(cat /run/secrets/db_password)
+      - POSTGRES_DB=domino
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./secrets/db_password.txt:/run/secrets/db_password:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - domino_net
 
 volumes:
-  db_data:
-    name: domino_prod_data
-
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt
-  secret_key:
-    file: ./secrets/secret_key.txt
-  jwt_secret_key:
-    file: ./secrets/jwt_secret_key.txt
+  postgres_data:
+    name: domino_postgres_data
 
 networks:
   domino_net:
-    name: domino_network 
+    name: domino_network
+    external: false 

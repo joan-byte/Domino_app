@@ -15,6 +15,7 @@ export const useResultadoStore = defineStore('resultado', () => {
             await obtenerRanking(resultado1.campeonato_id);
             return response;
         } catch (e) {
+            console.error('Error al crear resultado:', e);
             error.value = e.response?.data?.detail || 'Error al crear el resultado';
             throw e;
         } finally {
@@ -30,6 +31,7 @@ export const useResultadoStore = defineStore('resultado', () => {
             await obtenerRanking(resultado1.campeonato_id);
             return response;
         } catch (e) {
+            console.error('Error al actualizar resultados:', e);
             error.value = e.response?.data?.detail || 'Error al actualizar los resultados';
             throw e;
         } finally {
@@ -41,9 +43,12 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
+            console.log('Obteniendo resultados del campeonato:', campeonatoId);
             const response = await resultadoService.obtenerResultadosCampeonato(campeonatoId);
+            console.log('Resultados obtenidos:', response);
             return response;
         } catch (e) {
+            console.error('Error al obtener resultados del campeonato:', e);
             error.value = e.response?.data?.detail || 'Error al obtener los resultados del campeonato';
             return [];
         } finally {
@@ -52,16 +57,42 @@ export const useResultadoStore = defineStore('resultado', () => {
     };
 
     const obtenerRanking = async (campeonatoId) => {
+        if (!campeonatoId) {
+            console.error('Error: campeonatoId es requerido para obtener el ranking');
+            error.value = 'ID de campeonato no proporcionado';
+            ranking.value = [];
+            return [];
+        }
+
         loading.value = true;
         error.value = null;
         try {
+            console.log('Store: Obteniendo ranking para campeonato:', campeonatoId);
             const response = await resultadoService.obtenerRanking(campeonatoId);
+            
+            if (!response) {
+                console.error('Store: Error - no se recibió respuesta del servidor');
+                throw new Error('No se recibió respuesta del servidor');
+            }
+            
             if (!Array.isArray(response)) {
+                console.error('Store: Error - respuesta del ranking no es un array:', response);
                 throw new Error('Formato de respuesta inválido');
             }
+            
+            console.log('Store: Ranking obtenido:', response);
             ranking.value = response;
             return response;
         } catch (e) {
+            console.error('Store: Error al obtener el ranking:', e);
+            if (e.response) {
+                console.error('Store: Detalles del error:', {
+                    status: e.response.status,
+                    data: e.response.data,
+                    headers: e.response.headers,
+                    url: e.response?.config?.url
+                });
+            }
             error.value = e.response?.data?.detail || 'Error al obtener el ranking';
             ranking.value = [];
             throw e;
@@ -78,8 +109,12 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            return await resultadoService.obtenerPorMesa(mesaId, partida);
+            console.log('Obteniendo resultados para mesa:', mesaId, 'partida:', partida);
+            const response = await resultadoService.obtenerPorMesa(mesaId, partida);
+            console.log('Resultados de mesa obtenidos:', response);
+            return response;
         } catch (e) {
+            console.error('Error al obtener resultados de mesa:', e);
             error.value = e.response?.data?.detail || 'Error al obtener los resultados';
             return [];
         } finally {
@@ -91,8 +126,12 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            return await resultadoService.obtenerResultadosPorPareja(parejaId);
+            console.log('Obteniendo resultados para pareja:', parejaId);
+            const response = await resultadoService.obtenerResultadosPorPareja(parejaId);
+            console.log('Resultados de pareja obtenidos:', response);
+            return response;
         } catch (e) {
+            console.error('Error al obtener resultados de pareja:', e);
             error.value = e.response?.data?.detail || 'Error al obtener los resultados';
             return [];
         } finally {

@@ -161,8 +161,30 @@ export const resultadoService = {
   },
 
   async obtenerRanking(campeonatoId) {
-    const response = await api.get(`/resultados/ranking?campeonato_id=${campeonatoId}`);
-    return response.data;
+    if (!campeonatoId) {
+      console.error('Error: campeonatoId es requerido');
+      throw new Error('ID de campeonato es requerido');
+    }
+    
+    console.log('Realizando petición GET a /resultados/ranking con campeonato_id:', campeonatoId);
+    try {
+      const response = await api.get(`/resultados/ranking?campeonato_id=${campeonatoId}`);
+      console.log('Respuesta recibida:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error en obtenerRanking:', error);
+      if (error.response) {
+        console.error('Detalles del error:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers,
+          url: error.response.config.url
+        });
+      } else if (error.request) {
+        console.error('No se recibió respuesta del servidor:', error.request);
+      }
+      throw error;
+    }
   },
 
   async obtenerResultadosPorPareja(parejaId) {

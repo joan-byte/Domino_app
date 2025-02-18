@@ -46,17 +46,29 @@ const router = createRouter({
     {
       path: '/resultados',
       name: 'resultados',
-      component: ResultadosView
+      component: ResultadosView,
+      meta: {
+        requiresAuth: false,
+        title: 'Ranking Actual'
+      }
     },
     {
       path: '/ranking',
       name: 'ranking',
-      component: RankingView
+      component: RankingView,
+      meta: {
+        requiresAuth: false,
+        title: 'Ranking Completo'
+      }
     },
     {
       path: '/podium',
       name: 'podium',
-      component: PodiumView
+      component: PodiumView,
+      meta: {
+        requiresAuth: false,
+        title: 'Podium del Campeonato'
+      }
     },
     {
       path: '/resultados/:id/editar',
@@ -64,6 +76,12 @@ const router = createRouter({
       component: ModificarResultadoView
     }
   ]
+});
+
+// Configurar títulos de página
+router.beforeEach((to, from, next) => {
+  document.title = to.meta.title || 'Domino App';
+  next();
 });
 
 export default router; 
