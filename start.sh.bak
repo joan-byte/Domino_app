@@ -34,7 +34,7 @@ fi
 
 # Iniciar el backend
 echo "🚀 Iniciando el backend..."
-cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+cd /app/backend && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 
 # Asegurarse de que los directorios de nginx existan y tengan los permisos correctos
 echo "🔧 Configurando permisos de nginx..."

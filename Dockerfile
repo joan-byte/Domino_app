@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt uvicorn
 COPY backend/ .
 
 FROM postgres:14.13 AS db-base
@@ -23,15 +23,15 @@ RUN cat /run/secrets/db_password > /tmp/pwd && \
     export POSTGRES_PASSWORD=$(cat /tmp/pwd) && \
     rm /tmp/pwd
 
-FROM node:18-slim
+FROM python:3.12.4-slim
 
 # Crear usuario no privilegiado
 RUN groupadd -r domino && useradd -r -g domino domino
 
 # Instalar dependencias necesarias
 RUN apt-get update && apt-get install -y \
-    python3-full \
-    python3-pip \
+    nodejs \
+    npm \
     postgresql \
     postgresql-contrib \
     nginx \
@@ -40,15 +40,18 @@ RUN apt-get update && apt-get install -y \
     procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear y configurar entorno virtual
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# Instalar uvicorn globalmente
+RUN pip install --no-cache-dir uvicorn
+
+# Copiar backend y sus dependencias
+COPY --from=backend-builder /backend /app/backend
+COPY --from=backend-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+RUN chown -R domino:domino /usr/local/lib/python3.12/site-packages && \
+    chmod -R 755 /usr/local/lib/python3.12/site-packages
 
 # Crear directorios necesarios y establecer permisos
 RUN mkdir -p /frontend /app/backend /var/lib/postgresql/data /var/run/postgresql && \
-    chown -R domino:domino /frontend /app/backend /var/lib/postgresql/data /var/run/postgresql $VIRTUAL_ENV && \
-    chmod 2777 /var/run/postgresql
+    chown -R domino:domino /frontend /app/backend /var/lib/postgresql/data /var/run/postgresql
 
 # Copiar frontend compilado
 COPY --from=frontend-builder /frontend/dist /usr/share/nginx/html
@@ -60,13 +63,6 @@ RUN mkdir -p /var/run/nginx /var/tmp/nginx /var/lib/nginx/body /var/lib/nginx/pr
     chmod -R 755 /var/run/nginx /var/tmp/nginx /var/log/nginx /usr/share/nginx/html /var/lib/nginx && \
     sed -i 's/user nginx/user domino/g' /etc/nginx/nginx.conf && \
     sed -i 's/pid \/run\/nginx.pid/pid \/var\/run\/nginx\/nginx.pid/g' /etc/nginx/nginx.conf
-
-# Copiar backend y sus dependencias
-COPY --from=backend-builder /backend /app/backend
-COPY backend/requirements.txt /app/backend/
-RUN . $VIRTUAL_ENV/bin/activate && \
-    cd /app/backend && \
-    pip install --no-cache-dir -r requirements.txt
 
 # Configurar .env.prod con los secrets
 COPY secrets/db_password.txt secrets/secret_key.txt secrets/jwt_secret_key.txt /app/secrets/
@@ -85,8 +81,8 @@ COPY --from=db-base /usr/lib/postgresql /usr/lib/postgresql
 COPY --from=db-base /usr/share/postgresql /usr/share/postgresql
 COPY --from=db-base /var/lib/postgresql/data /var/lib/postgresql/data
 
-# Configurar PATH para PostgreSQL
-ENV PATH="/usr/lib/postgresql/14/bin:$PATH"
+# Configurar PATH para PostgreSQL y Python
+ENV PATH="/usr/local/bin:/usr/lib/postgresql/14/bin:$PATH"
 ENV PYTHONPATH="/app/backend"
 
 # Script de inicio
