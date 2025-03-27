@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 import logging
 import random
+import os
+import shutil
+from pathlib import Path
 from ..database import get_db
 from ..models.campeonato import Campeonato
 from ..models.pareja import Pareja
@@ -15,6 +18,11 @@ from sqlalchemy import text, desc
 
 router = APIRouter(prefix="/campeonatos", tags=["campeonatos"])
 logger = logging.getLogger(__name__) 
+
+# Directorio para guardar las imágenes
+LOGO_DIR = Path("static/logos")
+# Asegurar que el directorio de logos existe
+os.makedirs(LOGO_DIR, exist_ok=True)
 
 @router.get("/{campeonato_id}/parejas", response_model=List[ParejaSchema])
 def obtener_parejas_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
@@ -88,7 +96,8 @@ def crear_campeonato(campeonato: CampeonatoCreate, db: Session = Depends(get_db)
             gb_valor=campeonato.gb_valor,
             activo=True,
             partida_actual=0,
-            pm=campeonato.pm
+            pm=campeonato.pm,
+            logo=campeonato.logo
         )
         db.add(db_campeonato)
         db.commit()
@@ -132,6 +141,8 @@ def actualizar_campeonato(campeonato_id: int, campeonato: CampeonatoUpdate, db: 
             db_campeonato.gb_valor = campeonato.gb_valor
         if campeonato.pm is not None:
             db_campeonato.pm = campeonato.pm
+        if campeonato.logo is not None:
+            db_campeonato.logo = campeonato.logo
         
         db.commit()
         db.refresh(db_campeonato)
@@ -170,7 +181,8 @@ def obtener_campeonato_actual(db: Session = Depends(get_db)):
             "gb_valor": campeonato.gb_valor,
             "activo": campeonato.activo,
             "partida_actual": campeonato.partida_actual,
-            "pm": campeonato.pm
+            "pm": campeonato.pm,
+            "logo": campeonato.logo
         }
         
         return campeonato_dict
@@ -304,4 +316,38 @@ def reiniciar_campeonato(campeonato_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al reiniciar el campeonato: {str(e)}"
+        )
+
+@router.post("/upload-logo")
+async def upload_logo(file: UploadFile = File(...)):
+    """
+    Sube una imagen de logo y devuelve la ruta para acceder a ella
+    """
+    try:
+        logger.info(f"Subiendo archivo: {file.filename}")
+        
+        # Validar el tipo de archivo
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El archivo debe ser una imagen"
+            )
+        
+        # Crear un nombre seguro para el archivo
+        file_extension = file.filename.split(".")[-1]
+        file_name = f"logo_{random.randint(10000, 99999)}.{file_extension}"
+        file_path = LOGO_DIR / file_name
+        
+        # Guardar el archivo
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Devolver la ruta relativa para acceder al archivo
+        return {"logo_path": f"/static/logos/{file_name}"}
+    
+    except Exception as e:
+        logger.error(f"Error al subir logo: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al subir la imagen: {str(e)}"
         ) 

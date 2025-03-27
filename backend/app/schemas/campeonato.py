@@ -10,6 +10,7 @@ class CampeonatoBase(BaseModel):
     gb: bool = False
     gb_valor: Optional[int] = None
     pm: int = Field(ge=0, le=500, default=300, description="Puntuación Máxima por partida")
+    logo: Optional[str] = None  # URL o path opcional para el logo del campeonato
 
 class CampeonatoCreate(CampeonatoBase):
     pass
@@ -22,6 +23,7 @@ class CampeonatoUpdate(BaseModel):
     gb: Optional[bool] = None
     gb_valor: Optional[int] = None
     pm: Optional[int] = Field(None, ge=0, le=500, description="Puntuación Máxima por partida")
+    logo: Optional[str] = None  # Permitir actualizar el logo del campeonato
 
 class CampeonatoResponse(CampeonatoBase):
     id: int

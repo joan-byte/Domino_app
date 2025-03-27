@@ -126,28 +126,66 @@ const clearCloseTimeout = () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', closeMenus)
+  
+  // Cargar el campeonato actual al iniciar
+  try {
+    const data = await campeonatoService.obtenerActual();
+    if (data) {
+      campeonato.value = data;
+      console.log('Campeonato cargado en App.vue:', campeonato.value);
+      console.log('Logo del campeonato:', campeonato.value.logo);
+      
+      // Construir URL completa para el logo si es necesario
+      if (campeonato.value.logo && !campeonato.value.logo.startsWith('http')) {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        campeonato.value.logo = `${baseUrl}${campeonato.value.logo.startsWith('/') ? '' : '/'}${campeonato.value.logo}`;
+        console.log('URL completa del logo:', campeonato.value.logo);
+      }
+    }
+  } catch (error) {
+    console.error('Error al cargar el campeonato:', error);
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', closeMenus)
   clearCloseTimeout()
 })
+
+// Función para manejar errores de carga del logo
+const handleLogoError = (event) => {
+  console.error('Error al cargar el logo:', event.target.src);
+};
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Navegación Horizontal -->
-    <nav class="bg-white shadow-sm fixed w-full z-10">
+    <nav class="bg-white shadow-sm fixed w-full z-10 pt-3">
       <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between h-16">
+        <div class="flex justify-between h-20">
           <!-- Logo y enlaces izquierdos -->
           <div class="flex">
             <div class="flex-shrink-0 flex items-center">
+              <!-- Logo del campeonato si existe -->
+              <div v-if="campeonato && campeonato.logo" class="mr-3 h-18 w-18 flex items-center justify-center">
+                <img 
+                  :src="campeonato.logo" 
+                  alt="Logo del campeonato"
+                  style="height: 78px; max-width: 78px; object-fit: contain; display: block;"
+                  @error="handleLogoError"
+                  @load="() => console.log('Logo cargado correctamente')"
+                />
+              </div>
+              <!-- Debug info -->
+              <div v-if="false" class="text-xs">
+                Logo URL: {{ campeonato?.logo }}
+              </div>
               <h1 class="text-xl font-bold text-gray-900">Domino App</h1>
             </div>
-            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div class="hidden sm:ml-6 sm:flex sm:space-x-8 items-center">
               <router-link 
                 to="/" 
                 class="inline-flex items-center px-1 pt-1 text-gray-700 hover:text-gray-900"
@@ -283,7 +321,7 @@ onUnmounted(() => {
     </nav>
 
     <!-- Contenido Principal -->
-    <div class="pt-16">
+    <div class="pt-24">
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <router-view></router-view>
       </main>
@@ -552,7 +590,7 @@ onUnmounted(() => {
     margin: 0 !important;
   }
 
-  .pt-16 {
+  .pt-24 {
     padding-top: 0 !important;
   }
 

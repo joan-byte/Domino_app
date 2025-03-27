@@ -37,14 +37,20 @@
       
       <div class="bg-gray-50 p-4 rounded-lg">
         <h3 class="text-lg font-semibold mb-3">Información General</h3>
-        <div class="space-y-2">
-          <p><span class="font-medium">Fecha de inicio:</span> {{ formatearFecha(campeonato.fecha_inicio) }}</p>
-          <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
-          <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
-          <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
-          <p v-if="campeonato.gb"><span class="font-medium">GBP:</span> {{ campeonato.gb_valor }}</p>
-          <p><span class="font-medium">PM:</span> {{ campeonato.pm }}</p>
-          <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Logo del campeonato si existe -->
+          <div v-if="campeonato.logo" class="flex justify-center mb-4 md:mb-0">
+            <img :src="campeonato.logo" alt="Logo del campeonato" class="h-24 w-auto object-contain"/>
+          </div>
+          <div class="space-y-2 flex-1">
+            <p><span class="font-medium">Fecha de inicio:</span> {{ formatearFecha(campeonato.fecha_inicio) }}</p>
+            <p><span class="font-medium">Duración:</span> {{ campeonato.dias_duracion }} días</p>
+            <p><span class="font-medium">Número de partidas:</span> {{ campeonato.numero_partidas }}</p>
+            <p><span class="font-medium">GB:</span> {{ campeonato.gb ? 'Sí' : 'No' }}</p>
+            <p v-if="campeonato.gb"><span class="font-medium">GBP:</span> {{ campeonato.gb_valor }}</p>
+            <p><span class="font-medium">PM:</span> {{ campeonato.pm }}</p>
+            <p><span class="font-medium">Partida actual:</span> {{ campeonato.partida_actual }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -67,6 +73,49 @@
                 required
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
+            </div>
+            
+            <!-- Campo para logo del campeonato -->
+            <div>
+              <label for="logoFile" class="block text-sm font-medium text-gray-700">Logo del Campeonato (opcional)</label>
+              <div class="mt-1 flex flex-col space-y-2">
+                <!-- Vista previa si hay un logo -->
+                <img v-if="nuevoCampeonato.logo" :src="nuevoCampeonato.logo" alt="Vista previa del logo" class="h-20 w-auto object-contain"/>
+                <!-- Input para cargar la imagen -->
+                <div class="flex items-center space-x-2">
+                  <input
+                    ref="logoFileInput"
+                    id="logoFile"
+                    name="logoFile"
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="handleLogoUpload"
+                  />
+                  <button 
+                    type="button" 
+                    @click="$refs.logoFileInput.click()"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  >
+                    Seleccionar imagen
+                  </button>
+                  <span v-if="logoFileName" class="text-sm text-gray-600">{{ logoFileName }}</span>
+                  <button 
+                    v-if="nuevoCampeonato.logo" 
+                    type="button" 
+                    @click="eliminarLogo"
+                    class="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none"
+                    aria-label="Eliminar logo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">
+                Sube una imagen para usar como logo del campeonato (formato recomendado: PNG o JPG)
+              </p>
             </div>
             
             <div>
@@ -121,15 +170,18 @@
               />
             </div>
 
-            <div class="flex items-center">
-              <input
-                id="gb"
-                name="gb"
-                type="checkbox"
-                v-model="nuevoCampeonato.gb"
-                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label for="gb" class="ml-2 block text-sm text-gray-900">GB</label>
+            <div>
+              <label for="gbCheckbox" class="block text-sm font-medium text-gray-700">General Bolting</label>
+              <div class="flex items-center">
+                <input
+                  id="gbCheckbox"
+                  name="gb"
+                  type="checkbox"
+                  v-model="nuevoCampeonato.gb"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span class="ml-2 block text-sm text-gray-900">GB</span>
+              </div>
             </div>
 
             <!-- Campo GBP Valor -->
@@ -200,6 +252,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { campeonatoService } from '../services/api';
 import { windowManager } from '../services/windowManager';
+import axios from 'axios';
 
 const router = useRouter();
 const campeonato = ref(null);
@@ -207,6 +260,7 @@ const error = ref(null);
 const mostrarModal = ref(false);
 const mostrarConfirmacion = ref(false);
 const modoEdicion = ref(false);
+const logoFileName = ref('');
 const nuevoCampeonato = ref({
   nombre: '',
   fecha_inicio: new Date().toISOString().split('T')[0],
@@ -214,7 +268,8 @@ const nuevoCampeonato = ref({
   numero_partidas: 1,
   gb: false,
   gb_valor: null,
-  pm: 300
+  pm: 300,
+  logo: null
 });
 
 const formatearFecha = (fecha) => {
@@ -249,7 +304,8 @@ const mostrarFormularioCreacion = () => {
     numero_partidas: 1,
     gb: false,
     gb_valor: null,
-    pm: 300
+    pm: 300,
+    logo: null
   };
 };
 
@@ -263,7 +319,8 @@ const mostrarFormularioEdicion = () => {
     numero_partidas: campeonato.value.numero_partidas,
     gb: campeonato.value.gb,
     gb_valor: campeonato.value.gb_valor,
-    pm: campeonato.value.pm
+    pm: campeonato.value.pm,
+    logo: campeonato.value.logo
   };
 };
 
@@ -277,7 +334,8 @@ const cerrarModal = () => {
     numero_partidas: 1,
     gb: false,
     gb_valor: null,
-    pm: 300
+    pm: 300,
+    logo: null
   };
 };
 
@@ -337,6 +395,40 @@ watch([() => nuevoCampeonato.value.numero_partidas, () => nuevoCampeonato.value.
     nuevoCampeonato.value.gb_valor = null;
   }
 });
+
+const handleLogoUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  logoFileName.value = file.name;
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Usar la URL base de la API
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const response = await axios.post(`${baseUrl}/campeonatos/upload-logo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    // Actualizar el valor del logo con la URL recibida
+    nuevoCampeonato.value.logo = `${baseUrl}${response.data.logo_path}`;
+  } catch (e) {
+    console.error('Error al subir el logo:', e);
+    error.value = 'Error al subir la imagen del logo';
+  }
+};
+
+const eliminarLogo = () => {
+  nuevoCampeonato.value.logo = null;
+  logoFileName.value = '';
+  if (document.querySelector('input[type="file"]')) {
+    document.querySelector('input[type="file"]').value = '';
+  }
+};
 
 onMounted(async () => {
   await cargarCampeonatoActual();

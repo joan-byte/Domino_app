@@ -23,7 +23,8 @@ export const useCampeonatoStore = defineStore('campeonato', () => {
                     gb: data.gb,
                     pm: data.pm,
                     dias_duracion: data.dias_duracion,
-                    numero_partidas: data.numero_partidas
+                    numero_partidas: data.numero_partidas,
+                    logo: data.logo
                 }));
             }
             return data;
