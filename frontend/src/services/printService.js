@@ -158,39 +158,40 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl) => {
     paginasHTML += '</div>'; // Cierre print-page
   }
   
-  // Construir el HTML completo evitando problemas con etiquetas
-  const htmlCompleto = '<!DOCTYPE html>' +
-    '<html>' +
-    '<head>' +
-    '<meta charset="UTF-8">' +
-    '<title>Impresión de Mesas - ' + (campeonato && campeonato.nombre ? campeonato.nombre : 'Domino App') + '</title>' +
-    '<style>' +
-    '* { box-sizing: border-box; margin: 0; padding: 0; }' +
-    '@page { size: landscape; margin: 0; }' +
-    'html, body { width: 100%; height: 100%; background-color: white; margin: 0; padding: 0; overflow: hidden; }' +
-    '.print-container { display: block; width: 100%; height: 100%; overflow: hidden; }' +
-    '.print-page { width: 100%; height: 100%; page-break-after: always; position: relative; margin: 0; padding: 0; overflow: hidden; }' +
-    '.print-page:last-child { page-break-after: avoid; }' +
-    '.print-template-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }' +
-    '.template-image { width: 100%; height: 100%; object-fit: fill; display: block; }' +
-    '.form-field { position: absolute; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; color: black; }' +
-    '@media screen { ' +
-    '  body { background-color: #f0f0f0; padding: 0; }' +
-    '  .print-page { margin-bottom: 10px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }' +
-    '}' +
-    '@media print {' +
-    '  @page { size: landscape; margin: 0; }' +
-    '  html, body { width: 100%; height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }' +
-    '  .print-page { width: 100%; height: 100%; break-inside: avoid; page-break-after: always; box-shadow: none; margin: 0; padding: 0; }' +
-    '  .print-container { width: 100%; height: 100%; padding: 0; margin: 0; overflow: hidden; }' +
-    '  .template-image { width: 100%; height: 100%; object-fit: fill; }' +
-    '}' +
-    '</style>' +
-    '</head>' +
-    '<body>' +
-    '<div class="print-container">' + paginasHTML + '</div>' +
-    '</body>' +
-    '</html>';
+  // Estilos CSS mejorados para impresión
+  const stylesPrint = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: landscape; margin: 0; }
+    html, body { width: 100%; height: 100%; background-color: white; margin: 0; padding: 0; }
+    .print-container { display: block; }
+    .print-page { page-break-after: always; position: relative; margin: 0; padding: 0; height: 100vh; width: 100%; }
+    .print-page:last-child { page-break-after: avoid; }
+    .print-template-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .template-image { width: 100%; height: 100%; object-fit: fill; display: block; }
+    .form-field { position: absolute; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; color: black; }
+    .debug-info { position: fixed; top: 5px; right: 5px; background: rgba(255,255,255,0.7); padding: 5px; font-size: 10px; z-index: 9999; }
+    @media print {
+      @page { size: landscape; margin: 0; }
+      html, body { width: 100%; height: 100%; margin: 0 !important; padding: 0 !important; }
+      .print-page { break-inside: avoid; page-break-after: always; box-shadow: none; margin: 0; padding: 0; height: 100vh; width: 100%; }
+      .print-container { padding: 0; margin: 0; }
+      .template-image { width: 100%; height: 100%; object-fit: fill; }
+      .debug-info { display: none; }
+    }
+  `;
+  
+  // Construir el HTML completo con un script que controla la impresión
+  const htmlCompleto = `<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Impresión de Mesas - ${campeonato && campeonato.nombre ? campeonato.nombre : 'Domino App'}</title>
+      <style>${stylesPrint}</style>
+    </head>
+    <body>
+      <div class="print-container">${paginasHTML}</div>
+    </body>
+    </html>`;
   
   return htmlCompleto;
 };
@@ -216,42 +217,45 @@ const imprimirMesas = (mesas, campeonato, plantillaImagenUrl) => {
       // Generar el HTML de impresión
       const htmlCompleto = generarHTMLImpresion(mesas, campeonato, plantillaImagenUrl);
       
-      // Crear un iframe temporal oculto para imprimir
-      const iframeTemporal = document.createElement('iframe');
-      iframeTemporal.style.position = 'fixed';
-      iframeTemporal.style.width = '0';
-      iframeTemporal.style.height = '0';
-      iframeTemporal.style.opacity = '0';
-      iframeTemporal.style.border = 'none';
-      iframeTemporal.style.overflow = 'hidden';
-      document.body.appendChild(iframeTemporal);
+      // Compartir datos con la nueva ventana
+      window.mesasParaImprimir = mesas;
+      window.campeonato = campeonato;
+      window.plantillaImagenUrl = plantillaImagenUrl;
       
-      // Establecer el contenido del iframe
-      iframeTemporal.contentWindow.document.open();
-      iframeTemporal.contentWindow.document.write(htmlCompleto);
-      iframeTemporal.contentWindow.document.close();
+      // Crear un iframe invisible para imprimir directamente
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.opacity = '0';
+      iframe.style.border = 'none';
+      iframe.style.left = '-1000px';
+      iframe.style.top = '-1000px';
+      document.body.appendChild(iframe);
       
-      // Esperar a que el iframe cargue completamente
-      iframeTemporal.onload = () => {
-        setTimeout(() => {
-          try {
-            // Llamar a imprimir en el iframe
-            iframeTemporal.contentWindow.focus();
-            iframeTemporal.contentWindow.print();
-            
-            // Limpiar el iframe después de un tiempo
-            setTimeout(() => {
-              document.body.removeChild(iframeTemporal);
-              resolve();
-            }, 2000);
-          } catch (e) {
-            console.error('Error al imprimir:', e);
-            document.body.removeChild(iframeTemporal);
-            reject(e);
-          }
-        }, 1000);
+      // Configurar el iframe con el contenido
+      iframe.contentWindow.document.open();
+      iframe.contentWindow.document.write(htmlCompleto);
+      iframe.contentWindow.document.close();
+      
+      // Cuando el contenido está cargado, imprimir directamente
+      iframe.onload = () => {
+        try {
+          // Imprimir inmediatamente
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          
+          // Eliminar el iframe después de un tiempo razonable
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            resolve();
+          }, 1000);
+        } catch (e) {
+          console.error('Error al imprimir:', e);
+          document.body.removeChild(iframe);
+          reject(e);
+        }
       };
-      
     } catch (error) {
       console.error('Error al imprimir:', error);
       reject(error);
