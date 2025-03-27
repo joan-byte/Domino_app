@@ -151,6 +151,9 @@ const paginaActual = ref(0);
 const intervalId = ref(null);
 const intervalRecargaId = ref(null);
 
+// Referencia para el manejador de cambios de visibilidad
+const handleVisibilityChange = ref(null);
+
 const isRankingCompleto = computed(() => route.path === '/ranking');
 
 const sortedRanking = computed(() => {
@@ -329,7 +332,7 @@ onMounted(async () => {
     }
     
     // Configurar el evento de visibilidad
-    const handleVisibilityChange = async () => {
+    handleVisibilityChange.value = async () => {
       if (document.visibilityState === 'visible') {
         console.log('Página visible, reiniciando actualizaciones');
         await iniciarRecargaAutomatica();
@@ -343,19 +346,20 @@ onMounted(async () => {
       }
     };
     
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Limpiar al desmontar
-    onUnmounted(() => {
-      console.log('Componente desmontado, limpiando intervalos y eventos');
-      detenerRotacionPaginas();
-      detenerRecargaAutomatica();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    });
-    
+    document.addEventListener('visibilitychange', handleVisibilityChange.value);
   } catch (e) {
     console.error('Error en la inicialización:', e);
     error.value = 'Error al inicializar el ranking';
+  }
+});
+
+// Limpiar al desmontar (movido al nivel superior del componente)
+onUnmounted(() => {
+  console.log('Componente desmontado, limpiando intervalos y eventos');
+  detenerRotacionPaginas();
+  detenerRecargaAutomatica();
+  if (handleVisibilityChange.value) {
+    document.removeEventListener('visibilitychange', handleVisibilityChange.value);
   }
 });
 

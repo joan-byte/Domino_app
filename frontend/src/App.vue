@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
-import { campeonatoService } from './services/api'
+import { campeonatoService, resultadoService } from './services/api'
 import AppHeader from './components/AppHeader.vue'
 import PrintView from './components/PrintView.vue'
 import PlantillaModal from './components/PlantillaModal.vue'
 import impresionService from './services/impresionService'
+import rankingPrintService from './services/rankingPrintService'
 
 // Verificar si esta ventana es para impresión
 const esVentanaImpresion = ref(false)
@@ -20,6 +21,11 @@ const plantillaImagenUrl = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMC
 // Modal de configuración de plantilla
 const mostrarModalPlantilla = ref(false)
 
+// Correcto: esto se ejecuta antes de cualquier await
+onUnmounted(() => {
+  // limpieza aquí
+})
+
 // Función para imprimir las mesas
 const imprimir = async () => {
   try {
@@ -30,6 +36,20 @@ const imprimir = async () => {
     );
   } catch (error) {
     alert('Error al imprimir: ' + error.message);
+  }
+};
+
+// Función para imprimir solo el ranking completo
+const imprimirRanking = async () => {
+  try {
+    // Obtener los datos del ranking
+    const rankingData = await resultadoService.obtenerRanking(campeonato.value.id);
+    
+    // Usar el servicio para imprimir el ranking
+    await rankingPrintService.imprimirRanking(rankingData, campeonato.value);
+  } catch (error) {
+    console.error('Error al imprimir ranking:', error);
+    alert('Error al imprimir ranking: ' + error.message);
   }
 };
 
@@ -84,10 +104,6 @@ onMounted(async () => {
     console.error('Error al inicializar la aplicación:', error);
   }
 })
-
-onUnmounted(() => {
-  // Limpiar
-})
 </script>
 
 <template>
@@ -107,6 +123,7 @@ onUnmounted(() => {
       <AppHeader 
         :campeonato="campeonato"
         @imprimir="imprimir"
+        @imprimir-ranking="imprimirRanking"
         @mostrar-modal-plantilla="mostrarModalPlantilla = true"
       />
 
@@ -158,4 +175,4 @@ body {
     margin: 0cm;
   }
 }
-</style>
+</style> 

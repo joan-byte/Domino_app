@@ -13,7 +13,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:show-menu', 'close-menus']);
+const emit = defineEmits(['update:show-menu', 'close-menus', 'imprimir-ranking']);
 
 // Abrir el menú al pasar el ratón
 const abrirMenu = () => {
@@ -23,6 +23,12 @@ const abrirMenu = () => {
 // Cerrar el menú al salir
 const cerrarMenu = () => {
   emit('update:show-menu', false);
+};
+
+// Función para imprimir el ranking
+const imprimirRanking = () => {
+  cerrarMenu();
+  emit('imprimir-ranking');
 };
 </script>
 
@@ -76,6 +82,12 @@ const cerrarMenu = () => {
         >
           Ranking Completo
         </router-link>
+        <button 
+          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          @click="imprimirRanking"
+        >
+          Imprimir Ranking
+        </button>
       </div>
     </div>
   </div>
