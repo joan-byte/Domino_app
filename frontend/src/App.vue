@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { campeonatoService, mesaService, parejaService, resultadoService } from './services/api'
 import PlantillaImagenConfig from './components/PlantillaImagenConfig.vue'
+import printService from './services/printService'
 
 const route = useRoute()
 const showMesasMenu = ref(false)
@@ -151,244 +152,25 @@ const imprimir = async () => {
       return;
     }
     
-    const paginasCount = Math.ceil(mesasCount / 2);
-    console.log(`Imprimiendo ${mesasCount} mesas en ${paginasCount} páginas...`);
+    // Usar el servicio de impresión para generar el HTML y abrir la ventana
+    await printService.imprimirMesas(
+      mesasParaImprimir.value,
+      campeonato.value,
+      plantillaImagenUrl.value,
+      obtenerEstiloPosicionTexto
+    );
     
-    // En lugar de modificar la página actual, abrir una ventana separada para imprimir
-    const imprimirWindow = window.open(window.location.href + '?imprimir=true', 'DominoImprimir', 
-      'width=1024,height=768,top=0,left=0,toolbar=0,scrollbars=0,status=0,menubar=0');
-    
-    if (!imprimirWindow) {
-      alert('No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes en su navegador.');
-      return;
-    }
-    
-    // Pasar los datos de impresión a la nueva ventana
-    imprimirWindow.onload = () => {
-      // Pasar los datos necesarios a la ventana de impresión
-      imprimirWindow.mesasParaImprimir = mesasParaImprimir.value;
-      imprimirWindow.campeonato = campeonato.value;
-      imprimirWindow.plantillaImagenUrl = plantillaImagenUrl.value;
-      
-      // Generar el HTML directamente en lugar de intentar acceder al elemento original
-      let paginasHTML = '';
-      
-      // Generar el HTML para cada mesa, 2 por página
-      for (let i = 0; i < mesasParaImprimir.value.length; i += 2) {
-        const mesa = mesasParaImprimir.value[i];
-        const tieneSiguienteMesa = i + 1 < mesasParaImprimir.value.length;
-        const siguienteMesa = tieneSiguienteMesa ? mesasParaImprimir.value[i + 1] : null;
-        
-        paginasHTML += `
-          <div id="print-page-${Math.floor(i/2)}" class="print-page" style="position: relative; width: 100%; height: 100%; overflow: hidden; page-break-after: always;">
-            <div class="print-template-image" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-              <img src="${plantillaImagenUrl.value}" alt="Plantilla de mesas" class="template-image" style="width: 100%; height: 100%; object-fit: fill;" />
-              
-              <!-- Logo izquierdo -->
-              <div style="position: absolute; top: 113px; left: 246px; width: 42px; height: 30px; display: flex; justify-content: center; align-items: center; z-index: 100;">
-                ${campeonato.value?.logo ? `<img src="${campeonato.value.logo}" alt="Logo mesa izquierda" style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" />` : ''}
-              </div>
-              
-              <!-- Logo derecho (solo si hay una mesa siguiente) -->
-              ${tieneSiguienteMesa ? `
-                <div style="position: absolute; top: 113px; left: 914px; width: 42px; height: 30px; display: flex; justify-content: center; align-items: center; z-index: 100;">
-                  ${campeonato.value?.logo ? `<img src="${campeonato.value.logo}" alt="Logo mesa derecha" style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" />` : ''}
-                </div>
-              ` : ''}
-              
-              <!-- Datos de la primera mesa (izquierda) -->
-              <div class="template-overlay left-side">
-                <!-- Nombre del campeonato -->
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('nombreCampeonato', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${campeonato.value?.nombre || ''}
-                </div>
-                
-                <!-- Número de mesa y partida -->
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('mesaNumero', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.id}
-                </div>
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('partidaNumero', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${campeonato.value?.partida_actual || ''}
-                </div>
-                
-                <!-- Datos pareja izquierda -->
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('posicion', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja1?.ranking_posicion || '-'}
-                </div>
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('pg', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja1?.partidas_ganadas || '0'}
-                </div>
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('diferencia', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja1?.diferencia || '0'}
-                </div>
-                
-                <!-- Datos pareja derecha (en la mesa izquierda) -->
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('posicionOponente', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja2?.ranking_posicion || '-'}
-                </div>
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('pgOponente', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja2?.partidas_ganadas || '0'}
-                </div>
-                <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('diferenciaOponente', i, 'izquierda')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                  ${mesa.pareja2?.diferencia || '0'}
-                </div>
-              </div>
-              
-              <!-- Datos de la segunda mesa (derecha) -->
-              ${tieneSiguienteMesa ? `
-                <div class="template-overlay right-side">
-                  <!-- Nombre del campeonato -->
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('nombreCampeonato', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${campeonato.value?.nombre || ''}
-                  </div>
-                  
-                  <!-- Número de mesa y partida -->
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('mesaNumero', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.id}
-                  </div>
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('partidaNumero', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${campeonato.value?.partida_actual || ''}
-                  </div>
-                  
-                  <!-- Datos pareja izquierda (en la mesa derecha) -->
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('posicion', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja1?.ranking_posicion || '-'}
-                  </div>
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('pg', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja1?.partidas_ganadas || '0'}
-                  </div>
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('diferencia', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja1?.diferencia || '0'}
-                  </div>
-                  
-                  <!-- Datos pareja derecha (en la mesa derecha) -->
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('posicionOponente', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja2?.ranking_posicion || '-'}
-                  </div>
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('pgOponente', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja2?.partidas_ganadas || '0'}
-                  </div>
-                  <div class="form-field" style="${JSON.stringify(obtenerEstiloPosicionTexto('diferenciaOponente', i + 1, 'derecha')).replace(/[{}"]/g, '').replace(/,/g, ';')}">
-                    ${siguienteMesa.pareja2?.diferencia || '0'}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        `;
-      }
-      
-      // Aplicar los estilos y el contenido HTML a la ventana de impresión
-      imprimirWindow.document.body.innerHTML = `
-        <style>
-          @page {
-            size: A4 landscape;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            background: white;
-          }
-          .print-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-          }
-          .print-page {
-            width: 297mm;
-            height: 210mm;
-            position: relative;
-            page-break-after: always;
-          }
-          .template-image {
-            width: 100%;
-            height: 100%;
-            object-fit: fill;
-          }
-          .form-field {
-            position: absolute;
-            text-align: center;
-            font-family: Arial, sans-serif;
-            font-size: 10pt;
-            color: black;
-          }
-        </style>
-        <div class="print-container" id="print-container">
-          ${paginasHTML}
-        </div>
-      `;
-      
-      // Esperar un poco y luego imprimir
-      setTimeout(() => {
-        imprimirWindow.print();
-        
-        // Cerrar la ventana después de imprimir
-        setTimeout(() => {
-          imprimirWindow.close();
-        }, 1000);
-      }, 500);
-    };
   } catch (error) {
     console.error('Error al imprimir:', error);
-    alert(`Error al imprimir: ${error.message}`);
+    alert('Error al imprimir: ' + error.message);
   }
 };
 
-// Función para depurar la impresión (versión de prueba)
-const imprimirPrueba = async () => {
-  try {
-    await cargarDatosImpresion();
-    
-    console.log("Estado de las mesas para imprimir:");
-    console.log(`- Total de mesas: ${mesasParaImprimir.value.length}`);
-    console.log(`- Páginas necesarias: ${Math.ceil(mesasParaImprimir.value.length / 2)}`);
-    
-    // Generar HTML de prueba para cada página
-    let htmlDebug = "<div style='padding: 20px; background: #f5f5f5;'>";
-    htmlDebug += `<h2>Imprimiendo ${mesasParaImprimir.value.length} mesas en ${Math.ceil(mesasParaImprimir.value.length / 2)} páginas</h2>`;
-    
-    for (let i = 0; i < mesasParaImprimir.value.length; i += 2) {
-      htmlDebug += `<div style='margin: 10px; padding: 10px; border: 1px solid #ccc; background: white;'>`;
-      htmlDebug += `<h3>Página ${Math.floor(i/2) + 1}</h3>`;
-      htmlDebug += `<div style='display: flex;'>`;
-      
-      // Primera mesa
-      htmlDebug += `<div style='flex: 1; padding: 5px;'>`;
-      htmlDebug += `<div>Mesa ${mesasParaImprimir.value[i].id}</div>`;
-      htmlDebug += `<div>Pareja1: ${JSON.stringify(mesasParaImprimir.value[i].pareja1)}</div>`;
-      htmlDebug += `<div>Pareja2: ${JSON.stringify(mesasParaImprimir.value[i].pareja2)}</div>`;
-      htmlDebug += `</div>`;
-      
-      // Segunda mesa (si existe)
-      if (i + 1 < mesasParaImprimir.value.length) {
-        htmlDebug += `<div style='flex: 1; padding: 5px;'>`;
-        htmlDebug += `<div>Mesa ${mesasParaImprimir.value[i+1].id}</div>`;
-        htmlDebug += `<div>Pareja1: ${JSON.stringify(mesasParaImprimir.value[i+1].pareja1)}</div>`;
-        htmlDebug += `<div>Pareja2: ${JSON.stringify(mesasParaImprimir.value[i+1].pareja2)}</div>`;
-        htmlDebug += `</div>`;
-      }
-      
-      htmlDebug += `</div></div>`;
-    }
-    
-    htmlDebug += "</div>";
-    
-    // Crear una ventana nueva para ver la depuración
-    const debugWindow = window.open('', '_blank');
-    if (debugWindow) {
-      debugWindow.document.write(htmlDebug);
-      debugWindow.document.close();
-    } else {
-      console.warn("No se pudo abrir la ventana de depuración. Verificar si los popups están bloqueados.");
-      console.log(htmlDebug);
-    }
-    
-  } catch (error) {
-    console.error('Error en la función de depuración:', error);
-  }
+// Función auxiliar para convertir objetos de estilo a texto CSS
+const convertirEstiloATexto = (estiloObj) => {
+  return Object.entries(estiloObj)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('; ');
 };
 
 // Nueva implementación de posicionamiento para el logo
