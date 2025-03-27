@@ -1,26 +1,19 @@
 // Servicio para la impresión de mesas de dominó
 // Este servicio maneja la generación de HTML y la impresión
 
-/**
- * Convierte un objeto de estilo a texto CSS
- * @param {Object} estiloObj - Objeto con propiedades CSS
- * @returns {String} Cadena de texto con estilos CSS
- */
-const convertirEstiloATexto = (estiloObj) => {
-  return Object.entries(estiloObj)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
-};
+import posicionamientoService from './posicionamientoService';
 
 /**
  * Genera el HTML de impresión para las mesas
  * @param {Array} mesas - Lista de mesas a imprimir
  * @param {Object} campeonato - Datos del campeonato actual
  * @param {String} plantillaImagenUrl - URL de la imagen de plantilla
- * @param {Function} obtenerEstiloPosicionTexto - Función para obtener estilos
  * @returns {String} HTML completo para imprimir
  */
-const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, obtenerEstiloPosicionTexto) => {
+const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl) => {
+  // Acceder a las funciones desde el servicio de posicionamiento
+  const { obtenerEstiloPosicionTexto, convertirEstiloATexto } = posicionamientoService;
+
   // Construir HTML para la impresión
   let paginasHTML = '';
   for (let i = 0; i < mesas.length; i += 2) {
@@ -29,12 +22,13 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, obtenerEsti
     const siguienteMesa = tieneSiguienteMesa ? mesas[i + 1] : null;
     
     // Crear página
-    paginasHTML += '<div id="print-page-' + Math.floor(i/2) + '" class="print-page" style="page-break-inside: avoid; page-break-after: always; height: 210mm; width: 297mm;">';
-    paginasHTML += '<div class="print-template-image" style="width: 100%; height: 100%;">';
-    paginasHTML += '<img src="' + plantillaImagenUrl + '" alt="Plantilla de mesas" class="template-image" style="width: 100%; height: 100%; object-fit: fill;" />';
+    paginasHTML += '<div id="print-page-' + Math.floor(i/2) + '" class="print-page">';
+    paginasHTML += '<div class="print-template-image">';
+    paginasHTML += '<img src="' + plantillaImagenUrl + '" alt="Plantilla de mesas" class="template-image" />';
     
     // Logo izquierdo
-    paginasHTML += '<div style="position: absolute; top: 113px; left: 246px; width: 42px; height: 30px; display: flex; justify-content: center; align-items: center; z-index: 100;">';
+    const estiloLogoIzquierdo = convertirEstiloATexto(obtenerEstiloPosicionTexto('logoCampeonato', i, 'izquierda'));
+    paginasHTML += '<div style="position: absolute; top: 180px; left: 230px; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; z-index: 100;">';
     if (campeonato && campeonato.logo) {
       paginasHTML += '<img src="' + campeonato.logo + '" alt="Logo mesa izquierda" style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" />';
     }
@@ -97,7 +91,8 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, obtenerEsti
     // Si hay una segunda mesa, añadir su HTML
     if (tieneSiguienteMesa) {
       // Logo derecho
-      paginasHTML += '<div style="position: absolute; top: 113px; left: 914px; width: 42px; height: 30px; display: flex; justify-content: center; align-items: center; z-index: 100;">';
+      const estiloLogoDerecho = convertirEstiloATexto(obtenerEstiloPosicionTexto('logoCampeonato', i + 1, 'derecha'));
+      paginasHTML += '<div style="position: absolute; top: 180px; left: 900px; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; z-index: 100;">';
       if (campeonato && campeonato.logo) {
         paginasHTML += '<img src="' + campeonato.logo + '" alt="Logo mesa derecha" style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" />';
       }
@@ -172,22 +167,23 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, obtenerEsti
     '<style>' +
     '* { box-sizing: border-box; margin: 0; padding: 0; }' +
     '@page { size: landscape; margin: 0; }' +
-    'html, body { width: 100%; height: 100%; background-color: white; }' +
-    '.print-container { display: block; width: 100%; }' +
-    '.print-page { width: 297mm; height: 210mm; page-break-after: always; position: relative; margin: 0 auto; overflow: hidden; }' +
+    'html, body { width: 100%; height: 100%; background-color: white; margin: 0; padding: 0; overflow: hidden; }' +
+    '.print-container { display: block; width: 100%; height: 100%; overflow: hidden; }' +
+    '.print-page { width: 100%; height: 100%; page-break-after: always; position: relative; margin: 0; padding: 0; overflow: hidden; }' +
     '.print-page:last-child { page-break-after: avoid; }' +
-    '.print-template-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }' +
-    '.template-image { width: 100%; height: 100%; object-fit: contain; }' +
+    '.print-template-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }' +
+    '.template-image { width: 100%; height: 100%; object-fit: fill; display: block; }' +
     '.form-field { position: absolute; text-align: center; font-family: Arial, sans-serif; font-size: 10pt; color: black; }' +
     '@media screen { ' +
-    '  body { background-color: #f0f0f0; padding: 20px; }' +
-    '  .print-page { margin-bottom: 20px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }' +
+    '  body { background-color: #f0f0f0; padding: 0; }' +
+    '  .print-page { margin-bottom: 10px; background-color: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }' +
     '}' +
     '@media print {' +
     '  @page { size: landscape; margin: 0; }' +
-    '  html, body { margin: 0 !important; padding: 0 !important; }' +
-    '  .print-page { break-inside: avoid; page-break-after: always; box-shadow: none; }' +
-    '  .print-container { padding: 0; margin: 0; }' +
+    '  html, body { width: 100%; height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }' +
+    '  .print-page { width: 100%; height: 100%; break-inside: avoid; page-break-after: always; box-shadow: none; margin: 0; padding: 0; }' +
+    '  .print-container { width: 100%; height: 100%; padding: 0; margin: 0; overflow: hidden; }' +
+    '  .template-image { width: 100%; height: 100%; object-fit: fill; }' +
     '}' +
     '</style>' +
     '</head>' +
@@ -204,10 +200,9 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, obtenerEsti
  * @param {Array} mesas - Lista de mesas a imprimir
  * @param {Object} campeonato - Datos del campeonato actual
  * @param {String} plantillaImagenUrl - URL de la imagen de plantilla
- * @param {Function} obtenerEstiloPosicionTexto - Función para obtener los estilos
  * @returns {Promise} Promesa que se resuelve cuando se completa la operación
  */
-const imprimirMesas = (mesas, campeonato, plantillaImagenUrl, obtenerEstiloPosicionTexto) => {
+const imprimirMesas = (mesas, campeonato, plantillaImagenUrl) => {
   return new Promise((resolve, reject) => {
     try {
       if (!mesas || mesas.length === 0) {
@@ -219,7 +214,7 @@ const imprimirMesas = (mesas, campeonato, plantillaImagenUrl, obtenerEstiloPosic
       console.log('Imprimiendo ' + mesas.length + ' mesas en ' + paginasCount + ' páginas...');
       
       // Generar el HTML de impresión
-      const htmlCompleto = generarHTMLImpresion(mesas, campeonato, plantillaImagenUrl, obtenerEstiloPosicionTexto);
+      const htmlCompleto = generarHTMLImpresion(mesas, campeonato, plantillaImagenUrl);
       
       // Crear un iframe temporal oculto para imprimir
       const iframeTemporal = document.createElement('iframe');
