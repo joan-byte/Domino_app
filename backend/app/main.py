@@ -24,7 +24,7 @@ load_dotenv(dotenv_path=str(dotenv_path))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from .routes import campeonato, pareja, mesa, resultados, ranking
+from .routes import campeonato, pareja, mesa, resultados, ranking, plantilla
 from .database import Base, engine, init_db, get_db_url
 
 app = FastAPI()
@@ -51,6 +51,7 @@ app.add_middleware(
 # Creamos el directorio si no existe
 os.makedirs(os.path.join(BASE_DIR, "static"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "static/logos"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "static/plantillas"), exist_ok=True)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Inicializar la base de datos
@@ -69,4 +70,5 @@ app.include_router(campeonato)
 app.include_router(pareja)
 app.include_router(mesa)
 app.include_router(resultados)
-app.include_router(ranking) 
+app.include_router(ranking)
+app.include_router(plantilla) 

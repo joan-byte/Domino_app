@@ -26,6 +26,65 @@ api.interceptors.response.use(
   }
 );
 
+// Nuevo servicio para gestionar plantillas de impresión
+export const plantillaService = {
+  /**
+   * Sube una plantilla de mesas al servidor
+   * @param {string} dataUrl - URL de datos de la imagen (base64)
+   * @returns {Promise<Object>} - Respuesta con la URL de la plantilla guardada
+   */
+  async subirPlantilla(dataUrl) {
+    try {
+      // Convertir dataURL a un objeto Blob
+      const fetchResponse = await fetch(dataUrl);
+      const blob = await fetchResponse.blob();
+      
+      // Crear un objeto FormData para la subida de archivos
+      const formData = new FormData();
+      formData.append('file', blob, 'plantilla_mesas.png');
+      
+      // Configurar los headers para el multipart/form-data
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      };
+      
+      try {
+        const response = await api.post('/plantillas/mesas', formData, config);
+        return response.data;
+      } catch (error) {
+        // Si el servidor no está disponible o devuelve error 404, usar localStorage como respaldo
+        console.error('Error al guardar en servidor, usando localStorage:', error);
+        // Retornar un objeto similar al que devolvería el servidor
+        return { url: dataUrl };
+      }
+    } catch (error) {
+      console.error('Error al procesar la imagen:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Obtiene la URL de la plantilla actual
+   * @returns {Promise<string>} - URL de la plantilla guardada o null si no existe
+   */
+  async obtenerPlantilla() {
+    try {
+      const response = await api.get('/plantillas/mesas');
+      return response.data.url;
+    } catch (error) {
+      // Si el servidor no está disponible o devuelve error 404, usar localStorage como respaldo
+      console.log('No se pudo obtener la plantilla del servidor, buscando en localStorage');
+      const localTemplate = localStorage.getItem('plantilla_mesas_url');
+      if (localTemplate) {
+        return localTemplate;
+      }
+      return null;
+    }
+  }
+};
+
 export const campeonatoService = {
   async obtenerActual() {
     try {

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { campeonatoService, resultadoService } from './services/api'
+import { plantillaService } from './services/api'
 import AppHeader from './components/AppHeader.vue'
 import PrintView from './components/PrintView.vue'
 import PlantillaModal from './components/PlantillaModal.vue'
@@ -54,9 +55,9 @@ const imprimirRanking = async () => {
 };
 
 // Función para actualizar la imagen de plantilla
-const actualizarPlantilla = (nuevaUrl) => {
+const actualizarPlantilla = async (nuevaUrl) => {
   plantillaImagenUrl.value = nuevaUrl;
-  // Guardar la URL en localStorage
+  // Guardar la URL en localStorage como respaldo
   localStorage.setItem('plantilla_mesas_url', nuevaUrl);
 };
 
@@ -95,10 +96,27 @@ onMounted(async () => {
       campeonato.value.logo = `${baseUrl}${campeonato.value.logo.startsWith('/') ? '' : '/'}${campeonato.value.logo}`;
     }
     
-    // Cargar la plantilla guardada
-    const storedTemplateUrl = localStorage.getItem('plantilla_mesas_url');
-    if (storedTemplateUrl) {
-      plantillaImagenUrl.value = storedTemplateUrl;
+    // Intentar cargar la plantilla desde el servidor primero
+    try {
+      const serverTemplateUrl = await plantillaService.obtenerPlantilla();
+      if (serverTemplateUrl) {
+        plantillaImagenUrl.value = serverTemplateUrl;
+        // Actualizar también el localStorage como respaldo
+        localStorage.setItem('plantilla_mesas_url', serverTemplateUrl);
+      } else {
+        // Si no hay plantilla en el servidor, intentar cargar desde localStorage
+        const storedTemplateUrl = localStorage.getItem('plantilla_mesas_url');
+        if (storedTemplateUrl) {
+          plantillaImagenUrl.value = storedTemplateUrl;
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar la plantilla desde el servidor:', error);
+      // Intentar cargar desde localStorage como fallback
+      const storedTemplateUrl = localStorage.getItem('plantilla_mesas_url');
+      if (storedTemplateUrl) {
+        plantillaImagenUrl.value = storedTemplateUrl;
+      }
     }
   } catch (error) {
     console.error('Error al inicializar la aplicación:', error);
