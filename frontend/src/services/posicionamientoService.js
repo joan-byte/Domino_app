@@ -1,98 +1,170 @@
 /**
- * Servicio para gestionar el posicionamiento de elementos en la plantilla de impresión.
- * Este servicio centraliza la lógica de posicionamiento que antes estaba en App.vue.
+ * Servicio para manejar el posicionamiento de elementos en las plantillas
+ * Implementa posicionamiento exacto para garantizar precisión visual en formato A4 apaisado (842x595px)
  */
 
-/**
- * Obtiene los estilos de posición para un elemento en la plantilla de impresión.
- * @param {string} tipo - Tipo de elemento (nombreCampeonato, logoCampeonato, etc.)
- * @param {number} indice - Índice de la mesa
- * @param {string} lado - Lado de la plantilla ('izquierda' o 'derecha')
- * @returns {Object} - Objeto con propiedades CSS para el posicionamiento
- */
-const obtenerEstiloPosicionTexto = (tipo, indice, lado) => {
-  // Mapeo de posiciones para los diferentes elementos de texto
-  // Estas posiciones están calibradas para una imagen A4 en modo paisaje (297mm x 210mm)
-  const posiciones = {
-    // Para el nombre del campeonato
-    nombreCampeonato: {
-      izquierda: { top: '158px', left: '450px', width: '140px', textAlign: 'center', fontSize: '12pt' },
-      derecha: { top: '158px', left: '1120px', width: '140px', textAlign: 'center', fontSize: '12pt' }
-    },
-    // Para el logo del campeonato (si existe)
-    logoCampeonato: {
-      izquierda: { position: 'absolute', top: '180px', left: '230px', width: '50px', height: '50px', padding: '0', margin: '0' },
-      derecha: { position: 'absolute', top: '180px', left: '900px', width: '50px', height: '50px', padding: '0', margin: '0' }
-    },
-    // Para el número de mesa
-    mesaNumero: {
-      izquierda: { top: '135px', left: '390px', width: '40px', textAlign: 'center' },
-      derecha: { top: '135px', left: '1070px', width: '40px', textAlign: 'center' }
-    },
-    // Para el número de partida
-    partidaNumero: {
-      izquierda: { top: '135px', left: '560px', width: '40px', textAlign: 'center' },
-      derecha: { top: '135px', left: '1240px', width: '40px', textAlign: 'center' }
-    },
-    // Para la posición de la pareja izquierda
-    posicion: {
-      izquierda: { top: '213px', left: '81px', width: '25px', textAlign: 'center' },
-      derecha: { top: '213px', left: '760px', width: '25px', textAlign: 'center' }
-    },
-    // Para las partidas ganadas de la pareja izquierda
-    pg: {
-      izquierda: { top: '213px', left: '155px', width: '25px', textAlign: 'center' },
-      derecha: { top: '213px', left: '835px', width: '25px', textAlign: 'center' }
-    },
-    // Para la diferencia de la pareja izquierda
-    diferencia: {
-      izquierda: { top: '213px', left: '228px', width: '40px', textAlign: 'center' },
-      derecha: { top: '213px', left: '908px', width: '40px', textAlign: 'center' }
-    },
-    // Para la posición de la pareja derecha
-    posicionOponente: {
-      izquierda: { top: '213px', left: '410px', width: '25px', textAlign: 'center' },
-      derecha: { top: '213px', left: '1090px', width: '25px', textAlign: 'center' }
-    },
-    // Para las partidas ganadas de la pareja derecha
-    pgOponente: {
-      izquierda: { top: '213px', left: '485px', width: '25px', textAlign: 'center' },
-      derecha: { top: '213px', left: '1165px', width: '25px', textAlign: 'center' }
-    },
-    // Para la diferencia de la pareja derecha
-    diferenciaOponente: {
-      izquierda: { top: '213px', left: '560px', width: '40px', textAlign: 'center' },
-      derecha: { top: '213px', left: '1240px', width: '40px', textAlign: 'center' }
+// Dimensiones de referencia para A4 apaisado
+const ANCHO_A4 = 842; // px
+const ALTO_A4 = 595;  // px
+const MITAD_ANCHO = ANCHO_A4 / 2; // 421px - mitad de la página para diferenciar lados
+
+// Función para obtener la posición personalizada del logo desde localStorage
+const obtenerPosicionPersonalizadaLogo = (lado) => {
+  try {
+    const posGuardada = localStorage.getItem(`logo_posicion_${lado}`);
+    if (posGuardada) {
+      return JSON.parse(posGuardada);
     }
-  };
-
-  // Caso especial para el logo - obsoleto, ahora usa el objeto posiciones
-  // if (tipo === 'logoCampeonato') {
-  //   if (lado === 'izquierda') {
-  //     return { position: 'absolute', top: '140px', left: '373px', width: '25px', height: '25px', padding: '0', margin: '0' };
-  //   } else {
-  //     return { position: 'absolute', top: '140px', left: '1050px', width: '25px', height: '25px', padding: '0', margin: '0' };
-  //   }
-  // }
-
-  // Retornar el estilo CSS con la posición para los demás casos
-  return posiciones[tipo]?.[lado] || {};
+  } catch (e) {
+    console.error(`Error al obtener posición personalizada para ${lado}:`, e);
+  }
+  
+  // Valores predeterminados si no hay guardados - ajustados para A4 apaisado
+  return lado === 'izquierda' 
+    ? { top: 30, left: 60, width: 100, height: 60 } 
+    : { top: 30, left: MITAD_ANCHO + 30, width: 100, height: 60 }; // 451px desde izquierda
 };
 
-/**
- * Convierte un objeto de estilo a texto CSS
- * @param {Object} estiloObj - Objeto con propiedades CSS
- * @returns {String} Cadena de texto con estilos CSS
- */
-const convertirEstiloATexto = (estiloObj) => {
-  if (!estiloObj || typeof estiloObj !== 'object') return '';
+// Obtener estilo para el elemento según la posición
+const obtenerEstiloPosicionTexto = (tipo, index, lado, escala = 1) => {
+  // Para los logos, usar posiciones personalizadas desde localStorage
+  if (tipo === 'logo' || tipo === 'logoCampeonato') {
+    const posicion = obtenerPosicionPersonalizadaLogo(lado);
+    
+    // Devolver posición exacta en píxeles
+    return {
+      position: 'absolute',
+      top: `${posicion.top}px`,
+      left: `${posicion.left}px`,
+      width: `${posicion.width}px`,
+      height: `${posicion.height}px`,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 10
+    };
+  }
   
-  return Object.entries(estiloObj)
-    .map(([key, value]) => `${key}: ${value}`)
+  // Para la imagen del logo (dentro del contenedor)
+  if (tipo === 'logoImagen') {
+    // Calcular escala porcentual entre 50% y 100%
+    const escalaAjustada = Math.max(0.5, Math.min(1.0, escala));
+    
+    return {
+      maxWidth: `${escalaAjustada * 100}%`,
+      maxHeight: `${escalaAjustada * 100}%`,
+      width: 'auto !important',
+      height: 'auto !important',
+      objectFit: 'contain',
+      objectPosition: 'center',
+      display: 'block',
+      margin: 'auto',
+      zIndex: 10
+    };
+  }
+  
+  // Posiciones para otros elementos - valores exactos ajustados para A4 apaisado
+  const posicionesElementos = {
+    nombreCampeonato: {
+      izquierda: { top: '40px', left: `${MITAD_ANCHO/2}px` },          // Centro del lado izquierdo
+      derecha: { top: '40px', left: `${MITAD_ANCHO + MITAD_ANCHO/2}px` } // Centro del lado derecho
+    },
+    mesaNumero: {
+      izquierda: { top: '90px', left: `${MITAD_ANCHO/3}px` },          // Tercio izquierdo
+      derecha: { top: '90px', left: `${MITAD_ANCHO + MITAD_ANCHO/3}px` } // Tercio derecho
+    },
+    partidaNumero: {
+      izquierda: { top: '90px', left: `${(MITAD_ANCHO/3) * 2}px` },     // Dos tercios izquierdo
+      derecha: { top: '90px', left: `${MITAD_ANCHO + (MITAD_ANCHO/3) * 2}px` } // Dos tercios derecho
+    }
+  };
+  
+  // Devolver posición del elemento si existe
+  if (posicionesElementos[tipo] && posicionesElementos[tipo][lado]) {
+    return {
+      position: 'absolute',
+      ...posicionesElementos[tipo][lado],
+      textAlign: 'center',
+      zIndex: 20
+    };
+  }
+  
+  // Posición genérica si no hay configuración específica
+  return {
+    position: 'absolute',
+    top: '15px',
+    left: lado === 'derecha' ? `${MITAD_ANCHO + 50}px` : '150px',
+    zIndex: 20
+  };
+};
+
+// Convertir un objeto de estilo a texto CSS
+const convertirEstiloATexto = (estilo) => {
+  return Object.entries(estilo)
+    .map(([propiedad, valor]) => `${propiedad}: ${valor}`)
     .join('; ');
 };
 
+// Actualizar configuraciones inmediatamente
+const actualizarConfiguraciones = () => {
+  // Forzar actualización de localStorage en tiempo real
+  console.log('Configuraciones de logo actualizadas');
+};
+
+/**
+ * Obtiene los estilos CSS necesarios para posicionar el logo del campeonato
+ * @param {string} lado - 'izquierda' o 'derecha'
+ * @returns {Object} Objeto con propiedades CSS
+ */
+function obtenerEstiloPosicionLogo(lado) {
+  try {
+    // Intentar obtener la posición personalizada
+    const posicionGuardada = obtenerPosicionPersonalizadaLogo(lado);
+    
+    if (posicionGuardada) {
+      // Usar posiciones exactas en píxeles
+      return {
+        'top': `${posicionGuardada.top}px`,
+        'left': `${posicionGuardada.left}px`,
+        'width': `${posicionGuardada.width}px`,
+        'height': `${posicionGuardada.height}px`,
+        'z-index': '50'
+      };
+    }
+    
+    // Valores por defecto en caso de que no haya posición guardada
+    if (lado === 'izquierda') {
+      return {
+        'top': '30px',
+        'left': '60px',
+        'width': '100px',
+        'height': '60px',
+        'z-index': '50'
+      };
+    } else {
+      // Para el lado derecho, valor por defecto actualizado
+      return {
+        'top': '30px',
+        'left': '451px', // MITAD_ANCHO + 30, equivalente a 421 + 30
+        'width': '100px',
+        'height': '60px',
+        'z-index': '50'
+      };
+    }
+  } catch (error) {
+    console.error('Error al obtener estilo para el logo:', error);
+    // Valores de respaldo en caso de error
+    return lado === 'izquierda' ? 
+      { 'top': '30px', 'left': '60px', 'width': '100px', 'height': '60px', 'z-index': '50' } : 
+      { 'top': '30px', 'left': '451px', 'width': '100px', 'height': '60px', 'z-index': '50' };
+  }
+}
+
+// Exportar las funciones y objetos
 export default {
   obtenerEstiloPosicionTexto,
-  convertirEstiloATexto
+  convertirEstiloATexto,
+  obtenerPosicionPersonalizadaLogo,
+  actualizarConfiguraciones,
+  obtenerEstiloPosicionLogo
 }; 

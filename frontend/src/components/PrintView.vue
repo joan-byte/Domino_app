@@ -5,7 +5,11 @@ import posicionamientoService from '../services/posicionamientoService';
 const props = defineProps({
   mesasParaImprimir: Array,
   campeonato: Object,
-  plantillaImagenUrl: String
+  plantillaImagenUrl: String,
+  escalaLogo: {
+    type: Number,
+    default: 0.7
+  }
 });
 
 // Función para manejar errores de carga del logo
@@ -22,23 +26,28 @@ const handleLogoError = (event) => {
       <div v-if="index % 2 === 0" :id="`print-page-${Math.floor(index/2)}`" class="print-page">
         <!-- Imagen de fondo del formulario -->
         <div class="print-template-image">
+          <!-- Primera cargamos la plantilla de fondo -->
           <img :src="plantillaImagenUrl" alt="Plantilla de mesas" class="template-image" />
           
-          <!-- Logo izquierdo -->
-          <div style="position: absolute; top: 180px; left: 230px; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; z-index: 100;">
+          <!-- Superponemos los logos y datos - Aseguramos que se muestren encima usando z-index alto -->
+          
+          <!-- Logo izquierdo - Ajustado a la casilla "Logo" -->
+          <div :style="posicionamientoService.obtenerEstiloPosicionTexto('logoCampeonato', index, 'izquierda')" class="logo-container">
             <img v-if="campeonato?.logo" 
                  :src="campeonato.logo" 
                  alt="Logo mesa izquierda" 
-                 style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" 
+                 :style="posicionamientoService.obtenerEstiloPosicionTexto('logoImagen', index, 'izquierda', escalaLogo)" 
                  @error="handleLogoError" />
           </div>
           
           <!-- Logo derecho (solo si hay una mesa siguiente) -->
-          <div v-if="index + 1 < mesasParaImprimir.length" style="position: absolute; top: 180px; left: 900px; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; z-index: 100;">
+          <div v-if="index + 1 < mesasParaImprimir.length" 
+               :style="posicionamientoService.obtenerEstiloPosicionTexto('logoCampeonato', index + 1, 'derecha')" 
+               class="logo-container">
             <img v-if="campeonato?.logo" 
                  :src="campeonato.logo" 
                  alt="Logo mesa derecha" 
-                 style="max-width: 100%; max-height: 100%; object-fit: contain; object-position: center center; display: block;" 
+                 :style="posicionamientoService.obtenerEstiloPosicionTexto('logoImagen', index + 1, 'derecha', escalaLogo)" 
                  @error="handleLogoError" />
           </div>
           
@@ -124,6 +133,25 @@ const handleLogoError = (event) => {
 </template>
 
 <style scoped>
+.logo-container {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+}
+
+/* Asegurar que la imagen del logo se visualice correctamente */
+img[alt^="Logo mesa"] {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  object-position: center;
+}
+
 /* Estilos específicos para modo impresión cuando es ventana de impresión */
 .print-container {
   width: 100%;
@@ -160,8 +188,23 @@ const handleLogoError = (event) => {
 .template-image {
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
   display: block;
+  /* Asegurar que la imagen de plantilla se procese primero */
+  z-index: 1;
+}
+
+.template-overlay {
+  position: relative;
+  z-index: 15;
+}
+
+.left-side, .right-side {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .form-field {
@@ -170,6 +213,8 @@ const handleLogoError = (event) => {
   font-family: Arial, sans-serif;
   font-size: 10pt;
   color: black;
+  /* Asegurar que el texto se renderice encima de la imagen */
+  z-index: 20;
 }
 
 /* Último elemento sin salto de página */

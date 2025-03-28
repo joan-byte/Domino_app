@@ -22,6 +22,30 @@
       {{ error }}
     </div>
     
+    <!-- Control de tamaño del logo -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        Tamaño del Logo ({{ Math.round(escalaLogo * 100) }}%)
+      </label>
+      <input 
+        type="range" 
+        min="50" 
+        max="100" 
+        step="5"
+        v-model="escalaLogoTemp" 
+        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+        @change="actualizarEscalaLogo"
+      />
+      <div class="flex justify-between text-xs text-gray-500 mt-1">
+        <span>50%</span>
+        <span>75%</span>
+        <span>100%</span>
+      </div>
+      <p class="mt-1 text-sm text-gray-600">
+        Ajusta el tamaño del logo para que se visualice correctamente dentro de la casilla marcada como "Logo".
+      </p>
+    </div>
+    
     <!-- Selección de imagen -->
     <div class="mb-4">
       <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -80,15 +104,33 @@ const props = defineProps({
   imagenUrlActual: {
     type: String,
     default: imagenPredeterminada
+  },
+  escalaLogoInicial: {
+    type: Number,
+    default: 0.7
   }
 });
 
-const emit = defineEmits(['actualizar-plantilla']);
+const emit = defineEmits(['actualizar-plantilla', 'actualizar-escala-logo']);
 
 const imagenUrl = ref(props.imagenUrlActual);
 const imagenSeleccionada = ref(null);
 const cargando = ref(false);
 const error = ref(null);
+const escalaLogo = ref(props.escalaLogoInicial);
+const escalaLogoTemp = ref(props.escalaLogoInicial * 100);
+
+// Actualizar escala del logo
+const actualizarEscalaLogo = () => {
+  // Convertir de porcentaje a decimal
+  escalaLogo.value = escalaLogoTemp.value / 100;
+  
+  // Guardar en localStorage
+  localStorage.setItem('logo_escala', escalaLogo.value.toString());
+  
+  // Emitir evento
+  emit('actualizar-escala-logo', escalaLogo.value);
+};
 
 // Manejar la selección de una nueva imagen
 const manejarSeleccionImagen = (event) => {

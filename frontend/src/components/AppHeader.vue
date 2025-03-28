@@ -8,7 +8,7 @@ const props = defineProps({
   campeonato: Object
 });
 
-const emit = defineEmits(['imprimir', 'mostrar-modal-plantilla', 'imprimir-ranking']);
+const emit = defineEmits(['imprimir', 'mostrar-modal-plantilla', 'imprimir-ranking', 'mostrar-posicionamiento-logo']);
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +33,10 @@ const handleMostrarModalPlantilla = () => {
 
 const handleImprimirRanking = () => {
   emit('imprimir-ranking');
+};
+
+const handleMostrarPosicionamientoLogo = () => {
+  emit('mostrar-posicionamiento-logo');
 };
 
 // Funciones para manejar menús desplegables por hover
@@ -142,6 +146,7 @@ const handleLogoError = (event) => {
             @close-menus="closeMenus"
             @imprimir="handleImprimir"
             @mostrar-modal-plantilla="handleMostrarModalPlantilla"
+            @mostrar-posicionamiento-logo="handleMostrarPosicionamientoLogo"
           />
 
           <MenuResultados 

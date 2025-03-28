@@ -4,10 +4,14 @@ import PlantillaImagenConfig from './PlantillaImagenConfig.vue';
 
 const props = defineProps({
   mostrar: Boolean,
-  plantillaImagenUrl: String
+  plantillaImagenUrl: String,
+  escalaLogo: {
+    type: Number,
+    default: 0.7
+  }
 });
 
-const emit = defineEmits(['update:mostrar', 'actualizar-plantilla']);
+const emit = defineEmits(['update:mostrar', 'actualizar-plantilla', 'actualizar-escala-logo']);
 
 const cerrar = () => {
   emit('update:mostrar', false);
@@ -16,6 +20,10 @@ const cerrar = () => {
 const actualizarPlantilla = (nuevaUrl) => {
   emit('actualizar-plantilla', nuevaUrl);
   cerrar();
+};
+
+const actualizarEscalaLogo = (nuevaEscala) => {
+  emit('actualizar-escala-logo', nuevaEscala);
 };
 </script>
 
@@ -33,7 +41,9 @@ const actualizarPlantilla = (nuevaUrl) => {
       <div class="p-4">
         <PlantillaImagenConfig 
           :imagen-url-actual="plantillaImagenUrl" 
+          :escala-logo-inicial="escalaLogo"
           @actualizar-plantilla="actualizarPlantilla"
+          @actualizar-escala-logo="actualizarEscalaLogo"
         />
       </div>
     </div>

@@ -13,7 +13,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:show-menu', 'clear-timeout', 'close-menus', 'imprimir', 'mostrar-modal-plantilla']);
+const emit = defineEmits(['update:show-menu', 'clear-timeout', 'close-menus', 'imprimir', 'mostrar-modal-plantilla', 'mostrar-posicionamiento-logo']);
 
 // Abrir el menú al pasar el ratón
 const abrirMenu = () => {
@@ -33,6 +33,11 @@ const imprimir = () => {
 const mostrarPlantilla = () => {
   cerrarMenu();
   emit('mostrar-modal-plantilla');
+};
+
+const mostrarPosicionamientoLogo = () => {
+  cerrarMenu();
+  emit('mostrar-posicionamiento-logo');
 };
 </script>
 
@@ -78,19 +83,23 @@ const mostrarPlantilla = () => {
         >
           Registro
         </router-link>
-        <router-link 
-          to="/mesas/asignacion" 
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          :class="{ 'bg-gray-100': $route.path === '/mesas/asignacion' }"
+        <button 
+          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           @click="imprimir"
         >
           Imprimir
-        </router-link>
+        </button>
         <button 
           class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           @click="mostrarPlantilla"
         >
           Configurar Plantilla
+        </button>
+        <button 
+          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          @click="mostrarPosicionamientoLogo"
+        >
+          Posicionamiento información
         </button>
       </div>
     </div>
