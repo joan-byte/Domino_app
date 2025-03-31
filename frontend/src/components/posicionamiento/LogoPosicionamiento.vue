@@ -432,7 +432,13 @@ const actualizarPosicion = (elementType, side, subElementOrPosition, position = 
 
 // Método para determinar si se debe mostrar un elemento según el lado seleccionado
 const mostrarElemento = (elementType, side, subElement = null) => {
-  return ladoSeleccionado.value === 'ambos' || ladoSeleccionado.value === side;
+  // Siempre mostrar todos los elementos cuando estamos configurando un lado específico
+  if (ladoSeleccionado.value === side) {
+    return true;
+  }
+  
+  // Si se selecciona "ambos", mostrar todos los elementos
+  return ladoSeleccionado.value === 'ambos';
 };
 
 // Método para guardar posiciones

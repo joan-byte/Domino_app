@@ -21,8 +21,10 @@
         <p>No se ha cargado ninguna plantilla</p>
       </div>
       
-      <!-- Elementos posicionados -->
-      <slot></slot>
+      <!-- Contenedor ampliado para elementos posicionados -->
+      <div class="elementos-container">
+        <slot></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -104,11 +106,28 @@ onUnmounted(() => {
 
 <style scoped>
 .visualizador-plantilla {
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  overflow: hidden;
   position: relative;
-  background-color: #f9fafb;
+  overflow: visible; /* Permitir que los elementos se muestren fuera del límite del contenedor */
+  min-height: 600px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Asegurar que los elementos del lado derecho sean visibles */
+.plantilla-container {
+  position: relative;
+  overflow: visible;
+  margin-bottom: 30px; /* Espacio para elementos que puedan quedar abajo */
+}
+
+/* Aplicar estilos para asegurar visibilidad */
+::v-deep .elemento-arrastrable {
+  z-index: 10;
+}
+
+/* Aumentar z-index para lado derecho */
+::v-deep .elemento-derecho {
+  z-index: 20;
 }
 
 .controles-escala {
@@ -174,7 +193,16 @@ onUnmounted(() => {
   position: relative;
   width: 842px; /* Ancho A4 apaisado */
   height: 595px; /* Alto A4 apaisado */
-  overflow: hidden;
+  overflow: visible; /* Cambiar a visible para que los elementos no se corten */
+}
+
+.elementos-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1200px; /* Ampliado más allá del tamaño A4 para dar espacio adicional */
+  height: 700px; /* Ampliado más allá del tamaño A4 para dar espacio adicional */
+  overflow: visible;
 }
 
 .plantilla-imagen {
@@ -184,7 +212,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  pointer-events: none;
+  z-index: 1; /* Asegurar que la imagen esté debajo de los elementos */
 }
 
 .sin-plantilla {

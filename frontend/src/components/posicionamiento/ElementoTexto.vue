@@ -98,17 +98,15 @@ const emit = defineEmits(['update:posicion']);
 
 // Calcular el límite derecho según el lado y tipo de elemento
 const maxLeft = computed(() => {
-  // Dar más libertad al título del campeonato
-  if (props.tipoElemento === 'titulo') {
-    return props.lado === 'derecha' 
-      ? props.anchoMaximo - (props.posicion.width / 2) // Permitir que sobresalga parcialmente
-      : props.anchoMaximo * 0.75; // Permitir moverse hasta 3/4 del ancho total
+  // Ampliar significativamente los límites para permitir mayor libertad de movimiento
+  // Especialmente en el lado derecho donde hay problemas de visibilidad
+  if (props.lado === 'derecha') {
+    // Dar más espacio para mover libremente en el lado derecho
+    return props.anchoMaximo * 1.5; // Permitir movimiento más allá del ancho visible
   }
   
-  // Para otros elementos mantener la lógica original
-  return props.lado === 'derecha' 
-    ? props.anchoMaximo - props.posicion.width 
-    : (props.anchoMaximo / 2) - props.posicion.width;
+  // Para el lado izquierdo, mantener lógica más permisiva
+  return props.anchoMaximo * 0.75;
 });
 
 // Extraer posición y tamaño del prop posicion
@@ -133,7 +131,7 @@ const textoMostrado = computed(() => {
 
 // Estilo del texto
 const estiloTexto = computed(() => {
-  return {
+  const baseStyle = {
     display: 'flex',
     justifyContent: props.alineacion === 'left' ? 'flex-start' : props.alineacion === 'right' ? 'flex-end' : 'center',
     alignItems: 'center',
@@ -147,6 +145,17 @@ const estiloTexto = computed(() => {
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     border: '1px dashed #ccc'
   };
+  
+  // Aumentar la visibilidad para los elementos en el lado derecho
+  if (props.lado === 'derecha') {
+    return {
+      ...baseStyle,
+      zIndex: 30, // Mayor z-index para elementos en el lado derecho
+      backgroundColor: 'rgba(255, 255, 255, 0.7)', // Más opaco para mejor visibilidad
+    };
+  }
+  
+  return baseStyle;
 });
 
 // Calcular la etiqueta descriptiva según el tipo y subtipo

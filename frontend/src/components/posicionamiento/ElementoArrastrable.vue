@@ -2,7 +2,11 @@
   <div
     ref="elementoRef"
     class="elemento-arrastrable"
-    :class="{ 'is-dragging': isDragging, 'is-resizing': isResizing }"
+    :class="{ 
+      'is-dragging': isDragging, 
+      'is-resizing': isResizing,
+      'elemento-derecho': elementSide === 'derecha'
+    }"
     :style="elementStyle"
     @mousedown.prevent="onElementMouseDown"
   >
@@ -336,35 +340,44 @@ defineExpose({
 <style scoped>
 .elemento-arrastrable {
   box-sizing: border-box;
-  user-select: none;
-  overflow: visible;
-  border: 1px solid transparent;
+  position: absolute;
+  cursor: grab;
+  /* Aumentar la visibilidad de todos los elementos */
+  z-index: 10;
 }
 
-.elemento-arrastrable:hover {
-  border: 1px dashed #2196f3;
+/* Aplicar estilos específicos para elementos del lado derecho */
+.elemento-derecho {
+  z-index: 20; /* Priorizar elementos del lado derecho */
+  background-color: rgba(255, 255, 255, 0.7) !important; /* Más opaco para mejor visibilidad */
 }
 
-.elemento-arrastrable.is-dragging {
-  opacity: 0.8;
-  border: 1px dashed #2196f3;
+.is-dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+  z-index: 100 !important; /* Asegurar que el elemento arrastrado esté en primer plano */
 }
 
-.elemento-arrastrable.is-resizing {
-  opacity: 0.8;
-  border: 1px dashed #4caf50;
+.is-resizing {
+  cursor: nwse-resize;
+  opacity: 0.9;
+  z-index: 100 !important; /* Asegurar que el elemento redimensionado esté en primer plano */
 }
 
 .resize-handle {
   position: absolute;
-  bottom: -6px;
-  right: -6px;
+  right: -5px;
+  bottom: -5px;
   width: 12px;
   height: 12px;
-  background-color: #2196f3;
-  border: 1px solid white;
+  background-color: #3b82f6;
+  border: 2px solid white;
   border-radius: 50%;
   cursor: nwse-resize;
-  z-index: 2;
+  z-index: 15;
+}
+
+.resize-handle:hover {
+  transform: scale(1.2);
 }
 </style> 
