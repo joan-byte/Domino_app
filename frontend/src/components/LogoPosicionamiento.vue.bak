@@ -1,0 +1,2329 @@
+<template>
+  <div class="p-4 bg-white shadow rounded-lg">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">Posicionamiento de Información</h2>
+      <!-- Botón volver en modo independiente -->
+      <button 
+        v-if="enModoIndependiente" 
+        @click="volverAtras" 
+        class="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+      >
+        Volver
+      </button>
+    </div>
+    
+    <!-- Controles de posicionamiento -->
+    <div class="mb-4 flex flex-wrap gap-4">
+      <!-- Lado a configurar -->
+      <div class="mb-4">
+        <fieldset>
+          <legend class="block text-sm font-medium text-gray-700 mb-2">
+            Lado a configurar:
+          </legend>
+          <div class="flex space-x-4">
+            <div class="inline-flex items-center">
+              <input 
+                id="lado_izquierda"
+                name="lado"
+                type="radio" 
+                v-model="lado" 
+                value="izquierda"
+                class="form-radio h-4 w-4 text-blue-600"
+              />
+              <label 
+                for="lado_izquierda"
+                class="ml-2 text-sm text-gray-700 cursor-pointer"
+              >
+                Lado Izquierdo
+              </label>
+            </div>
+            <div class="inline-flex items-center">
+              <input 
+                id="lado_derecha"
+                name="lado"
+                type="radio" 
+                v-model="lado" 
+                value="derecha"
+                class="form-radio h-4 w-4 text-blue-600"
+              />
+              <label 
+                for="lado_derecha"
+                class="ml-2 text-sm text-gray-700 cursor-pointer"
+              >
+                Lado Derecho
+              </label>
+            </div>
+            <div class="inline-flex items-center">
+              <input 
+                id="lado_ambos"
+                name="lado"
+                type="radio" 
+                v-model="lado" 
+                value="ambos"
+                class="form-radio h-4 w-4 text-blue-600"
+              />
+              <label 
+                for="lado_ambos"
+                class="ml-2 text-sm text-gray-700 cursor-pointer"
+              >
+                Ambos Lados
+              </label>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+      
+      <!-- Botones de acción -->
+      <div class="flex ml-auto space-x-2">
+        <button 
+          class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          @click="guardarPosicion"
+        >
+          Guardar Posiciones
+        </button>
+        <button 
+          class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+          @click="resetearPosicion"
+        >
+          Resetear
+        </button>
+      </div>
+    </div>
+    
+    <!-- Área de previsualización -->
+    <div v-if="plantillaImagenUrlEfectiva" class="mb-4 relative overflow-auto max-h-[60vh] border border-gray-300">
+      <div 
+        class="relative"
+        style="width: 842px; height: 595px; overflow: hidden; transform-origin: top left;"
+        :style="{ transform: `scale(${escalaPrevia})` }"
+        ref="plantillaContainer"
+      >
+        <!-- Plantilla de fondo -->
+        <img 
+          :src="plantillaImagenUrlEfectiva" 
+          class="absolute top-0 left-0 w-full h-full object-contain" 
+          alt="Plantilla para posicionar" 
+        />
+        
+        <!-- Indicadores de referencia (esquinas) -->
+        <div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-red-500"></div>
+        <div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-red-500"></div>
+        <div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-red-500"></div>
+        <div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-red-500"></div>
+        
+        <!-- Indicador visual de qué lado se está editando (solo cuando no es ambos lados) -->
+        <div v-if="lado !== 'ambos'" class="absolute inset-0 flex items-center justify-center print-hide">
+          <div 
+            class="absolute"
+            :style="{
+              top: 0,
+              bottom: 0,
+              left: lado === 'izquierda' ? '50%' : 0,
+              right: lado === 'izquierda' ? 0 : '50%',
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              zIndex: 90
+            }"
+          >
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <span class="bg-gray-800 text-white px-3 py-1 rounded-md text-sm">
+                No editando
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenido dinámico del área de previsualización aquí -->
+      </div>
+      
+      <div class="mt-2 text-xs text-gray-600 flex items-center">
+        <span>Escala de visualización:</span> 
+        <input 
+          id="escala_previa"
+          name="escala_previa"
+          type="range" 
+          v-model="escalaPrevia" 
+          min="0.3" 
+          max="1" 
+          step="0.1" 
+          class="mx-2"
+        />
+        <span>{{ Math.round(escalaPrevia * 100) }}%</span>
+      </div>
+    </div>
+    <div v-else class="flex justify-center items-center h-40 bg-gray-100 rounded">
+      <p class="text-gray-500">No se ha cargado ninguna plantilla</p>
+    </div>
+
+    <div class="mt-4 text-sm text-gray-600">
+      <strong>Nota:</strong> El área de posicionamiento tiene tamaño exacto A4 apaisado para mejorar precisión.
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
+import posicionamientoService from '../services/posicionamientoService';
+import { campeonatoService } from '../services/api';
+import { plantillaService } from '../services/api';
+import { useRouter } from 'vue-router';
+
+// Nuevas variables para cuando se usa como vista independiente
+const enModoIndependiente = computed(() => {
+  // Si no se pasa plantillaImagenUrl ni campeonato como props, estamos en modo independiente
+  return !props.plantillaImagenUrl || !props.campeonato;
+});
+
+// Referencias para datos cargados independientemente
+const campeonatoLocal = ref(null);
+const plantillaImagenLocal = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI2MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0id2hpdGUiLz48dGV4dCB4PSI2MDAiIHk9IjMwMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJibGFjayI+Q2FyZ3VlIGxhIGltYWdlbiBkZSBwbGFudGlsbGEgZGVzZGUgbGEgb3BjacOzbiAnQ29uZmlndXJhciBQbGFudGlsbGEnPC90ZXh0Pjwvc3ZnPg==');
+
+// Posición del logo guardada localmente
+const posicionLogoLocal = ref({
+  izquierda: { top: 15, left: 20, width: 120, height: 70 },
+  derecha: { top: 15, left: 690, width: 120, height: 70 }
+});
+
+// Usar router para la navegación
+const router = useRouter();
+
+// Obtener plantillaImagenUrl efectiva (prop o cargada localmente)
+const plantillaImagenUrlEfectiva = computed(() => {
+  return enModoIndependiente.value ? plantillaImagenLocal.value : props.plantillaImagenUrl;
+});
+
+// Obtener campeonato efectivo (prop o cargado localmente)
+const campeonatoEfectivo = computed(() => {
+  return enModoIndependiente.value ? campeonatoLocal.value : props.campeonato;
+});
+
+// Obtener posicionLogo efectivo (prop o cargado localmente)
+const posicionLogoEfectivo = computed(() => {
+  return enModoIndependiente.value ? posicionLogoLocal.value : props.posicionLogoGuardada;
+});
+
+// Maneja la vuelta a la página anterior
+const volverAtras = () => {
+  router.back();
+};
+
+const props = defineProps({
+  plantillaImagenUrl: {
+    type: String,
+    required: false
+  },
+  campeonato: {
+    type: Object,
+    required: false
+  },
+  posicionLogoGuardada: {
+    type: Object,
+    default: () => ({
+      izquierda: { top: 15, left: 20, width: 120, height: 70 },
+      derecha: { top: 15, left: 690, width: 120, height: 70 }
+    })
+  }
+});
+
+const emit = defineEmits(['actualizar-posicion-logo']);
+
+// Elementos del DOM
+const plantillaContainer = ref(null);
+const logoDraggable = ref(null);
+const tituloDraggable = ref(null);
+const mesaDraggable = ref(null);
+const partidaDraggable = ref(null);
+const pareja1NombreDraggable = ref(null);
+const pareja1PosDraggable = ref(null);
+const pareja1PGDraggable = ref(null);
+const pareja1DifDraggable = ref(null);
+const pareja2NombreDraggable = ref(null);
+const pareja2PosDraggable = ref(null);
+const pareja2PGDraggable = ref(null);
+const pareja2DifDraggable = ref(null);
+
+// Estado interno
+const lado = ref('izquierda'); // izquierda, derecha, ambos
+const isDragging = ref(false);
+const isResizing = ref(false);
+const lastPos = reactive({ x: 0, y: 0 });
+const maxWidth = ref(600);
+const maxHeight = ref(400);
+
+// Añadir nueva variable reactiva para la escala de visualización
+const escalaPrevia = ref(0.8); // 80% por defecto para que quepa en pantalla
+
+// Valores predeterminados para resetear
+const DEFAULT_LEFT_POS = 60;
+const DEFAULT_RIGHT_POS = 421 + 30; // Mitad de A4 apaisado (421) + margen
+const DEFAULT_TOP = 30;
+const DEFAULT_WIDTH = 100;
+const DEFAULT_HEIGHT = 60;
+
+// Posición y tamaño del logo para el lado derecho (en modo 'ambos')
+const posicionLogoDerecha = computed(() => {
+  // Si estamos en modo 'ambos', calcular la posición espejo para el lado derecho
+  if (lado.value === 'ambos') {
+    const valorGuardado = localStorage.getItem('logo_posicion_derecha');
+    if (valorGuardado) {
+      try {
+        const pos = JSON.parse(valorGuardado);
+        return pos;
+      } catch (e) {
+        console.error('Error al leer posición derecha guardada:', e);
+      }
+    }
+    
+    // Si no hay valor guardado, usar el valor predeterminado
+    // Usando mitad de página (421) para posicionar en el lado derecho
+    return {
+      top: posicionLogo.top,
+      left: 421 + 30, // Mitad + margen
+      width: posicionLogo.width,
+      height: posicionLogo.height
+    };
+  }
+  
+  return null;
+});
+
+// Texto descriptivo del lado que se está editando
+const ladoEditandoTexto = computed(() => {
+  switch (lado.value) {
+    case 'izquierda': return 'Lado Izquierdo';
+    case 'derecha': return 'Lado Derecho';
+    case 'ambos': return 'Ambos Lados';
+    default: return '';
+  }
+});
+
+// Posición y tamaño del logo (valores reactivos)
+const posicionLogo = reactive({
+  top: DEFAULT_TOP,
+  left: DEFAULT_LEFT_POS,
+  width: DEFAULT_WIDTH,
+  height: DEFAULT_HEIGHT
+});
+
+// En la sección de script, modificar la variable reactiva posicionTitulo:
+const posicionTitulo = reactive({
+  top: 50,
+  left: 200,
+  width: 400,
+  fontSize: 24 // Tamaño de fuente inicial
+});
+
+const posicionMesa = reactive({
+  top: 100,
+  left: 50,
+  width: 150,
+  fontSize: 24
+});
+
+const posicionPartida = reactive({
+  top: 100,
+  left: 250,
+  width: 150,
+  fontSize: 24
+});
+
+// Variables para el arrastre y redimensionamiento de cada elemento
+const isDraggingTitulo = ref(false);
+const isDraggingParejas = ref(false);
+const isResizingTitulo = ref(false);
+const isResizingParejas = ref(false);
+
+// En la sección de script, modificar la variable reactiva espacioMesaPartida:
+const espacioMesaPartida = ref(2); // Espacio inicial entre mesa y partida
+const isAjustandoEspacio = ref(false);
+
+// En la sección de script, reemplazar las variables y funciones de fecha/mesa:
+const isDraggingMesa = ref(false);
+const isDraggingPartida = ref(false);
+const isResizingMesa = ref(false);
+const isResizingPartida = ref(false);
+
+// Variables reactivas para las posiciones de cada elemento
+const posicionPareja1Nombre = reactive({
+  top: 150,
+  left: 50,
+  width: 200,
+  fontSize: 16
+});
+
+const posicionPareja1Pos = reactive({
+  top: 150,
+  left: 260,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja1PG = reactive({
+  top: 150,
+  left: 350,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja1Dif = reactive({
+  top: 150,
+  left: 440,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2Nombre = reactive({
+  top: 200,
+  left: 50,
+  width: 200,
+  fontSize: 16
+});
+
+const posicionPareja2Pos = reactive({
+  top: 200,
+  left: 260,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2PG = reactive({
+  top: 200,
+  left: 350,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2Dif = reactive({
+  top: 200,
+  left: 440,
+  width: 80,
+  fontSize: 16
+});
+
+// Variables para el arrastre y redimensionamiento
+const isDraggingPareja1Nombre = ref(false);
+const isDraggingPareja1Pos = ref(false);
+const isDraggingPareja1PG = ref(false);
+const isDraggingPareja1Dif = ref(false);
+const isDraggingPareja2Nombre = ref(false);
+const isDraggingPareja2Pos = ref(false);
+const isDraggingPareja2PG = ref(false);
+const isDraggingPareja2Dif = ref(false);
+
+const isResizingPareja1Nombre = ref(false);
+const isResizingPareja1Pos = ref(false);
+const isResizingPareja1PG = ref(false);
+const isResizingPareja1Dif = ref(false);
+const isResizingPareja2Nombre = ref(false);
+const isResizingPareja2Pos = ref(false);
+const isResizingPareja2PG = ref(false);
+const isResizingPareja2Dif = ref(false);
+
+// Variables de estado para el lado derecho
+const isDraggingPareja1NombreDerecha = ref(false);
+const isDraggingPareja1PosDerecha = ref(false);
+const isDraggingPareja1PGDerecha = ref(false);
+const isDraggingPareja1DifDerecha = ref(false);
+const isDraggingPareja2NombreDerecha = ref(false);
+const isDraggingPareja2PosDerecha = ref(false);
+const isDraggingPareja2PGDerecha = ref(false);
+const isDraggingPareja2DifDerecha = ref(false);
+
+const isResizingPareja1NombreDerecha = ref(false);
+const isResizingPareja1PosDerecha = ref(false);
+const isResizingPareja1PGDerecha = ref(false);
+const isResizingPareja1DifDerecha = ref(false);
+const isResizingPareja2NombreDerecha = ref(false);
+const isResizingPareja2PosDerecha = ref(false);
+const isResizingPareja2PGDerecha = ref(false);
+const isResizingPareja2DifDerecha = ref(false);
+
+// Variables reactivas para las posiciones del lado derecho
+const posicionPareja1NombreDerecha = reactive({
+  top: 150,
+  left: 450,
+  width: 200,
+  fontSize: 16
+});
+
+const posicionPareja1PosDerecha = reactive({
+  top: 150,
+  left: 660,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja1PGDerecha = reactive({
+  top: 150,
+  left: 750,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja1DifDerecha = reactive({
+  top: 150,
+  left: 840,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2NombreDerecha = reactive({
+  top: 200,
+  left: 450,
+  width: 200,
+  fontSize: 16
+});
+
+const posicionPareja2PosDerecha = reactive({
+  top: 200,
+  left: 660,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2PGDerecha = reactive({
+  top: 200,
+  left: 750,
+  width: 80,
+  fontSize: 16
+});
+
+const posicionPareja2DifDerecha = reactive({
+  top: 200,
+  left: 840,
+  width: 80,
+  fontSize: 16
+});
+
+// Cargar valores guardados al cambiar de lado
+watch(lado, (nuevoLado) => {
+  console.log(`Cambiando a lado: ${nuevoLado}`);
+  
+  if (nuevoLado === 'izquierda') {
+    // Cargar valores para el lado izquierdo
+    const posGuardada = props.posicionLogoGuardada['izquierda'];
+    console.log('Posición guardada izquierda:', posGuardada);
+    
+    if (posGuardada) {
+      posicionLogo.top = posGuardada.top;
+      posicionLogo.left = posGuardada.left;
+      posicionLogo.width = posGuardada.width;
+      posicionLogo.height = posGuardada.height;
+    } else {
+      // Intentar cargar desde localStorage
+      const savedPosString = localStorage.getItem('logo_posicion_izquierda');
+      if (savedPosString) {
+        try {
+          const savedPos = JSON.parse(savedPosString);
+          posicionLogo.top = savedPos.top;
+          posicionLogo.left = savedPos.left;
+          posicionLogo.width = savedPos.width;
+          posicionLogo.height = savedPos.height;
+        } catch (e) {
+          console.error('Error al cargar posición guardada izquierda:', e);
+          // Valores predeterminados
+          posicionLogo.top = DEFAULT_TOP;
+          posicionLogo.left = DEFAULT_LEFT_POS;
+          posicionLogo.width = DEFAULT_WIDTH;
+          posicionLogo.height = DEFAULT_HEIGHT;
+        }
+      } else {
+        // Valores predeterminados
+        posicionLogo.top = DEFAULT_TOP;
+        posicionLogo.left = DEFAULT_LEFT_POS;
+        posicionLogo.width = DEFAULT_WIDTH;
+        posicionLogo.height = DEFAULT_HEIGHT;
+      }
+    }
+  } else if (nuevoLado === 'derecha') {
+    // Cargar valores para el lado derecho
+    const posGuardada = props.posicionLogoGuardada['derecha'];
+    console.log('Posición guardada derecha:', posGuardada);
+    
+    if (posGuardada) {
+      posicionLogo.top = posGuardada.top;
+      posicionLogo.left = posGuardada.left;
+      posicionLogo.width = posGuardada.width;
+      posicionLogo.height = posGuardada.height;
+    } else {
+      // Intentar cargar desde localStorage
+      const savedPosString = localStorage.getItem('logo_posicion_derecha');
+      if (savedPosString) {
+        try {
+          const savedPos = JSON.parse(savedPosString);
+          posicionLogo.top = savedPos.top;
+          posicionLogo.left = savedPos.left;
+          posicionLogo.width = savedPos.width;
+          posicionLogo.height = savedPos.height;
+        } catch (e) {
+          console.error('Error al cargar posición guardada derecha:', e);
+          // Valores predeterminados
+          posicionLogo.top = DEFAULT_TOP;
+          posicionLogo.left = DEFAULT_RIGHT_POS;
+          posicionLogo.width = DEFAULT_WIDTH;
+          posicionLogo.height = DEFAULT_HEIGHT;
+        }
+      } else {
+        // Valores predeterminados
+        posicionLogo.top = DEFAULT_TOP;
+        posicionLogo.left = DEFAULT_RIGHT_POS;
+        posicionLogo.width = DEFAULT_WIDTH;
+        posicionLogo.height = DEFAULT_HEIGHT;
+      }
+    }
+  } else if (nuevoLado === 'ambos') {
+    // Cargar valores para ambos lados (usar el izquierdo como activo)
+    const posGuardadaIzquierda = props.posicionLogoGuardada['izquierda'];
+    
+    if (posGuardadaIzquierda) {
+      posicionLogo.top = posGuardadaIzquierda.top;
+      posicionLogo.left = posGuardadaIzquierda.left;
+      posicionLogo.width = posGuardadaIzquierda.width;
+      posicionLogo.height = posGuardadaIzquierda.height;
+    } else {
+      // Intentar cargar desde localStorage
+      const savedPosString = localStorage.getItem('logo_posicion_izquierda');
+      if (savedPosString) {
+        try {
+          const savedPos = JSON.parse(savedPosString);
+          posicionLogo.top = savedPos.top;
+          posicionLogo.left = savedPos.left;
+          posicionLogo.width = savedPos.width;
+          posicionLogo.height = savedPos.height;
+        } catch (e) {
+          console.error('Error al cargar posición guardada izquierda:', e);
+          // Valores predeterminados
+          posicionLogo.top = DEFAULT_TOP;
+          posicionLogo.left = DEFAULT_LEFT_POS;
+          posicionLogo.width = DEFAULT_WIDTH;
+          posicionLogo.height = DEFAULT_HEIGHT;
+        }
+      } else {
+        // Valores predeterminados
+        posicionLogo.top = DEFAULT_TOP;
+        posicionLogo.left = DEFAULT_LEFT_POS;
+        posicionLogo.width = DEFAULT_WIDTH;
+        posicionLogo.height = DEFAULT_HEIGHT;
+      }
+    }
+  }
+});
+
+// Iniciar arrastre del logo
+const iniciarArrastre = (e) => {
+  if (isResizing.value) return;
+  
+  isDragging.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  // Evento global de ratón para mover
+  window.addEventListener('mousemove', moverElemento);
+  window.addEventListener('mouseup', finalizarArrastre);
+
+  // Prevenir selección de texto durante el arrastre
+  e.preventDefault();
+};
+
+// Mover el logo durante el arrastre
+const moverElemento = (e) => {
+  if (!isDragging.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const containerRect = plantillaContainer.value.getBoundingClientRect();
+  
+  // Ajustar por la escala de visualización
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  // Calcular nuevas posiciones con límites
+  let newLeft = posicionLogo.left + deltaXAjustado;
+  let newTop = posicionLogo.top + deltaYAjustado;
+  
+  // Limitar dentro del contenedor A4 (842x595)
+  const maxLeftLimit = 842 - posicionLogo.width;
+  const maxTopLimit = 595 - posicionLogo.height;
+  
+  // Si estamos editando el lado derecho, permitir moverse más hacia la izquierda
+  // pero no demasiado para evitar solapar completamente el lado izquierdo
+  if (lado.value === 'derecha') {
+    // Permitir mover hasta 100px a la izquierda de la mitad (321px en lugar de 421px)
+    const limiteIzquierdo = Math.max(321, 421 - posicionLogo.width / 2);
+    newLeft = Math.max(limiteIzquierdo, Math.min(newLeft, maxLeftLimit));
+  } else {
+    // Para el lado izquierdo o ambos, mantener dentro de los límites normales
+    newLeft = Math.max(0, Math.min(newLeft, maxLeftLimit));
+  }
+  
+  newTop = Math.max(0, Math.min(newTop, maxTopLimit));
+  
+  // Actualizar posición
+  posicionLogo.left = Math.round(newLeft);
+  posicionLogo.top = Math.round(newTop);
+};
+
+// Finalizar arrastre
+const finalizarArrastre = () => {
+  isDragging.value = false;
+  window.removeEventListener('mousemove', moverElemento);
+  window.removeEventListener('mouseup', finalizarArrastre);
+};
+
+// Iniciar redimensionamiento
+const iniciarRedimension = (e) => {
+  isResizing.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarElemento);
+  window.addEventListener('mouseup', finalizarRedimension);
+  
+  e.preventDefault();
+};
+
+// Redimensionar durante el arrastre
+const redimensionarElemento = (e) => {
+  if (!isResizing.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  // Ajustar por la escala de visualización
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  // Calcular nuevo tamaño con límites
+  let newWidth = posicionLogo.width + deltaXAjustado;
+  let newHeight = posicionLogo.height + deltaYAjustado;
+  
+  // Limitar tamaño mínimo y máximo (A4 apaisado = 842x595)
+  newWidth = Math.max(20, Math.min(newWidth, 842 - posicionLogo.left));
+  newHeight = Math.max(20, Math.min(newHeight, 595 - posicionLogo.top));
+  
+  // Actualizar tamaño
+  posicionLogo.width = Math.round(newWidth);
+  posicionLogo.height = Math.round(newHeight);
+};
+
+// Finalizar redimensionamiento
+const finalizarRedimension = () => {
+  isResizing.value = false;
+  window.removeEventListener('mousemove', redimensionarElemento);
+  window.removeEventListener('mouseup', finalizarRedimension);
+};
+
+// Funciones para el arrastre y redimensionamiento del título
+const iniciarArrastreTitulo = (e) => {
+  if (isResizingTitulo.value) return;
+  isDraggingTitulo.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverTitulo);
+  window.addEventListener('mouseup', finalizarArrastreTitulo);
+  e.preventDefault();
+};
+
+const moverTitulo = (e) => {
+  if (!isDraggingTitulo.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionTitulo.left + deltaXAjustado;
+  let newTop = posicionTitulo.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionTitulo.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionTitulo.left = Math.round(newLeft);
+  posicionTitulo.top = Math.round(newTop);
+};
+
+const finalizarArrastreTitulo = () => {
+  isDraggingTitulo.value = false;
+  window.removeEventListener('mousemove', moverTitulo);
+  window.removeEventListener('mouseup', finalizarArrastreTitulo);
+};
+
+// Agregar las funciones de redimensionamiento del título
+const iniciarRedimensionTitulo = (e) => {
+  isResizingTitulo.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarTitulo);
+  window.addEventListener('mouseup', finalizarRedimensionTitulo);
+  
+  e.preventDefault();
+};
+
+const redimensionarTitulo = (e) => {
+  if (!isResizingTitulo.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  // Ajustar por la escala de visualización
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  // Calcular nuevo tamaño con límites
+  let newWidth = posicionTitulo.width + deltaXAjustado;
+  let newFontSize = posicionTitulo.fontSize + (deltaYAjustado * 0.5); // Factor de escala para el tamaño de fuente
+  
+  // Limitar tamaño mínimo y máximo
+  newWidth = Math.max(100, Math.min(newWidth, 842 - posicionTitulo.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72)); // Límites razonables para el tamaño de fuente
+  
+  // Actualizar tamaño
+  posicionTitulo.width = Math.round(newWidth);
+  posicionTitulo.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionTitulo = () => {
+  isResizingTitulo.value = false;
+  window.removeEventListener('mousemove', redimensionarTitulo);
+  window.removeEventListener('mouseup', finalizarRedimensionTitulo);
+};
+
+// Funciones para el arrastre y redimensionamiento de Mesa
+const iniciarArrastreMesa = (e) => {
+  if (isResizingMesa.value) return;
+  isDraggingMesa.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverMesa);
+  window.addEventListener('mouseup', finalizarArrastreMesa);
+  e.preventDefault();
+};
+
+const moverMesa = (e) => {
+  if (!isDraggingMesa.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionMesa.left + deltaXAjustado;
+  let newTop = posicionMesa.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionMesa.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionMesa.left = Math.round(newLeft);
+  posicionMesa.top = Math.round(newTop);
+};
+
+const finalizarArrastreMesa = () => {
+  isDraggingMesa.value = false;
+  window.removeEventListener('mousemove', moverMesa);
+  window.removeEventListener('mouseup', finalizarArrastreMesa);
+};
+
+const iniciarRedimensionMesa = (e) => {
+  isResizingMesa.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarMesa);
+  window.addEventListener('mouseup', finalizarRedimensionMesa);
+  
+  e.preventDefault();
+};
+
+const redimensionarMesa = (e) => {
+  if (!isResizingMesa.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionMesa.width + deltaXAjustado;
+  let newFontSize = posicionMesa.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionMesa.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionMesa.width = Math.round(newWidth);
+  posicionMesa.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionMesa = () => {
+  isResizingMesa.value = false;
+  window.removeEventListener('mousemove', redimensionarMesa);
+  window.removeEventListener('mouseup', finalizarRedimensionMesa);
+};
+
+// Funciones para el arrastre y redimensionamiento de Partida
+const iniciarArrastrePartida = (e) => {
+  if (isResizingPartida.value) return;
+  isDraggingPartida.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPartida);
+  window.addEventListener('mouseup', finalizarArrastrePartida);
+  e.preventDefault();
+};
+
+const moverPartida = (e) => {
+  if (!isDraggingPartida.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPartida.left + deltaXAjustado;
+  let newTop = posicionPartida.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPartida.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPartida.left = Math.round(newLeft);
+  posicionPartida.top = Math.round(newTop);
+};
+
+const finalizarArrastrePartida = () => {
+  isDraggingPartida.value = false;
+  window.removeEventListener('mousemove', moverPartida);
+  window.removeEventListener('mouseup', finalizarArrastrePartida);
+};
+
+const iniciarRedimensionPartida = (e) => {
+  isResizingPartida.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPartida);
+  window.addEventListener('mouseup', finalizarRedimensionPartida);
+  
+  e.preventDefault();
+};
+
+const redimensionarPartida = (e) => {
+  if (!isResizingPartida.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPartida.width + deltaXAjustado;
+  let newFontSize = posicionPartida.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPartida.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPartida.width = Math.round(newWidth);
+  posicionPartida.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPartida = () => {
+  isResizingPartida.value = false;
+  window.removeEventListener('mousemove', redimensionarPartida);
+  window.removeEventListener('mouseup', finalizarRedimensionPartida);
+};
+
+// Funciones para Pareja 1 - Nombre
+const iniciarArrastrePareja1Nombre = (e) => {
+  if (isResizingPareja1Nombre.value) return;
+  isDraggingPareja1Nombre.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja1Nombre);
+  window.addEventListener('mouseup', finalizarArrastrePareja1Nombre);
+  e.preventDefault();
+};
+
+const moverPareja1Nombre = (e) => {
+  if (!isDraggingPareja1Nombre.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja1Nombre.left + deltaXAjustado;
+  let newTop = posicionPareja1Nombre.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja1Nombre.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja1Nombre.left = Math.round(newLeft);
+  posicionPareja1Nombre.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja1Nombre = () => {
+  isDraggingPareja1Nombre.value = false;
+  window.removeEventListener('mousemove', moverPareja1Nombre);
+  window.removeEventListener('mouseup', finalizarArrastrePareja1Nombre);
+};
+
+const iniciarRedimensionPareja1Nombre = (e) => {
+  isResizingPareja1Nombre.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja1Nombre);
+  window.addEventListener('mouseup', finalizarRedimensionPareja1Nombre);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja1Nombre = (e) => {
+  if (!isResizingPareja1Nombre.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja1Nombre.width + deltaXAjustado;
+  let newFontSize = posicionPareja1Nombre.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja1Nombre.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja1Nombre.width = Math.round(newWidth);
+  posicionPareja1Nombre.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja1Nombre = () => {
+  isResizingPareja1Nombre.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja1Nombre);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja1Nombre);
+};
+
+// Funciones para Pareja 1 - Posición
+const iniciarArrastrePareja1Pos = (e) => {
+  if (isResizingPareja1Pos.value) return;
+  isDraggingPareja1Pos.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja1Pos);
+  window.addEventListener('mouseup', finalizarArrastrePareja1Pos);
+  e.preventDefault();
+};
+
+const moverPareja1Pos = (e) => {
+  if (!isDraggingPareja1Pos.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja1Pos.left + deltaXAjustado;
+  let newTop = posicionPareja1Pos.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja1Pos.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja1Pos.left = Math.round(newLeft);
+  posicionPareja1Pos.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja1Pos = () => {
+  isDraggingPareja1Pos.value = false;
+  window.removeEventListener('mousemove', moverPareja1Pos);
+  window.removeEventListener('mouseup', finalizarArrastrePareja1Pos);
+};
+
+const iniciarRedimensionPareja1Pos = (e) => {
+  isResizingPareja1Pos.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja1Pos);
+  window.addEventListener('mouseup', finalizarRedimensionPareja1Pos);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja1Pos = (e) => {
+  if (!isResizingPareja1Pos.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja1Pos.width + deltaXAjustado;
+  let newFontSize = posicionPareja1Pos.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja1Pos.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja1Pos.width = Math.round(newWidth);
+  posicionPareja1Pos.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja1Pos = () => {
+  isResizingPareja1Pos.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja1Pos);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja1Pos);
+};
+
+// Funciones para Pareja 1 - Partidas Ganadas
+const iniciarArrastrePareja1PG = (e) => {
+  if (isResizingPareja1PG.value) return;
+  isDraggingPareja1PG.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja1PG);
+  window.addEventListener('mouseup', finalizarArrastrePareja1PG);
+  e.preventDefault();
+};
+
+const moverPareja1PG = (e) => {
+  if (!isDraggingPareja1PG.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja1PG.left + deltaXAjustado;
+  let newTop = posicionPareja1PG.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja1PG.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja1PG.left = Math.round(newLeft);
+  posicionPareja1PG.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja1PG = () => {
+  isDraggingPareja1PG.value = false;
+  window.removeEventListener('mousemove', moverPareja1PG);
+  window.removeEventListener('mouseup', finalizarArrastrePareja1PG);
+};
+
+const iniciarRedimensionPareja1PG = (e) => {
+  isResizingPareja1PG.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja1PG);
+  window.addEventListener('mouseup', finalizarRedimensionPareja1PG);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja1PG = (e) => {
+  if (!isResizingPareja1PG.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja1PG.width + deltaXAjustado;
+  let newFontSize = posicionPareja1PG.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja1PG.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja1PG.width = Math.round(newWidth);
+  posicionPareja1PG.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja1PG = () => {
+  isResizingPareja1PG.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja1PG);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja1PG);
+};
+
+// Funciones para Pareja 1 - Diferencia
+const iniciarArrastrePareja1Dif = (e) => {
+  if (isResizingPareja1Dif.value) return;
+  isDraggingPareja1Dif.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja1Dif);
+  window.addEventListener('mouseup', finalizarArrastrePareja1Dif);
+  e.preventDefault();
+};
+
+const moverPareja1Dif = (e) => {
+  if (!isDraggingPareja1Dif.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja1Dif.left + deltaXAjustado;
+  let newTop = posicionPareja1Dif.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja1Dif.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja1Dif.left = Math.round(newLeft);
+  posicionPareja1Dif.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja1Dif = () => {
+  isDraggingPareja1Dif.value = false;
+  window.removeEventListener('mousemove', moverPareja1Dif);
+  window.removeEventListener('mouseup', finalizarArrastrePareja1Dif);
+};
+
+const iniciarRedimensionPareja1Dif = (e) => {
+  isResizingPareja1Dif.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja1Dif);
+  window.addEventListener('mouseup', finalizarRedimensionPareja1Dif);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja1Dif = (e) => {
+  if (!isResizingPareja1Dif.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja1Dif.width + deltaXAjustado;
+  let newFontSize = posicionPareja1Dif.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja1Dif.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja1Dif.width = Math.round(newWidth);
+  posicionPareja1Dif.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja1Dif = () => {
+  isResizingPareja1Dif.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja1Dif);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja1Dif);
+};
+
+// Funciones para Pareja 2 - Nombre
+const iniciarArrastrePareja2Nombre = (e) => {
+  if (isResizingPareja2Nombre.value) return;
+  isDraggingPareja2Nombre.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja2Nombre);
+  window.addEventListener('mouseup', finalizarArrastrePareja2Nombre);
+  e.preventDefault();
+};
+
+const moverPareja2Nombre = (e) => {
+  if (!isDraggingPareja2Nombre.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja2Nombre.left + deltaXAjustado;
+  let newTop = posicionPareja2Nombre.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja2Nombre.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja2Nombre.left = Math.round(newLeft);
+  posicionPareja2Nombre.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja2Nombre = () => {
+  isDraggingPareja2Nombre.value = false;
+  window.removeEventListener('mousemove', moverPareja2Nombre);
+  window.removeEventListener('mouseup', finalizarArrastrePareja2Nombre);
+};
+
+const iniciarRedimensionPareja2Nombre = (e) => {
+  isResizingPareja2Nombre.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja2Nombre);
+  window.addEventListener('mouseup', finalizarRedimensionPareja2Nombre);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja2Nombre = (e) => {
+  if (!isResizingPareja2Nombre.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja2Nombre.width + deltaXAjustado;
+  let newFontSize = posicionPareja2Nombre.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja2Nombre.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja2Nombre.width = Math.round(newWidth);
+  posicionPareja2Nombre.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja2Nombre = () => {
+  isResizingPareja2Nombre.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja2Nombre);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja2Nombre);
+};
+
+// Funciones para Pareja 2 - Posición
+const iniciarArrastrePareja2Pos = (e) => {
+  if (isResizingPareja2Pos.value) return;
+  isDraggingPareja2Pos.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja2Pos);
+  window.addEventListener('mouseup', finalizarArrastrePareja2Pos);
+  e.preventDefault();
+};
+
+const moverPareja2Pos = (e) => {
+  if (!isDraggingPareja2Pos.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja2Pos.left + deltaXAjustado;
+  let newTop = posicionPareja2Pos.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja2Pos.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja2Pos.left = Math.round(newLeft);
+  posicionPareja2Pos.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja2Pos = () => {
+  isDraggingPareja2Pos.value = false;
+  window.removeEventListener('mousemove', moverPareja2Pos);
+  window.removeEventListener('mouseup', finalizarArrastrePareja2Pos);
+};
+
+const iniciarRedimensionPareja2Pos = (e) => {
+  isResizingPareja2Pos.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja2Pos);
+  window.addEventListener('mouseup', finalizarRedimensionPareja2Pos);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja2Pos = (e) => {
+  if (!isResizingPareja2Pos.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja2Pos.width + deltaXAjustado;
+  let newFontSize = posicionPareja2Pos.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja2Pos.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja2Pos.width = Math.round(newWidth);
+  posicionPareja2Pos.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja2Pos = () => {
+  isResizingPareja2Pos.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja2Pos);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja2Pos);
+};
+
+// Funciones para Pareja 2 - Partidas Ganadas
+const iniciarArrastrePareja2PG = (e) => {
+  if (isResizingPareja2PG.value) return;
+  isDraggingPareja2PG.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja2PG);
+  window.addEventListener('mouseup', finalizarArrastrePareja2PG);
+  e.preventDefault();
+};
+
+const moverPareja2PG = (e) => {
+  if (!isDraggingPareja2PG.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja2PG.left + deltaXAjustado;
+  let newTop = posicionPareja2PG.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja2PG.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja2PG.left = Math.round(newLeft);
+  posicionPareja2PG.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja2PG = () => {
+  isDraggingPareja2PG.value = false;
+  window.removeEventListener('mousemove', moverPareja2PG);
+  window.removeEventListener('mouseup', finalizarArrastrePareja2PG);
+};
+
+const iniciarRedimensionPareja2PG = (e) => {
+  isResizingPareja2PG.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja2PG);
+  window.addEventListener('mouseup', finalizarRedimensionPareja2PG);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja2PG = (e) => {
+  if (!isResizingPareja2PG.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja2PG.width + deltaXAjustado;
+  let newFontSize = posicionPareja2PG.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja2PG.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja2PG.width = Math.round(newWidth);
+  posicionPareja2PG.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja2PG = () => {
+  isResizingPareja2PG.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja2PG);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja2PG);
+};
+
+// Funciones para Pareja 2 - Diferencia
+const iniciarArrastrePareja2Dif = (e) => {
+  if (isResizingPareja2Dif.value) return;
+  isDraggingPareja2Dif.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  window.addEventListener('mousemove', moverPareja2Dif);
+  window.addEventListener('mouseup', finalizarArrastrePareja2Dif);
+  e.preventDefault();
+};
+
+const moverPareja2Dif = (e) => {
+  if (!isDraggingPareja2Dif.value) return;
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newLeft = posicionPareja2Dif.left + deltaXAjustado;
+  let newTop = posicionPareja2Dif.top + deltaYAjustado;
+  
+  newLeft = Math.max(0, Math.min(newLeft, 842 - posicionPareja2Dif.width));
+  newTop = Math.max(0, Math.min(newTop, 595 - 50));
+  
+  posicionPareja2Dif.left = Math.round(newLeft);
+  posicionPareja2Dif.top = Math.round(newTop);
+};
+
+const finalizarArrastrePareja2Dif = () => {
+  isDraggingPareja2Dif.value = false;
+  window.removeEventListener('mousemove', moverPareja2Dif);
+  window.removeEventListener('mouseup', finalizarArrastrePareja2Dif);
+};
+
+const iniciarRedimensionPareja2Dif = (e) => {
+  isResizingPareja2Dif.value = true;
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  window.addEventListener('mousemove', redimensionarPareja2Dif);
+  window.addEventListener('mouseup', finalizarRedimensionPareja2Dif);
+  
+  e.preventDefault();
+};
+
+const redimensionarPareja2Dif = (e) => {
+  if (!isResizingPareja2Dif.value) return;
+  
+  const deltaX = e.clientX - lastPos.x;
+  const deltaY = e.clientY - lastPos.y;
+  
+  lastPos.x = e.clientX;
+  lastPos.y = e.clientY;
+  
+  const deltaXAjustado = deltaX / escalaPrevia.value;
+  const deltaYAjustado = deltaY / escalaPrevia.value;
+  
+  let newWidth = posicionPareja2Dif.width + deltaXAjustado;
+  let newFontSize = posicionPareja2Dif.fontSize + (deltaYAjustado * 0.5);
+  
+  newWidth = Math.max(50, Math.min(newWidth, 842 - posicionPareja2Dif.left));
+  newFontSize = Math.max(12, Math.min(newFontSize, 72));
+  
+  posicionPareja2Dif.width = Math.round(newWidth);
+  posicionPareja2Dif.fontSize = Math.round(newFontSize);
+};
+
+const finalizarRedimensionPareja2Dif = () => {
+  isResizingPareja2Dif.value = false;
+  window.removeEventListener('mousemove', redimensionarPareja2Dif);
+  window.removeEventListener('mouseup', finalizarRedimensionPareja2Dif);
+};
+
+// Funciones para Pareja 1 - Nombre (Lado Derecho)
+const iniciarArrastrePareja1NombreDerecha = (event) => {
+  isDraggingPareja1NombreDerecha.value = true;
+  const elemento = event.target;
+  const rect = elemento.getBoundingClientRect();
+  offsetX.value = event.clientX - rect.left;
+  offsetY.value = event.clientY - rect.top;
+  document.addEventListener('mousemove', moverPareja1NombreDerecha);
+  document.addEventListener('mouseup', finalizarArrastrePareja1NombreDerecha);
+};
+
+const moverPareja1NombreDerecha = (event) => {
+  if (!isDraggingPareja1NombreDerecha.value) return;
+  
+  const contenedor = document.querySelector('.contenedor-principal');
+  const rect = contenedor.getBoundingClientRect();
+  
+  const newLeft = event.clientX - rect.left - offsetX.value;
+  const newTop = event.clientY - rect.top - offsetY.value;
+  
+  posicionPareja1NombreDerecha.value.left = Math.max(0, Math.min(newLeft, rect.width - 100));
+  posicionPareja1NombreDerecha.value.top = Math.max(0, Math.min(newTop, rect.height - 50));
+  
+  guardarPosicion();
+};
+
+const finalizarArrastrePareja1NombreDerecha = () => {
+  isDraggingPareja1NombreDerecha.value = false;
+  document.removeEventListener('mousemove', moverPareja1NombreDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1NombreDerecha);
+};
+
+const iniciarRedimensionPareja1NombreDerecha = (event) => {
+  event.stopPropagation();
+  isResizingPareja1NombreDerecha.value = true;
+  const elemento = event.target;
+  const rect = elemento.getBoundingClientRect();
+  offsetX.value = event.clientX - rect.left;
+  offsetY.value = event.clientY - rect.top;
+  
+  document.addEventListener('mousemove', redimensionarPareja1NombreDerecha);
+  document.addEventListener('mouseup', finalizarRedimensionPareja1NombreDerecha);
+};
+
+const redimensionarPareja1NombreDerecha = (event) => {
+  if (!isResizingPareja1NombreDerecha.value) return;
+  
+  const deltaX = event.clientX - event.target.getBoundingClientRect().left - offsetX.value;
+  const deltaY = event.clientY - event.target.getBoundingClientRect().top - offsetY.value;
+  
+  posicionPareja1NombreDerecha.value.width = Math.max(50, posicionPareja1NombreDerecha.value.width + deltaX);
+  posicionPareja1NombreDerecha.value.fontSize = Math.max(12, posicionPareja1NombreDerecha.value.fontSize + deltaY / 10);
+  
+  guardarPosicion();
+};
+
+const finalizarRedimensionPareja1NombreDerecha = () => {
+  isResizingPareja1NombreDerecha.value = false;
+  document.removeEventListener('mousemove', redimensionarPareja1NombreDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1NombreDerecha);
+};
+
+// Funciones similares para los demás elementos del lado derecho
+// Pareja 1 - Posición
+const iniciarArrastrePareja1PosDerecha = (event) => {
+  isDraggingPareja1PosDerecha.value = true;
+  const elemento = event.target;
+  const rect = elemento.getBoundingClientRect();
+  offsetX.value = event.clientX - rect.left;
+  offsetY.value = event.clientY - rect.top;
+  
+  document.addEventListener('mousemove', moverPareja1PosDerecha);
+  document.addEventListener('mouseup', finalizarArrastrePareja1PosDerecha);
+};
+
+const moverPareja1PosDerecha = (event) => {
+  if (!isDraggingPareja1PosDerecha.value) return;
+  
+  const contenedor = document.querySelector('.contenedor-principal');
+  const rect = contenedor.getBoundingClientRect();
+  
+  const newLeft = event.clientX - rect.left - offsetX.value;
+  const newTop = event.clientY - rect.top - offsetY.value;
+  
+  posicionPareja1PosDerecha.value.left = Math.max(0, Math.min(newLeft, rect.width - 100));
+  posicionPareja1PosDerecha.value.top = Math.max(0, Math.min(newTop, rect.height - 50));
+  
+  guardarPosicion();
+};
+
+const finalizarArrastrePareja1PosDerecha = () => {
+  isDraggingPareja1PosDerecha.value = false;
+  document.removeEventListener('mousemove', moverPareja1PosDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1PosDerecha);
+};
+
+// ... Continuar con las funciones para los demás elementos del lado derecho ...
+
+// Guardar posición actual
+const guardarPosicion = () => {
+  const posiciones = {
+    // Posiciones del lado izquierdo
+    logo: {
+      top: posicionLogo.top,
+      left: posicionLogo.left,
+      width: posicionLogo.width,
+      height: posicionLogo.height
+    },
+    titulo: {
+      top: posicionTitulo.top,
+      left: posicionTitulo.left,
+      width: posicionTitulo.width,
+      fontSize: posicionTitulo.fontSize
+    },
+    mesa: {
+      top: posicionMesa.top,
+      left: posicionMesa.left,
+      width: posicionMesa.width,
+      fontSize: posicionMesa.fontSize
+    },
+    partida: {
+      top: posicionPartida.top,
+      left: posicionPartida.left,
+      width: posicionPartida.width,
+      fontSize: posicionPartida.fontSize
+    },
+    pareja1: {
+      nombre: {
+        top: posicionPareja1Nombre.top,
+        left: posicionPareja1Nombre.left,
+        width: posicionPareja1Nombre.width,
+        fontSize: posicionPareja1Nombre.fontSize
+      },
+      pos: {
+        top: posicionPareja1Pos.top,
+        left: posicionPareja1Pos.left,
+        width: posicionPareja1Pos.width,
+        fontSize: posicionPareja1Pos.fontSize
+      },
+      pg: {
+        top: posicionPareja1PG.top,
+        left: posicionPareja1PG.left,
+        width: posicionPareja1PG.width,
+        fontSize: posicionPareja1PG.fontSize
+      },
+      dif: {
+        top: posicionPareja1Dif.top,
+        left: posicionPareja1Dif.left,
+        width: posicionPareja1Dif.width,
+        fontSize: posicionPareja1Dif.fontSize
+      }
+    },
+    pareja2: {
+      nombre: {
+        top: posicionPareja2Nombre.top,
+        left: posicionPareja2Nombre.left,
+        width: posicionPareja2Nombre.width,
+        fontSize: posicionPareja2Nombre.fontSize
+      },
+      pos: {
+        top: posicionPareja2Pos.top,
+        left: posicionPareja2Pos.left,
+        width: posicionPareja2Pos.width,
+        fontSize: posicionPareja2Pos.fontSize
+      },
+      pg: {
+        top: posicionPareja2PG.top,
+        left: posicionPareja2PG.left,
+        width: posicionPareja2PG.width,
+        fontSize: posicionPareja2PG.fontSize
+      },
+      dif: {
+        top: posicionPareja2Dif.top,
+        left: posicionPareja2Dif.left,
+        width: posicionPareja2Dif.width,
+        fontSize: posicionPareja2Dif.fontSize
+      }
+    },
+    // Posiciones del lado derecho
+    pareja1Derecha: {
+      nombre: {
+        top: posicionPareja1NombreDerecha.top,
+        left: posicionPareja1NombreDerecha.left,
+        width: posicionPareja1NombreDerecha.width,
+        fontSize: posicionPareja1NombreDerecha.fontSize
+      },
+      pos: {
+        top: posicionPareja1PosDerecha.top,
+        left: posicionPareja1PosDerecha.left,
+        width: posicionPareja1PosDerecha.width,
+        fontSize: posicionPareja1PosDerecha.fontSize
+      },
+      pg: {
+        top: posicionPareja1PGDerecha.top,
+        left: posicionPareja1PGDerecha.left,
+        width: posicionPareja1PGDerecha.width,
+        fontSize: posicionPareja1PGDerecha.fontSize
+      },
+      dif: {
+        top: posicionPareja1DifDerecha.top,
+        left: posicionPareja1DifDerecha.left,
+        width: posicionPareja1DifDerecha.width,
+        fontSize: posicionPareja1DifDerecha.fontSize
+      }
+    },
+    pareja2Derecha: {
+      nombre: {
+        top: posicionPareja2NombreDerecha.top,
+        left: posicionPareja2NombreDerecha.left,
+        width: posicionPareja2NombreDerecha.width,
+        fontSize: posicionPareja2NombreDerecha.fontSize
+      },
+      pos: {
+        top: posicionPareja2PosDerecha.top,
+        left: posicionPareja2PosDerecha.left,
+        width: posicionPareja2PosDerecha.width,
+        fontSize: posicionPareja2PosDerecha.fontSize
+      },
+      pg: {
+        top: posicionPareja2PGDerecha.top,
+        left: posicionPareja2PGDerecha.left,
+        width: posicionPareja2PGDerecha.width,
+        fontSize: posicionPareja2PGDerecha.fontSize
+      },
+      dif: {
+        top: posicionPareja2DifDerecha.top,
+        left: posicionPareja2DifDerecha.left,
+        width: posicionPareja2DifDerecha.width,
+        fontSize: posicionPareja2DifDerecha.fontSize
+      }
+    }
+  };
+
+  localStorage.setItem('posiciones', JSON.stringify(posiciones));
+  
+  // Añadida funcionalidad para modo independiente
+  if (enModoIndependiente && enModoIndependiente.value) {
+    // Guardar el valor local
+    posicionLogoLocal.value = {
+      izquierda: { ...posicionLogo },
+      derecha: { ...posicionLogoDerecha }
+    };
+    
+    // Actualizar el servicio
+    actualizarServicioPosicionamiento();
+    
+    alert('Posiciones guardadas correctamente');
+  } else if (emit) {
+    // En modo componente, emitir el evento
+    emit('actualizar-posicion-logo', {
+      izquierda: { ...posicionLogo },
+      derecha: { ...posicionLogoDerecha }
+    });
+  }
+};
+
+// Resetear a posición predeterminada
+const resetearPosicion = () => {
+  // Resetear posiciones del lado izquierdo
+  Object.assign(posicionLogo, {
+    top: DEFAULT_TOP,
+    left: DEFAULT_LEFT_POS,
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT
+  });
+
+  Object.assign(posicionTitulo, {
+    top: 50,
+    left: 200,
+    width: 400,
+    fontSize: 24
+  });
+
+  Object.assign(posicionMesa, {
+    top: 100,
+    left: 50,
+    width: 150,
+    fontSize: 24
+  });
+
+  Object.assign(posicionPartida, {
+    top: 100,
+    left: 250,
+    width: 150,
+    fontSize: 24
+  });
+
+  // Resetear posiciones de Pareja 1 - Lado izquierdo
+  Object.assign(posicionPareja1Nombre, {
+    top: 150,
+    left: 50,
+    width: 200,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1Pos, {
+    top: 150,
+    left: 260,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1PG, {
+    top: 150,
+    left: 350,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1Dif, {
+    top: 150,
+    left: 440,
+    width: 80,
+    fontSize: 16
+  });
+
+  // Resetear posiciones de Pareja 2 - Lado izquierdo
+  Object.assign(posicionPareja2Nombre, {
+    top: 200,
+    left: 50,
+    width: 200,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2Pos, {
+    top: 200,
+    left: 260,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2PG, {
+    top: 200,
+    left: 350,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2Dif, {
+    top: 200,
+    left: 440,
+    width: 80,
+    fontSize: 16
+  });
+
+  // Resetear posiciones de Pareja 1 - Lado derecho
+  Object.assign(posicionPareja1NombreDerecha, {
+    top: 150,
+    left: 450,
+    width: 200,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1PosDerecha, {
+    top: 150,
+    left: 660,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1PGDerecha, {
+    top: 150,
+    left: 750,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja1DifDerecha, {
+    top: 150,
+    left: 840,
+    width: 80,
+    fontSize: 16
+  });
+
+  // Resetear posiciones de Pareja 2 - Lado derecho
+  Object.assign(posicionPareja2NombreDerecha, {
+    top: 200,
+    left: 450,
+    width: 200,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2PosDerecha, {
+    top: 200,
+    left: 660,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2PGDerecha, {
+    top: 200,
+    left: 750,
+    width: 80,
+    fontSize: 16
+  });
+
+  Object.assign(posicionPareja2DifDerecha, {
+    top: 200,
+    left: 840,
+    width: 80,
+    fontSize: 16
+  });
+
+  // Guardar las posiciones reseteadas
+  guardarPosicion();
+};
+
+// Cargar tamaño máximo disponible y posición guardada al montar el componente
+onMounted(async () => {
+  // Calcular dimensiones máximas
+  if (plantillaContainer.value) {
+    const containerRect = plantillaContainer.value.getBoundingClientRect();
+    maxWidth.value = containerRect.width;
+    maxHeight.value = containerRect.height;
+  }
+  
+  // Cargar las posiciones guardadas usando la nueva función
+  cargarPosicion();
+  
+  // Calcular la escala inicial
+  const contenedor = document.querySelector('.contenedor-principal');
+  if (contenedor) {
+    const anchoContenedor = contenedor.clientWidth;
+    escalaPrevia.value = Math.min(1, anchoContenedor / 842);
+  }
+  
+  // Común a ambos modos: Cargar posiciones guardadas
+  cargarPosicion();
+  
+  // Solo en modo independiente, cargar campeonato y plantilla
+  if (enModoIndependiente.value) {
+    try {
+      // Cargar el campeonato actual
+      campeonatoLocal.value = await campeonatoService.obtenerActual();
+      
+      if (campeonatoLocal.value && campeonatoLocal.value.logo && !campeonatoLocal.value.logo.startsWith('http')) {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        campeonatoLocal.value.logo = `${baseUrl}${campeonatoLocal.value.logo.startsWith('/') ? '' : '/'}${campeonatoLocal.value.logo}`;
+      }
+      
+      // Intentar cargar la plantilla desde el servidor primero
+      try {
+        const serverTemplateUrl = await plantillaService.obtenerPlantilla();
+        if (serverTemplateUrl) {
+          plantillaImagenLocal.value = serverTemplateUrl;
+        } else {
+          // Si no hay plantilla en el servidor, intentar cargar desde localStorage
+          const storedTemplateUrl = localStorage.getItem('plantilla_mesas_url');
+          if (storedTemplateUrl) {
+            plantillaImagenLocal.value = storedTemplateUrl;
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar la plantilla desde el servidor:', error);
+        // Intentar cargar desde localStorage como fallback
+        const storedTemplateUrl = localStorage.getItem('plantilla_mesas_url');
+        if (storedTemplateUrl) {
+          plantillaImagenLocal.value = storedTemplateUrl;
+        }
+      }
+      
+      // Cargar posición del logo desde localStorage
+      try {
+        const posLogoIzq = localStorage.getItem('logo_posicion_izquierda');
+        const posLogoDer = localStorage.getItem('logo_posicion_derecha');
+        
+        if (posLogoIzq) {
+          posicionLogoLocal.value.izquierda = JSON.parse(posLogoIzq);
+        }
+        
+        if (posLogoDer) {
+          posicionLogoLocal.value.derecha = JSON.parse(posLogoDer);
+        }
+      } catch (error) {
+        console.error('Error al cargar posición del logo:', error);
+      }
+    } catch (error) {
+      console.error('Error al inicializar el componente:', error);
+    }
+  }
+});
+
+// Limpiar eventos al desmontar
+onUnmounted(() => {
+  // Remover event listeners del logo
+  document.removeEventListener('mousemove', moverElemento);
+  document.removeEventListener('mouseup', finalizarArrastre);
+  document.removeEventListener('mousemove', redimensionarElemento);
+  document.removeEventListener('mouseup', finalizarRedimension);
+
+  // Remover event listeners del título
+  document.removeEventListener('mousemove', moverTitulo);
+  document.removeEventListener('mouseup', finalizarArrastreTitulo);
+  document.removeEventListener('mousemove', redimensionarTitulo);
+  document.removeEventListener('mouseup', finalizarRedimensionTitulo);
+
+  // Remover event listeners de mesa y partida
+  document.removeEventListener('mousemove', moverMesa);
+  document.removeEventListener('mouseup', finalizarArrastreMesa);
+  document.removeEventListener('mousemove', redimensionarMesa);
+  document.removeEventListener('mouseup', finalizarRedimensionMesa);
+  document.removeEventListener('mousemove', moverPartida);
+  document.removeEventListener('mouseup', finalizarArrastrePartida);
+  document.removeEventListener('mousemove', redimensionarPartida);
+  document.removeEventListener('mouseup', finalizarRedimensionPartida);
+
+  // Remover event listeners de Pareja 1 - Lado izquierdo
+  document.removeEventListener('mousemove', moverPareja1Nombre);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1Nombre);
+  document.removeEventListener('mousemove', redimensionarPareja1Nombre);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1Nombre);
+  document.removeEventListener('mousemove', moverPareja1Pos);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1Pos);
+  document.removeEventListener('mousemove', redimensionarPareja1Pos);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1Pos);
+  document.removeEventListener('mousemove', moverPareja1PG);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1PG);
+  document.removeEventListener('mousemove', redimensionarPareja1PG);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1PG);
+  document.removeEventListener('mousemove', moverPareja1Dif);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1Dif);
+  document.removeEventListener('mousemove', redimensionarPareja1Dif);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1Dif);
+
+  // Remover event listeners de Pareja 2 - Lado izquierdo
+  document.removeEventListener('mousemove', moverPareja2Nombre);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2Nombre);
+  document.removeEventListener('mousemove', redimensionarPareja2Nombre);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2Nombre);
+  document.removeEventListener('mousemove', moverPareja2Pos);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2Pos);
+  document.removeEventListener('mousemove', redimensionarPareja2Pos);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2Pos);
+  document.removeEventListener('mousemove', moverPareja2PG);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2PG);
+  document.removeEventListener('mousemove', redimensionarPareja2PG);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2PG);
+  document.removeEventListener('mousemove', moverPareja2Dif);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2Dif);
+  document.removeEventListener('mousemove', redimensionarPareja2Dif);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2Dif);
+
+  // Remover event listeners de Pareja 1 - Lado derecho
+  document.removeEventListener('mousemove', moverPareja1NombreDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1NombreDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja1NombreDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1NombreDerecha);
+  document.removeEventListener('mousemove', moverPareja1PosDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1PosDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja1PosDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1PosDerecha);
+  document.removeEventListener('mousemove', moverPareja1PGDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1PGDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja1PGDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1PGDerecha);
+  document.removeEventListener('mousemove', moverPareja1DifDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja1DifDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja1DifDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja1DifDerecha);
+
+  // Remover event listeners de Pareja 2 - Lado derecho
+  document.removeEventListener('mousemove', moverPareja2NombreDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2NombreDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja2NombreDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2NombreDerecha);
+  document.removeEventListener('mousemove', moverPareja2PosDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2PosDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja2PosDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2PosDerecha);
+  document.removeEventListener('mousemove', moverPareja2PGDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2PGDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja2PGDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2PGDerecha);
+  document.removeEventListener('mousemove', moverPareja2DifDerecha);
+  document.removeEventListener('mouseup', finalizarArrastrePareja2DifDerecha);
+  document.removeEventListener('mousemove', redimensionarPareja2DifDerecha);
+  document.removeEventListener('mouseup', finalizarRedimensionPareja2DifDerecha);
+});
+
+const cargarPosicion = () => {
+  try {
+    const posicionesGuardadas = localStorage.getItem('posiciones');
+    if (posicionesGuardadas) {
+      const posiciones = JSON.parse(posicionesGuardadas);
+      
+      // Cargar posiciones del lado izquierdo
+      if (posiciones.logo) {
+        Object.assign(posicionLogo, posiciones.logo);
+      }
+      if (posiciones.titulo) {
+        Object.assign(posicionTitulo, posiciones.titulo);
+      }
+      if (posiciones.mesa) {
+        Object.assign(posicionMesa, posiciones.mesa);
+      }
+      if (posiciones.partida) {
+        Object.assign(posicionPartida, posiciones.partida);
+      }
+      if (posiciones.pareja1) {
+        if (posiciones.pareja1.nombre) {
+          Object.assign(posicionPareja1Nombre, posiciones.pareja1.nombre);
+        }
+        if (posiciones.pareja1.pos) {
+          Object.assign(posicionPareja1Pos, posiciones.pareja1.pos);
+        }
+        if (posiciones.pareja1.pg) {
+          Object.assign(posicionPareja1PG, posiciones.pareja1.pg);
+        }
+        if (posiciones.pareja1.dif) {
+          Object.assign(posicionPareja1Dif, posiciones.pareja1.dif);
+        }
+      }
+      if (posiciones.pareja2) {
+        if (posiciones.pareja2.nombre) {
+          Object.assign(posicionPareja2Nombre, posiciones.pareja2.nombre);
+        }
+        if (posiciones.pareja2.pos) {
+          Object.assign(posicionPareja2Pos, posiciones.pareja2.pos);
+        }
+        if (posiciones.pareja2.pg) {
+          Object.assign(posicionPareja2PG, posiciones.pareja2.pg);
+        }
+        if (posiciones.pareja2.dif) {
+          Object.assign(posicionPareja2Dif, posiciones.pareja2.dif);
+        }
+      }
+      
+      // Cargar posiciones del lado derecho
+      if (posiciones.pareja1Derecha) {
+        if (posiciones.pareja1Derecha.nombre) {
+          Object.assign(posicionPareja1NombreDerecha, posiciones.pareja1Derecha.nombre);
+        }
+        if (posiciones.pareja1Derecha.pos) {
+          Object.assign(posicionPareja1PosDerecha, posiciones.pareja1Derecha.pos);
+        }
+        if (posiciones.pareja1Derecha.pg) {
+          Object.assign(posicionPareja1PGDerecha, posiciones.pareja1Derecha.pg);
+        }
+        if (posiciones.pareja1Derecha.dif) {
+          Object.assign(posicionPareja1DifDerecha, posiciones.pareja1Derecha.dif);
+        }
+      }
+      if (posiciones.pareja2Derecha) {
+        if (posiciones.pareja2Derecha.nombre) {
+          Object.assign(posicionPareja2NombreDerecha, posiciones.pareja2Derecha.nombre);
+        }
+        if (posiciones.pareja2Derecha.pos) {
+          Object.assign(posicionPareja2PosDerecha, posiciones.pareja2Derecha.pos);
+        }
+        if (posiciones.pareja2Derecha.pg) {
+          Object.assign(posicionPareja2PGDerecha, posiciones.pareja2Derecha.pg);
+        }
+        if (posiciones.pareja2Derecha.dif) {
+          Object.assign(posicionPareja2DifDerecha, posiciones.pareja2Derecha.dif);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error al cargar las posiciones:', error);
+    // Si hay un error, resetear a valores por defecto
+    resetearPosicion();
+  }
+};
+
+// Función para actualizar el posicionamiento en el servicio (para el modo independiente)
+const actualizarServicioPosicionamiento = () => {
+  // Actualizar lado izquierdo
+  posicionamientoService.guardarPosicionPersonalizadaLogo('izquierda', {
+    top: posicionLogo.top,
+    left: posicionLogo.left,
+    width: posicionLogo.width,
+    height: posicionLogo.height
+  });
+  
+  // Actualizar lado derecho
+  posicionamientoService.guardarPosicionPersonalizadaLogo('derecha', {
+    top: posicionLogoDerecha.top,
+    left: posicionLogoDerecha.left,
+    width: posicionLogoDerecha.width,
+    height: posicionLogoDerecha.height
+  });
+  
+  console.log('Servicio de posicionamiento actualizado con:',
+    {
+      izquierda: {
+        top: posicionLogo.top,
+        left: posicionLogo.left,
+        width: posicionLogo.width,
+        height: posicionLogo.height
+      },
+      derecha: {
+        top: posicionLogoDerecha.top,
+        left: posicionLogoDerecha.left,
+        width: posicionLogoDerecha.width,
+        height: posicionLogoDerecha.height
+      }
+    }
+  );
+};
+
+// Función principal para guardar la posición (adaptada para modo independiente)
+const guardarPosicion = () => {
+  // Almacenar las posiciones actuales en el objeto de posiciones
+  // Actualizar posiciones de logo
+  posiciones.logo.top = posicionLogo.top;
+  // Guardar en localStorage
+  localStorage.setItem('posiciones', JSON.stringify(posiciones));
+  
+  // Si estamos en modo independiente, actualizar el servicio
+  if (enModoIndependiente.value) {
+    // Guardar el valor local
+    posicionLogoLocal.value = {
+      izquierda: { ...posicionLogo },
+      derecha: { ...posicionLogoDerecha, left: posicionLogoDerecha.left }
+    };
+    
+    // Actualizar el servicio
+    actualizarServicioPosicionamiento();
+    
+    alert('Posiciones guardadas correctamente');
+  } else {
+    // En modo componente, emitir el evento
+    emit('actualizar-posicion-logo', {
+      izquierda: { ...posicionLogo },
+      derecha: { ...posicionLogoDerecha, left: posicionLogoDerecha.left }
+    });
+  }
+};
+
+// Función para actualizar la función guardarPosicion existente con la
+// funcionalidad de modo independiente
+const actualizarFuncionGuardarPosicion = () => {
+  // Esta función sirve como un marcador para indicar que necesitamos
+  // modificar la función guardarPosicion existente para que admita
+  // el modo independiente.
+  console.log('La función guardarPosicion debe ser actualizada para soportar el modo independiente');
+};
+
+actualizarFuncionGuardarPosicion();
+</script>
+
+<style scoped>
+.form-radio {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #D1D5DB;
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.form-radio:checked {
+  background-color: #2563EB;
+  border-color: #2563EB;
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='4'/%3e%3c/svg%3e");
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.print-hide {
+  @media print {
+    display: none !important;
+  }
+}
+</style> 

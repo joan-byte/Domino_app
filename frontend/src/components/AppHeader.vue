@@ -36,7 +36,9 @@ const handleImprimirRanking = () => {
 };
 
 const handleMostrarPosicionamientoLogo = () => {
+  console.log('AppHeader: Ejecutando handleMostrarPosicionamientoLogo, emitiendo evento');
   emit('mostrar-posicionamiento-logo');
+  console.log('AppHeader: Evento mostrar-posicionamiento-logo emitido');
 };
 
 // Funciones para manejar menús desplegables por hover

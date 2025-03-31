@@ -160,11 +160,51 @@ function obtenerEstiloPosicionLogo(lado) {
   }
 }
 
+/**
+ * Guarda la posición personalizada del logo en localStorage
+ * @param {string} lado - 'izquierda' o 'derecha'
+ * @param {Object} posicion - Objeto con propiedades top, left, width, height
+ * @returns {boolean} - true si se guardó correctamente, false en caso contrario
+ */
+const guardarPosicionPersonalizadaLogo = (lado, posicion) => {
+  try {
+    // Validar parámetros
+    if (!lado || !posicion) {
+      console.error('Se requiere lado y posición para guardar');
+      return false;
+    }
+    
+    // Validar propiedades requeridas en la posición
+    const propiedadesRequeridas = ['top', 'left', 'width', 'height'];
+    const todasLasPropiedades = propiedadesRequeridas.every(prop => 
+      posicion.hasOwnProperty(prop) && posicion[prop] !== undefined
+    );
+    
+    if (!todasLasPropiedades) {
+      console.error('La posición debe incluir todas las propiedades: top, left, width, height');
+      return false;
+    }
+    
+    // Guardar en localStorage
+    localStorage.setItem(`logo_posicion_${lado}`, JSON.stringify(posicion));
+    console.log(`Posición del logo para ${lado} guardada:`, posicion);
+    
+    // Actualizar configuraciones
+    actualizarConfiguraciones();
+    
+    return true;
+  } catch (error) {
+    console.error('Error al guardar posición personalizada:', error);
+    return false;
+  }
+};
+
 // Exportar las funciones y objetos
 export default {
   obtenerEstiloPosicionTexto,
   convertirEstiloATexto,
   obtenerPosicionPersonalizadaLogo,
+  guardarPosicionPersonalizadaLogo,
   actualizarConfiguraciones,
   obtenerEstiloPosicionLogo
 }; 

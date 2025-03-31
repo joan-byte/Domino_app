@@ -9,6 +9,7 @@ import ResultadosView from '../views/ResultadosView.vue';
 import CrearParejaView from '../views/CrearParejaView.vue'
 import ModificarParejaView from '../views/ModificarParejaView.vue'
 import ModificarResultadoView from '../views/ModificarResultadoView.vue'
+import LogoPosicionamiento from '../components/posicionamiento/LogoPosicionamiento.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,6 +75,15 @@ const router = createRouter({
       path: '/resultados/:id/editar',
       name: 'modificar-resultado',
       component: ModificarResultadoView
+    },
+    {
+      path: '/posicionamiento',
+      name: 'posicionamiento',
+      component: LogoPosicionamiento,
+      meta: {
+        requiresAuth: false,
+        title: 'Posicionamiento de Información'
+      }
     }
   ]
 });

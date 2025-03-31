@@ -17,42 +17,85 @@
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="rp_pareja1" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Resultado Partida (RP)
             </label>
             <input
+              id="rp_pareja1"
+              name="rp_pareja1"
               type="number"
               v-model="form.pareja1.rp"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="mg_pareja1" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Manos Ganadas (MG)
             </label>
             <input
+              id="mg_pareja1"
+              name="mg_pareja1"
               type="number"
               v-model="form.pareja1.mg"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="rt_pareja1" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Resultado Total (RT)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja1.rt }}</div>
+            <div 
+              id="rt_pareja1"
+              name="rt_pareja1"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja1.rt }}
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="pg_pareja1" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Partidas Ganadas (PG)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja1.pg }}</div>
+            <div 
+              id="pg_pareja1"
+              name="pg_pareja1"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja1.pg }}
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="pp_pareja1" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Diferencia (Dif.)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja1.pp }}</div>
+            <div 
+              id="pp_pareja1"
+              name="pp_pareja1"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja1.pp }}
+            </div>
           </div>
         </div>
       </div>
@@ -66,42 +109,85 @@
         
         <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="rp_pareja2" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Resultado Partida (RP)
             </label>
             <input
+              id="rp_pareja2"
+              name="rp_pareja2"
               type="number"
               v-model="form.pareja2.rp"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="mg_pareja2" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Manos Ganadas (MG)
             </label>
             <input
+              id="mg_pareja2"
+              name="mg_pareja2"
               type="number"
               v-model="form.pareja2.mg"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="rt_pareja2" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Resultado Total (RT)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja2.rt }}</div>
+            <div 
+              id="rt_pareja2"
+              name="rt_pareja2"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja2.rt }}
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="pg_pareja2" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Partidas Ganadas (PG)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja2.pg }}</div>
+            <div 
+              id="pg_pareja2"
+              name="pg_pareja2"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja2.pg }}
+            </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">
+            <label 
+              for="pp_pareja2" 
+              class="block text-sm font-medium text-gray-700"
+            >
               Diferencia (Dif.)
             </label>
-            <div class="mt-1 text-lg">{{ form.pareja2.pp }}</div>
+            <div 
+              id="pp_pareja2"
+              name="pp_pareja2"
+              class="mt-1 text-lg"
+              role="textbox"
+              aria-readonly="true"
+            >
+              {{ form.pareja2.pp }}
+            </div>
           </div>
         </div>
       </div>

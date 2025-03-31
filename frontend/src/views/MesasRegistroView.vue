@@ -262,9 +262,12 @@
 
                 <!-- Resultado Partida (RP) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="rp_pareja1" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Resultado Partida (RP)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ calculos.rp1 }}
                   </div>
@@ -272,9 +275,12 @@
                 
                 <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="pg_pareja1" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Partidas Ganadas (PG)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ !mesaSeleccionada.pareja2 ? 1 : calculos.pg1 }}
                   </div>
@@ -282,9 +288,12 @@
                 
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="pp_pareja1" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Diferencia (Dif.)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ !mesaSeleccionada.pareja2 ? 150 : calculos.pp1 }}
                   </div>
@@ -341,9 +350,12 @@
 
                 <!-- Resultado Partida (RP) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="rp_pareja2" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Resultado Partida (RP)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ calculos.rp2 }}
                   </div>
@@ -351,9 +363,12 @@
                 
                 <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="pg_pareja2" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Partidas Ganadas (PG)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ calculos.pg2 }}
                   </div>
@@ -361,9 +376,12 @@
                 
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
-                  <span class="block text-sm text-gray-600 h-6">
+                  <label 
+                    for="pp_pareja2" 
+                    class="block text-sm text-gray-600 h-6"
+                  >
                     Diferencia (Dif.)
-                  </span>
+                  </label>
                   <div class="px-3 py-2 bg-gray-100 rounded-md">
                     {{ calculos.pp2 }}
                   </div>

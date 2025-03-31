@@ -1,13 +1,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { RouterView, useRouter } from 'vue-router'
 import { campeonatoService, resultadoService } from './services/api'
 import { plantillaService } from './services/api'
 import AppHeader from './components/AppHeader.vue'
 import PlantillaModal from './components/PlantillaModal.vue'
-import LogoPosicionamientoModal from './components/LogoPosicionamientoModal.vue'
 import impresionService from './services/impresionService'
 import rankingPrintService from './services/rankingPrintService'
+
+// Inicializar el router
+const router = useRouter()
 
 // Verificar si esta ventana es para impresión
 const esVentanaImpresion = ref(false)
@@ -35,7 +37,6 @@ const posicionLogo = ref({
 
 // Modales
 const mostrarModalPlantilla = ref(false)
-const mostrarPosicionamientoLogo = ref(false)
 
 // Correcto: esto se ejecuta antes de cualquier await
 onUnmounted(() => {
@@ -135,6 +136,12 @@ const actualizarServicioPosicionamiento = () => {
   // Esta función se implementaría para actualizar el servicio
 };
 
+// Función para navegar al posicionamiento desde el menú
+const irAPosicionamiento = () => {
+  console.log('App: Redirigiendo a la vista de posicionamiento de información');
+  router.push('/posicionamiento');
+};
+
 onMounted(async () => {
   // Código normal de inicialización para la aplicación
   try {
@@ -207,7 +214,7 @@ onMounted(async () => {
       @imprimir="imprimir"
       @imprimir-ranking="imprimirRanking"
       @mostrar-modal-plantilla="mostrarModalPlantilla = true"
-      @mostrar-posicionamiento-logo="mostrarPosicionamientoLogo = true"
+      @mostrar-posicionamiento-logo="irAPosicionamiento"
     />
 
     <!-- Contenido Principal -->
@@ -224,15 +231,6 @@ onMounted(async () => {
       :escala-logo="escalaLogo"
       @actualizar-plantilla="actualizarPlantilla"
       @actualizar-escala-logo="actualizarEscalaLogo"
-    />
-    
-    <!-- Modal para posicionamiento manual del logo -->
-    <LogoPosicionamientoModal
-      v-model:mostrar="mostrarPosicionamientoLogo"
-      :plantilla-imagen-url="plantillaImagenUrl"
-      :campeonato="campeonato"
-      :posicion-logo-guardada="posicionLogo"
-      @actualizar-posicion-logo="actualizarPosicionLogo"
     />
   </div>
 </template>

@@ -36,8 +36,14 @@ const mostrarPlantilla = () => {
 };
 
 const mostrarPosicionamientoLogo = () => {
+  console.log('MenuMesas: Ejecutando mostrarPosicionamientoLogo');
   cerrarMenu();
+  console.log('MenuMesas: Menú cerrado, emitiendo evento mostrar-posicionamiento-logo');
+  
+  // Usar el evento para mantener la compatibilidad con la estructura actual
   emit('mostrar-posicionamiento-logo');
+  
+  console.log('MenuMesas: Evento mostrar-posicionamiento-logo emitido');
 };
 </script>
 
