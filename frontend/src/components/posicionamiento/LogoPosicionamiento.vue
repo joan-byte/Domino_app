@@ -78,91 +78,99 @@
       />
       
       <!-- Mesa - Lado izquierdo -->
+      <!-- Valor: ID de la mesa actual -->
       <ElementoTexto
         v-if="mostrarElemento('mesa', 'izquierda')"
         :posicion="obtenerPosicion('mesa', 'izquierda')"
         :tipo-elemento="'mesa'"
-        texto="Mesa: 1"
+        :texto="String(campeonatoEfectivo?.mesa_actual || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('mesa', 'izquierda', $event)"
       />
       
       <!-- Mesa - Lado derecho -->
+      <!-- Valor: ID de la siguiente mesa -->
       <ElementoTexto
         v-if="mostrarElemento('mesa', 'derecha')"
         :posicion="obtenerPosicion('mesa', 'derecha')"
         :tipo-elemento="'mesa'"
-        texto="Mesa: 1"
+        :texto="String(campeonatoEfectivo?.mesa_siguiente?.id || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('mesa', 'derecha', $event)"
       />
       
       <!-- Partida - Lado izquierdo -->
+      <!-- Valor: Número de partida actual del campeonato -->
       <ElementoTexto
         v-if="mostrarElemento('partida', 'izquierda')"
         :posicion="obtenerPosicion('partida', 'izquierda')"
         :tipo-elemento="'partida'"
-        texto="Partida: 1"
+        :texto="String(campeonatoEfectivo?.partida_actual || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('partida', 'izquierda', $event)"
       />
       
       <!-- Partida - Lado derecho -->
+      <!-- Valor: Número de partida actual del campeonato -->
       <ElementoTexto
         v-if="mostrarElemento('partida', 'derecha')"
         :posicion="obtenerPosicion('partida', 'derecha')"
         :tipo-elemento="'partida'"
-        texto="Partida: 1"
+        :texto="String(campeonatoEfectivo?.partida_actual || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('partida', 'derecha', $event)"
       />
       
       <!-- Pareja 1 - Lado izquierdo -->
+      <!-- Valor: Nombre de la pareja (formato: "Jugador1 / Jugador2") -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'izquierda', 'nombre')"
         :posicion="obtenerPosicion('pareja1', 'izquierda', 'nombre')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="nombre"
-        texto="Pareja 1: Nombre del Jugador / Nombre del Jugador"
+        :texto="formatearNombrePareja(campeonatoEfectivo?.pareja1)"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('pareja1', 'izquierda', 'nombre', $event)"
       />
       
+      <!-- Valor: Posición en el ranking de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'izquierda', 'pos')"
         :posicion="obtenerPosicion('pareja1', 'izquierda', 'pos')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="pos"
-        texto="Pos: 1"
+        :texto="String(campeonatoEfectivo?.pareja1?.pos || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja1', 'izquierda', 'pos', $event)"
       />
       
+      <!-- Valor: Partidas ganadas de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'izquierda', 'pg')"
         :posicion="obtenerPosicion('pareja1', 'izquierda', 'pg')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="pg"
-        texto="PG: 3"
+        :texto="String(campeonatoEfectivo?.pareja1?.pg || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja1', 'izquierda', 'pg', $event)"
       />
       
+      <!-- Valor: Diferencia de puntos de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'izquierda', 'dif')"
         :posicion="obtenerPosicion('pareja1', 'izquierda', 'dif')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="dif"
-        texto="Dif: +12"
+        :texto="formatearDiferencia(campeonatoEfectivo?.pareja1?.dif)"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
@@ -170,47 +178,51 @@
       />
       
       <!-- Pareja 1 - Lado derecho -->
+      <!-- Valor: Nombre de la pareja (formato: "Jugador1 / Jugador2") -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'derecha', 'nombre')"
         :posicion="obtenerPosicion('pareja1', 'derecha', 'nombre')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="nombre"
-        texto="Pareja 1: Nombre del Jugador / Nombre del Jugador"
+        :texto="formatearNombrePareja(campeonatoEfectivo?.mesa_siguiente?.pareja1)"
         lado="derecha"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('pareja1', 'derecha', 'nombre', $event)"
       />
       
+      <!-- Valor: Posición en el ranking de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'derecha', 'pos')"
         :posicion="obtenerPosicion('pareja1', 'derecha', 'pos')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="pos"
-        texto="Pos: 1"
+        :texto="String(campeonatoEfectivo?.mesa_siguiente?.pareja1?.pos || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja1', 'derecha', 'pos', $event)"
       />
       
+      <!-- Valor: Partidas ganadas de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'derecha', 'pg')"
         :posicion="obtenerPosicion('pareja1', 'derecha', 'pg')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="pg"
-        texto="PG: 3"
+        :texto="String(campeonatoEfectivo?.mesa_siguiente?.pareja1?.pg || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja1', 'derecha', 'pg', $event)"
       />
       
+      <!-- Valor: Diferencia de puntos de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja1', 'derecha', 'dif')"
         :posicion="obtenerPosicion('pareja1', 'derecha', 'dif')"
         :tipo-elemento="'pareja1'"
         subtipo-elemento="dif"
-        texto="Dif: +12"
+        :texto="formatearDiferencia(campeonatoEfectivo?.mesa_siguiente?.pareja1?.dif)"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
@@ -218,47 +230,51 @@
       />
       
       <!-- Pareja 2 - Lado izquierdo -->
+      <!-- Valor: Nombre de la pareja (formato: "Jugador1 / Jugador2") -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'izquierda', 'nombre')"
         :posicion="obtenerPosicion('pareja2', 'izquierda', 'nombre')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="nombre"
-        texto="Pareja 2: Nombre del Jugador / Nombre del Jugador"
+        :texto="formatearNombrePareja(campeonatoEfectivo?.pareja2)"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('pareja2', 'izquierda', 'nombre', $event)"
       />
       
+      <!-- Valor: Posición en el ranking de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'izquierda', 'pos')"
         :posicion="obtenerPosicion('pareja2', 'izquierda', 'pos')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="pos"
-        texto="Pos: 2"
+        :texto="String(campeonatoEfectivo?.pareja2?.pos || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja2', 'izquierda', 'pos', $event)"
       />
       
+      <!-- Valor: Partidas ganadas de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'izquierda', 'pg')"
         :posicion="obtenerPosicion('pareja2', 'izquierda', 'pg')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="pg"
-        texto="PG: 2"
+        :texto="String(campeonatoEfectivo?.pareja2?.pg || '')"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja2', 'izquierda', 'pg', $event)"
       />
       
+      <!-- Valor: Diferencia de puntos de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'izquierda', 'dif')"
         :posicion="obtenerPosicion('pareja2', 'izquierda', 'dif')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="dif"
-        texto="Dif: -12"
+        :texto="formatearDiferencia(campeonatoEfectivo?.pareja2?.dif)"
         lado="izquierda"
         :ancho-maximo="anchoA4"
         alineacion="center"
@@ -266,47 +282,51 @@
       />
       
       <!-- Pareja 2 - Lado derecho -->
+      <!-- Valor: Nombre de la pareja (formato: "Jugador1 / Jugador2") -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'derecha', 'nombre')"
         :posicion="obtenerPosicion('pareja2', 'derecha', 'nombre')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="nombre"
-        texto="Pareja 2: Nombre del Jugador / Nombre del Jugador"
+        :texto="formatearNombrePareja(campeonatoEfectivo?.mesa_siguiente?.pareja2)"
         lado="derecha"
         :ancho-maximo="anchoA4"
         @update:posicion="actualizarPosicion('pareja2', 'derecha', 'nombre', $event)"
       />
       
+      <!-- Valor: Posición en el ranking de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'derecha', 'pos')"
         :posicion="obtenerPosicion('pareja2', 'derecha', 'pos')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="pos"
-        texto="Pos: 2"
+        :texto="String(campeonatoEfectivo?.mesa_siguiente?.pareja2?.pos || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja2', 'derecha', 'pos', $event)"
       />
       
+      <!-- Valor: Partidas ganadas de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'derecha', 'pg')"
         :posicion="obtenerPosicion('pareja2', 'derecha', 'pg')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="pg"
-        texto="PG: 2"
+        :texto="String(campeonatoEfectivo?.mesa_siguiente?.pareja2?.pg || '')"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
         @update:posicion="actualizarPosicion('pareja2', 'derecha', 'pg', $event)"
       />
       
+      <!-- Valor: Diferencia de puntos de la pareja -->
       <ElementoTexto
         v-if="mostrarElemento('pareja2', 'derecha', 'dif')"
         :posicion="obtenerPosicion('pareja2', 'derecha', 'dif')"
         :tipo-elemento="'pareja2'"
         subtipo-elemento="dif"
-        texto="Dif: -12"
+        :texto="formatearDiferencia(campeonatoEfectivo?.mesa_siguiente?.pareja2?.dif)"
         lado="derecha"
         :ancho-maximo="anchoA4"
         alineacion="center"
@@ -315,6 +335,29 @@
     </VisualizadorPlantilla>
   </div>
 </template>
+
+<script>
+// Definición de props en un bloque script normal
+export default {
+  props: {
+    plantillaImagenUrl: {
+      type: String,
+      required: false
+    },
+    campeonato: {
+      type: Object,
+      required: false
+    },
+    posicionLogoGuardada: {
+      type: Object,
+      default: () => ({
+        izquierda: { top: 15, left: 20, width: 120, height: 70 },
+        derecha: { top: 15, left: 690, width: 120, height: 70 }
+      })
+    }
+  }
+}
+</script>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
@@ -338,9 +381,55 @@ import { usePositionStorage } from '../../composables/usePositionStorage';
 const anchoA4 = 842; // Ancho A4 apaisado
 const altoA4 = 595;  // Alto A4 apaisado
 
-/**
- * Props del componente
- */
+// Posiciones por defecto (basadas en las posiciones actuales)
+const POSICIONES_POR_DEFECTO = {
+  logo: {
+    izquierda: { top: 15, left: 20, width: 120, height: 70 },
+    derecha: { top: 15, left: 690, width: 120, height: 70 }
+  },
+  titulo: {
+    izquierda: { top: 30, left: 150, width: 400, height: 40 },
+    derecha: { top: 30, left: 820, width: 400, height: 40 }
+  },
+  mesa: {
+    izquierda: { top: 79, left: 112, width: 50, height: 20 },
+    derecha: { top: 79, left: 570, width: 50, height: 20 }
+  },
+  partida: {
+    izquierda: { top: 79, left: 162, width: 50, height: 20 },
+    derecha: { top: 79, left: 620, width: 50, height: 20 }
+  },
+  pareja1: {
+    izquierda: {
+      nombre: { top: 142, left: 112, width: 300, height: 20 },
+      pos: { top: 142, left: 412, width: 30, height: 20 },
+      pg: { top: 142, left: 442, width: 30, height: 20 },
+      dif: { top: 142, left: 472, width: 50, height: 20 }
+    },
+    derecha: {
+      nombre: { top: 142, left: 570, width: 300, height: 20 },
+      pos: { top: 142, left: 870, width: 30, height: 20 },
+      pg: { top: 142, left: 900, width: 30, height: 20 },
+      dif: { top: 142, left: 930, width: 50, height: 20 }
+    }
+  },
+  pareja2: {
+    izquierda: {
+      nombre: { top: 169, left: 112, width: 300, height: 20 },
+      pos: { top: 169, left: 412, width: 30, height: 20 },
+      pg: { top: 169, left: 442, width: 30, height: 20 },
+      dif: { top: 169, left: 472, width: 50, height: 20 }
+    },
+    derecha: {
+      nombre: { top: 169, left: 570, width: 300, height: 20 },
+      pos: { top: 169, left: 870, width: 30, height: 20 },
+      pg: { top: 169, left: 900, width: 30, height: 20 },
+      dif: { top: 169, left: 930, width: 50, height: 20 }
+    }
+  }
+};
+
+// Definición de props
 const props = defineProps({
   plantillaImagenUrl: {
     type: String,
@@ -463,7 +552,21 @@ const guardarPosiciones = async () => {
 
 // Método para resetear posiciones
 const resetearPosiciones = () => {
-  positionStorage.resetPositions();
+  // Usar las posiciones guardadas en localStorage en lugar de las posiciones por defecto
+  const posicionesGuardadas = localStorage.getItem('posiciones');
+  
+  if (posicionesGuardadas) {
+    try {
+      const posiciones = JSON.parse(posicionesGuardadas);
+      positionStorage.resetPositions(posiciones);
+    } catch (error) {
+      console.error('Error al cargar posiciones guardadas:', error);
+      positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
+    }
+  } else {
+    // Si no hay posiciones guardadas, usar las posiciones por defecto
+    positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
+  }
 };
 
 // Método para volver atrás
@@ -473,8 +576,8 @@ const volverAtras = () => {
 
 // Cargar posiciones y datos al montar el componente
 onMounted(async () => {
-  // Cargar posiciones guardadas
-  await positionStorage.loadPositions();
+  // Cargar posiciones guardadas o usar las posiciones por defecto
+  await positionStorage.loadPositions(POSICIONES_POR_DEFECTO);
   
   // En modo independiente, cargar datos adicionales
   if (enModoIndependiente.value) {
@@ -512,6 +615,22 @@ onMounted(async () => {
     }
   }
 });
+
+// Métodos para formatear nombres y diferencias
+const formatearNombrePareja = (pareja) => {
+  if (pareja) {
+    const [jugador1, jugador2] = pareja.split(' / ');
+    return `${jugador1} / ${jugador2}`;
+  }
+  return '';
+};
+
+const formatearDiferencia = (diferencia) => {
+  if (diferencia) {
+    return diferencia.toString();
+  }
+  return '';
+};
 </script>
 
 <style scoped>

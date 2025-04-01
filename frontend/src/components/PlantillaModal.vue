@@ -1,5 +1,4 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue';
 import PlantillaImagenConfig from './PlantillaImagenConfig.vue';
 
 const props = defineProps({

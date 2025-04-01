@@ -1,5 +1,4 @@
 <script setup>
-import { defineProps } from 'vue';
 import posicionamientoService from '../services/posicionamientoService';
 
 const props = defineProps({

@@ -121,12 +121,12 @@ onUnmounted(() => {
 }
 
 /* Aplicar estilos para asegurar visibilidad */
-::v-deep .elemento-arrastrable {
+:deep(.elemento-arrastrable) {
   z-index: 10;
 }
 
 /* Aumentar z-index para lado derecho */
-::v-deep .elemento-derecho {
+:deep(.elemento-derecho) {
   z-index: 20;
 }
 
