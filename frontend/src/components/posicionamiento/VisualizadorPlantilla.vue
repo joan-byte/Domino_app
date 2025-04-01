@@ -1,29 +1,38 @@
 <template>
-  <div ref="contenedorRef" class="visualizador-plantilla">
+  <div class="visualizador-wrapper">
+    <!-- Controles de escala - los mantenemos para permitir zoom in/out pero no afectarán la posición real -->
     <div class="controles-escala">
       <button @click="disminuirEscala" class="boton-escala" :disabled="escala <= 0.5">-</button>
       <span class="escala-valor">{{ Math.round(escala * 100) }}%</span>
       <button @click="aumentarEscala" class="boton-escala" :disabled="escala >= 2">+</button>
-      <button @click="resetearEscala" class="boton-resetear-escala">
-        <span>Ajustar</span>
+      <button @click="resetearEscala" class="boton-resetear-escala" :class="{ 'boton-destacado': escala !== 1 }">
+        <span>Escala 1:1</span>
       </button>
     </div>
+
+    <!-- Indicador de tamaño real de impresión -->
+    <div class="info-tamanio-impresion">
+      Tamaño real de impresión: A4 Apaisado (842×595 px)
+    </div>
     
-    <div class="area-plantilla" :style="{ transform: `scale(${escala})` }">
-      <!-- Imagen de fondo de la plantilla -->
-      <img 
-        v-if="plantillaImagenUrl" 
-        :src="plantillaImagenUrl" 
-        class="plantilla-imagen" 
-        alt="Plantilla para posicionar" 
-      />
-      <div v-else class="sin-plantilla">
-        <p>No se ha cargado ninguna plantilla</p>
-      </div>
-      
-      <!-- Contenedor ampliado para elementos posicionados -->
-      <div class="elementos-container">
-        <slot></slot>
+    <div ref="contenedorRef" class="visualizador-plantilla">
+      <!-- Contenedor con dimensiones exactas de A4 apaisado -->
+      <div class="pagina" :style="{ transform: `scale(${escala})` }">
+        <!-- Imagen de fondo de la plantilla -->
+        <img 
+          v-if="plantillaImagenUrl" 
+          :src="plantillaImagenUrl" 
+          class="plantilla-imagen" 
+          alt="Plantilla para posicionar" 
+        />
+        <div v-else class="sin-plantilla">
+          <p>No se ha cargado ninguna plantilla</p>
+        </div>
+        
+        <!-- Contenedor para elementos posicionados -->
+        <div class="elementos-container">
+          <slot></slot>
+        </div>
       </div>
     </div>
   </div>
@@ -54,23 +63,7 @@ const emit = defineEmits(['update:escala']);
 const contenedorRef = ref(null);
 const escala = ref(props.escalaInicial);
 
-// Calcular la escala automáticamente en función del tamaño del contenedor
-const calcularEscalaAutomatica = () => {
-  if (!contenedorRef.value) return;
-  
-  const contenedorAncho = contenedorRef.value.clientWidth;
-  
-  // Suponiendo formato A4 apaisado (842px de ancho)
-  if (contenedorAncho < 842) {
-    escala.value = parseFloat((contenedorAncho / 842).toFixed(2));
-  } else {
-    escala.value = 1;
-  }
-  
-  emit('update:escala', escala.value);
-};
-
-// Controles de escala
+// Controles de escala - solo para visualización, no afecta posiciones reales
 const aumentarEscala = () => {
   escala.value = Math.min(2, escala.value + 0.1);
   emit('update:escala', escala.value);
@@ -81,8 +74,10 @@ const disminuirEscala = () => {
   emit('update:escala', escala.value);
 };
 
+// Resetear a escala 1:1 para posicionamiento preciso
 const resetearEscala = () => {
-  calcularEscalaAutomatica();
+  escala.value = 1; // Siempre volver a 1:1 para posicionamiento exacto
+  emit('update:escala', escala.value);
 };
 
 // Actualizar escala cuando cambie la escala inicial
@@ -90,37 +85,50 @@ watch(() => props.escalaInicial, (nuevoValor) => {
   escala.value = nuevoValor;
 });
 
-// Calcular la escala automáticamente al montar el componente
+// Configuración inicial
 onMounted(() => {
-  calcularEscalaAutomatica();
-  
-  // Recalcular escala al cambiar el tamaño de la ventana
-  window.addEventListener('resize', calcularEscalaAutomatica);
-});
-
-// Limpiar event listeners
-onUnmounted(() => {
-  window.removeEventListener('resize', calcularEscalaAutomatica);
+  // Para asegurar que empezamos con la escala proporcionada
+  escala.value = props.escalaInicial;
+  emit('update:escala', escala.value);
 });
 </script>
 
 <style scoped>
+.visualizador-wrapper {
+  position: relative;
+  width: 100%;
+  overflow-x: auto; /* Permitir scroll horizontal si es necesario */
+  margin-bottom: 20px;
+}
+
+.info-tamanio-impresion {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  text-align: center;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
 .visualizador-plantilla {
   position: relative;
-  overflow: visible; /* Permitir que los elementos se muestren fuera del límite del contenedor */
-  min-height: 600px;
-  max-width: 100%;
   margin: 0 auto;
+  padding: 10px;
+}
+
+.pagina {
+  position: relative;
+  width: 842px; /* Ancho exacto de A4 apaisado */
+  height: 595px; /* Alto exacto de A4 apaisado */
+  transform-origin: top left;
+  overflow: visible; /* Permitir que los elementos sean visibles fuera de los límites */
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Asegurar que los elementos del lado derecho sean visibles */
-.plantilla-container {
-  position: relative;
-  overflow: visible;
-  margin-bottom: 30px; /* Espacio para elementos que puedan quedar abajo */
-}
-
-/* Aplicar estilos para asegurar visibilidad */
 :deep(.elemento-arrastrable) {
   z-index: 10;
 }
@@ -140,7 +148,7 @@ onUnmounted(() => {
   border-radius: 0.25rem;
   border: 1px solid #e5e7eb;
   padding: 0.25rem;
-  z-index: 10;
+  z-index: 50;
 }
 
 .boton-escala {
@@ -187,21 +195,19 @@ onUnmounted(() => {
   background-color: #e5e7eb;
 }
 
-.area-plantilla {
-  min-height: 200px;
-  transform-origin: top left;
-  position: relative;
-  width: 842px; /* Ancho A4 apaisado */
-  height: 595px; /* Alto A4 apaisado */
-  overflow: visible; /* Cambiar a visible para que los elementos no se corten */
+.boton-destacado {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #2563eb;
+  font-weight: bold;
 }
 
 .elementos-container {
   position: absolute;
   top: 0;
   left: 0;
-  width: 1200px; /* Ampliado más allá del tamaño A4 para dar espacio adicional */
-  height: 700px; /* Ampliado más allá del tamaño A4 para dar espacio adicional */
+  width: 100%;
+  height: 100%;
   overflow: visible;
 }
 
@@ -224,5 +230,11 @@ onUnmounted(() => {
   background-color: #f3f4f6;
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+  .visualizador-plantilla {
+    padding: 0;
+  }
 }
 </style> 

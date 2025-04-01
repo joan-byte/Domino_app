@@ -12,10 +12,10 @@
     :max-height="400"
     :draggable="true"
     :resizable="true"
-    :preserve-aspect-ratio="true"
+    :preserve-aspect-ratio="false"
+    content-alignment="left"
     :additional-styles="{ 
       display: 'flex',
-      justifyContent: 'center',
       alignItems: 'center',
       overflow: 'visible',
       backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -34,12 +34,8 @@
       <img 
         v-if="logoUrl" 
         :src="logoUrl" 
-        :style="{
-          maxWidth: '100%',
-          maxHeight: '100%',
-          objectFit: 'contain'
-        }" 
         alt="Logo"
+        ref="logoImgRef"
       />
       <div v-else class="logo-placeholder">
         Logo
@@ -49,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import ElementoArrastrable from './ElementoArrastrable.vue';
 
 /**
@@ -80,14 +76,17 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:posicion']);
+const logoImgRef = ref(null);
 
 // Calcular el límite derecho según el lado
 const maxLeft = computed(() => {
-  // Si es lado derecho, permitir mover hasta el ancho máximo
-  // Si es lado izquierdo, limitar a la mitad del ancho máximo
-  return props.lado === 'derecha' 
-    ? props.anchoMaximo - props.posicion.width 
-    : (props.anchoMaximo / 2) - props.posicion.width;
+  if (props.lado === 'derecha') {
+    // Para el lado derecho, permitir mover hasta el ancho máximo
+    return props.anchoMaximo - props.posicion.width;
+  } else {
+    // Para el lado izquierdo, limitar a la mitad del ancho máximo
+    return (props.anchoMaximo / 2) - props.posicion.width;
+  }
 });
 
 // Extraer posición y tamaño del prop posicion
@@ -181,6 +180,18 @@ const emitUpdate = () => {
     });
   });
 };
+
+// Verificar las dimensiones originales de la imagen al montar el componente
+onMounted(() => {
+  if (props.logoUrl && logoImgRef.value) {
+    // Cuando la imagen termina de cargar, obtener sus dimensiones naturales
+    logoImgRef.value.onload = () => {
+      const naturalWidth = logoImgRef.value.naturalWidth;
+      const naturalHeight = logoImgRef.value.naturalHeight;
+      console.log(`Logo (${props.lado}) - Dimensiones originales: ${naturalWidth}x${naturalHeight}, proporción: ${naturalWidth/naturalHeight}`);
+    };
+  }
+});
 </script>
 
 <style scoped>
@@ -205,13 +216,28 @@ const emitUpdate = () => {
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
+  overflow: hidden;
 }
+
+.contenido-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+  /* No estirar o distorsionar la imagen */
+  width: auto;
+  height: auto;
+}
+
+/* Estos estilos son los mismos para ambos lados,
+   ya que queremos mantener la alineación izquierda */
 
 .logo-placeholder {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
   height: 100%;
@@ -220,6 +246,7 @@ const emitUpdate = () => {
   font-size: 14px;
   font-weight: bold;
   border-radius: 4px;
+  padding-left: 10px;
 }
 
 /* Ocultar la etiqueta descriptiva en la impresión */

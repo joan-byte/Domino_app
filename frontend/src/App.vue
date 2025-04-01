@@ -73,10 +73,9 @@ const imprimir = async () => {
     // Imprimir
     console.log(`Enviando ${numMesas} mesas a impresión...`);
     await impresionService.ejecutarImpresion(
-      campeonato,
+      campeonato.value,
       mesasParaImprimir.value,
-      plantillaImagenUrl.value,
-      escalaLogo.value
+      plantillaImagenUrl.value
     );
   } catch (error) {
     console.error('Error al imprimir:', error);

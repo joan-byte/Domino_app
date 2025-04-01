@@ -6,7 +6,7 @@
     :max-left="maxLeft"
     :min-top="0"
     :max-top="1000"
-    :min-width="50"
+    :min-width="obtenerAnchoMinimo"
     :max-width="600"
     :min-height="20"
     :max-height="200"
@@ -277,8 +277,58 @@ const emitUpdate = (newFontSize = null) => {
   console.log('ElementoTexto - emitUpdate:', {
     tipo: props.tipoElemento,
     lado: props.lado,
+    subtipo: props.subtipoElemento,
     posición: { ...updatedPosition }
   });
+  
+  // Verificar si es un elemento crítico que necesita asegurar su guardado
+  const esCritico = (props.tipoElemento === 'pareja1' || props.tipoElemento === 'pareja2') && 
+                   (props.subtipoElemento === 'pos' || props.subtipoElemento === 'pg' || 
+                   props.subtipoElemento === 'dif' || props.subtipoElemento === 'nombre');
+  
+  // Si es un elemento crítico, guardarlo directamente en localStorage
+  if (esCritico) {
+    try {
+      // Intentar guardar directamente en localStorage
+      const posicionesJSON = localStorage.getItem('posiciones');
+      let posiciones = {};
+      
+      if (posicionesJSON) {
+        try {
+          posiciones = JSON.parse(posicionesJSON);
+        } catch (parseError) {
+          console.error('Error al analizar JSON de posiciones:', parseError);
+          // Crear un nuevo objeto si hay error al analizar
+          posiciones = {};
+        }
+      }
+      
+      // Asegurar que existe la estructura completa de objetos
+      if (!posiciones[props.tipoElemento]) posiciones[props.tipoElemento] = {};
+      if (!posiciones[props.tipoElemento][props.lado]) posiciones[props.tipoElemento][props.lado] = {};
+      if (!posiciones[props.tipoElemento][props.lado][props.subtipoElemento]) {
+        posiciones[props.tipoElemento][props.lado][props.subtipoElemento] = {};
+      }
+      
+      // Actualizar la posición en el objeto
+      posiciones[props.tipoElemento][props.lado][props.subtipoElemento] = { ...updatedPosition };
+      
+      // Guardar el objeto actualizado en localStorage
+      localStorage.setItem('posiciones', JSON.stringify(posiciones));
+      
+      console.log(`%c ✅ ${props.tipoElemento}.${props.lado}.${props.subtipoElemento} actualizado y guardado directamente (ancho: ${updatedPosition.width}px)`, 
+                 'background: #4CAF50; color: white; padding: 3px;');
+                 
+      // Añadir un atributo data al elemento para marcar que fue guardado
+      const elementoDOM = document.querySelector(`[data-elemento-tipo="${props.tipoElemento}"][data-lado="${props.lado}"][data-subtipo="${props.subtipoElemento}"]`);
+      if (elementoDOM) {
+        elementoDOM.setAttribute('data-guardado', 'true');
+        elementoDOM.setAttribute('data-ancho', updatedPosition.width);
+      }
+    } catch (error) {
+      console.error('Error al guardar directamente en localStorage:', error);
+    }
+  }
   
   nextTick(() => {
     emit('update:posicion', updatedPosition);
@@ -287,6 +337,25 @@ const emitUpdate = (newFontSize = null) => {
     });
   });
 };
+
+// Calcular el ancho mínimo según el tipo de elemento
+const obtenerAnchoMinimo = computed(() => {
+  if (props.tipoElemento === 'mesa' || props.tipoElemento === 'partida') {
+    return 15; // Permitir un ancho muy pequeño para los campos mesa y partida
+  }
+  
+  // Para los campos pos, pg y dif de cualquier pareja
+  if ((props.tipoElemento === 'pareja1' || props.tipoElemento === 'pareja2') && 
+      (props.subtipoElemento === 'pos' || props.subtipoElemento === 'pg' || props.subtipoElemento === 'dif')) {
+    // Permitir un ancho muy estrecho, especialmente para campos pos (3 dígitos máximo)
+    if (props.subtipoElemento === 'pos') {
+      return 10; // Para posición, que solo tiene 3 dígitos como máximo
+    }
+    return 15; // Para partidas ganadas y diferencia
+  }
+  
+  return 50; // Usar el valor predeterminado de 50 para otros tipos de elementos
+});
 </script>
 
 <style scoped>

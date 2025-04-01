@@ -10,51 +10,43 @@ const DEFAULT_POSITIONS = {
     derecha: { top: 15, left: 690, width: 120, height: 70 }
   },
   titulo: {
-    izquierda: { top: 50, left: 200, width: 400, fontSize: 24 },
-    derecha: { top: 50, left: 620, width: 400, fontSize: 24 }
+    izquierda: { top: 30, left: 150, width: 400, height: 40 },
+    derecha: { top: 30, left: 820, width: 400, height: 40 }
   },
   mesa: {
-    izquierda: { top: 100, left: 50, width: 150, fontSize: 20 },
-    derecha: { top: 100, left: 620, width: 150, fontSize: 20 }
+    izquierda: { top: 79, left: 112, width: 50, height: 20 },
+    derecha: { top: 79, left: 570, width: 50, height: 20 }
   },
   partida: {
-    izquierda: { top: 100, left: 250, width: 150, fontSize: 20 },
-    derecha: { top: 100, left: 820, width: 150, fontSize: 20 }
+    izquierda: { top: 79, left: 162, width: 50, height: 20 },
+    derecha: { top: 79, left: 620, width: 50, height: 20 }
   },
   pareja1: {
-    nombre: {
-      izquierda: { top: 150, left: 50, width: 200, fontSize: 16 },
-      derecha: { top: 150, left: 620, width: 200, fontSize: 16 }
+    izquierda: {
+      nombre: { top: 142, left: 112, width: 300, height: 20 },
+      pos: { top: 142, left: 412, width: 30, height: 20 },
+      pg: { top: 142, left: 442, width: 30, height: 20 },
+      dif: { top: 142, left: 472, width: 50, height: 20 }
     },
-    pos: {
-      izquierda: { top: 150, left: 260, width: 80, fontSize: 16 },
-      derecha: { top: 150, left: 830, width: 80, fontSize: 16 }
-    },
-    pg: {
-      izquierda: { top: 150, left: 350, width: 80, fontSize: 16 },
-      derecha: { top: 150, left: 920, width: 80, fontSize: 16 }
-    },
-    dif: {
-      izquierda: { top: 150, left: 440, width: 80, fontSize: 16 },
-      derecha: { top: 150, left: 1010, width: 80, fontSize: 16 }
+    derecha: {
+      nombre: { top: 142, left: 570, width: 300, height: 20 },
+      pos: { top: 142, left: 870, width: 30, height: 20 },
+      pg: { top: 142, left: 900, width: 30, height: 20 },
+      dif: { top: 142, left: 930, width: 50, height: 20 }
     }
   },
   pareja2: {
-    nombre: {
-      izquierda: { top: 180, left: 50, width: 200, fontSize: 16 },
-      derecha: { top: 180, left: 620, width: 200, fontSize: 16 }
+    izquierda: {
+      nombre: { top: 169, left: 112, width: 300, height: 20 },
+      pos: { top: 169, left: 412, width: 30, height: 20 },
+      pg: { top: 169, left: 442, width: 30, height: 20 },
+      dif: { top: 169, left: 472, width: 50, height: 20 }
     },
-    pos: {
-      izquierda: { top: 180, left: 260, width: 80, fontSize: 16 },
-      derecha: { top: 180, left: 830, width: 80, fontSize: 16 }
-    },
-    pg: {
-      izquierda: { top: 180, left: 350, width: 80, fontSize: 16 },
-      derecha: { top: 180, left: 920, width: 80, fontSize: 16 }
-    },
-    dif: {
-      izquierda: { top: 180, left: 440, width: 80, fontSize: 16 },
-      derecha: { top: 180, left: 1010, width: 80, fontSize: 16 }
+    derecha: {
+      nombre: { top: 169, left: 570, width: 300, height: 20 },
+      pos: { top: 169, left: 870, width: 30, height: 20 },
+      pg: { top: 169, left: 900, width: 30, height: 20 },
+      dif: { top: 169, left: 930, width: 50, height: 20 }
     }
   }
 };
@@ -118,7 +110,11 @@ export function usePositionStorage(options = {}) {
         }
       }
       
+      // Siempre marcar como cargado, incluso si no se cargaron posiciones
+      // porque en ese caso se usarán los valores predeterminados
       isLoaded.value = true;
+      console.log('loadPositions completado. isLoaded =', isLoaded.value, 'posiciones cargadas =', loaded);
+      
       return loaded;
     } catch (error) {
       console.error('Error al cargar posiciones:', error);
@@ -164,8 +160,27 @@ export function usePositionStorage(options = {}) {
   /**
    * Resetear posiciones a valores predeterminados
    */
-  const resetPositions = () => {
-    Object.assign(positions, JSON.parse(JSON.stringify(DEFAULT_POSITIONS)));
+  const resetPositions = (customPositions = null) => {
+    // Si se proporcionan posiciones personalizadas, usarlas en lugar de las predeterminadas
+    if (customPositions) {
+      Object.assign(positions, JSON.parse(JSON.stringify(customPositions)));
+    } else {
+      // De lo contrario, usar las posiciones por defecto
+      Object.assign(positions, JSON.parse(JSON.stringify(DEFAULT_POSITIONS)));
+    }
+    
+    // Marcar como cargado
+    isLoaded.value = true;
+    
+    console.log('Posiciones restablecidas correctamente. isLoaded =', isLoaded.value);
+  };
+
+  /**
+   * Obtener todas las posiciones actuales
+   * @returns {Object} - Copia de todas las posiciones actuales
+   */
+  const getAllPositions = () => {
+    return JSON.parse(JSON.stringify(positions));
   };
 
   /**
@@ -191,23 +206,34 @@ export function usePositionStorage(options = {}) {
     
     try {
       if (subElement) {
-        // Para elementos con subelementos (pareja1, pareja2)
+        // Caso especial para elementos con subelementos (pareja1, pareja2)
+        
+        // Asegurar que existe la estructura completa de objetos
         if (!positions[elementType]) positions[elementType] = {};
-        if (!positions[elementType][subElement]) positions[elementType][subElement] = {};
-        if (!positions[elementType][subElement][side]) positions[elementType][subElement][side] = {};
+        if (!positions[elementType][side]) positions[elementType][side] = {};
+        if (!positions[elementType][side][subElement]) positions[elementType][side][subElement] = {};
         
         // Crear copia del objeto para evitar referencias compartidas
-        const previousValue = { ...positions[elementType][subElement][side] };
-        positions[elementType][subElement][side] = {
-          ...positions[elementType][subElement][side],
+        const previousValue = { ...positions[elementType][side][subElement] };
+        
+        // Actualizar la posición asegurándose de establecer un valor válido
+        positions[elementType][side][subElement] = {
+          ...positions[elementType][side][subElement],
           ...position
         };
         
-        console.log(`Posición actualizada para ${elementType}.${subElement}.${side}:`, {
+        console.log(`Posición actualizada para ${elementType}.${side}.${subElement}:`, {
           antes: previousValue,
-          después: { ...positions[elementType][subElement][side] },
+          después: { ...positions[elementType][side][subElement] },
           cambios: Object.keys(position)
         });
+        
+        // Verificación adicional para nombres de pareja
+        if ((elementType === 'pareja1' || elementType === 'pareja2') && subElement === 'nombre') {
+          console.log(`%c VERIFICACIÓN CRÍTICA: ${elementType}.${side}.${subElement}`, 
+                    'background: purple; color: white; padding: 3px;');
+          console.log('Posición final en memoria:', { ...positions[elementType][side][subElement] });
+        }
       } else {
         // Para elementos directos (logo, titulo, etc.)
         if (!positions[elementType]) positions[elementType] = {};
@@ -240,29 +266,78 @@ export function usePositionStorage(options = {}) {
    */
   const getElementPosition = (elementType, side, subElement = null) => {
     try {
+      // Verificar si el tipo de elemento existe en DEFAULT_POSITIONS
+      const defaultExists = DEFAULT_POSITIONS && 
+                           DEFAULT_POSITIONS[elementType] && 
+                           (subElement ? 
+                             (DEFAULT_POSITIONS[elementType][subElement] && DEFAULT_POSITIONS[elementType][subElement][side]) : 
+                             DEFAULT_POSITIONS[elementType][side]);
+      
       // Para elementos con subelementos (pareja1, pareja2)
       if (subElement) {
-        if (!positions[elementType]) return DEFAULT_POSITIONS[elementType][subElement][side];
-        if (!positions[elementType][subElement]) return DEFAULT_POSITIONS[elementType][subElement][side];
-        if (!positions[elementType][subElement][side]) return DEFAULT_POSITIONS[elementType][subElement][side];
+        if (!positions[elementType]) {
+          return defaultExists ? 
+                 { ...DEFAULT_POSITIONS[elementType][subElement][side] } : 
+                 { top: 0, left: 0, width: 100, height: 20 };
+        }
+        if (!positions[elementType][subElement]) {
+          return defaultExists ? 
+                 { ...DEFAULT_POSITIONS[elementType][subElement][side] } : 
+                 { top: 0, left: 0, width: 100, height: 20 };
+        }
+        if (!positions[elementType][subElement][side]) {
+          return defaultExists ? 
+                 { ...DEFAULT_POSITIONS[elementType][subElement][side] } : 
+                 { top: 0, left: 0, width: 100, height: 20 };
+        }
         
         // Devolver copia del objeto para evitar modificar el original
         return { ...positions[elementType][subElement][side] };
       }
       
       // Para elementos directos (logo, titulo, etc.)
-      if (!positions[elementType]) return DEFAULT_POSITIONS[elementType][side];
-      if (!positions[elementType][side]) return DEFAULT_POSITIONS[elementType][side];
+      if (!positions[elementType]) {
+        return defaultExists ? 
+               { ...DEFAULT_POSITIONS[elementType][side] } : 
+               { top: 0, left: 0, width: 100, height: 20 };
+      }
+      if (!positions[elementType][side]) {
+        return defaultExists ? 
+               { ...DEFAULT_POSITIONS[elementType][side] } : 
+               { top: 0, left: 0, width: 100, height: 20 };
+      }
       
       // Devolver copia del objeto para evitar modificar el original
       return { ...positions[elementType][side] };
     } catch (error) {
       console.error('Error al obtener posición en usePositionStorage:', error);
-      // En caso de error, devolver posición por defecto
-      if (subElement) {
-        return { ...DEFAULT_POSITIONS[elementType][subElement][side] };
+      // En caso de error, devolver un objeto de posición básico
+      return { top: 0, left: 0, width: 100, height: 20 };
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    try {
+      console.log('Cargando posiciones directamente desde localStorage');
+      const posicionesGuardadasJSON = localStorage.getItem(storageKey);
+      
+      if (posicionesGuardadasJSON) {
+        const posicionesGuardadas = JSON.parse(posicionesGuardadasJSON);
+        console.log('Posiciones recuperadas de localStorage:', posicionesGuardadas);
+        
+        // Actualizar el estado con las posiciones recuperadas
+        Object.assign(positions, posicionesGuardadas);
+        isLoaded.value = true;
+        
+        console.log('Posiciones cargadas correctamente desde localStorage');
+        return true;
+      } else {
+        console.warn('No se encontraron posiciones guardadas en localStorage');
+        return false;
       }
-      return { ...DEFAULT_POSITIONS[elementType][side] };
+    } catch (error) {
+      console.error('Error al cargar posiciones desde localStorage:', error);
+      return false;
     }
   };
 
@@ -273,7 +348,9 @@ export function usePositionStorage(options = {}) {
     loadPositions,
     savePositions,
     resetPositions,
+    getAllPositions,
     updateElementPosition,
-    getElementPosition
+    getElementPosition,
+    loadFromLocalStorage
   };
 } 

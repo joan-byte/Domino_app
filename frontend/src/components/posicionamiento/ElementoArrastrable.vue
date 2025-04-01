@@ -108,6 +108,13 @@ const props = defineProps({
   elementSubtype: {
     type: String,
     default: null
+  },
+  
+  // Añadir el prop de alineación
+  contentAlignment: {
+    type: String,
+    default: 'center', // Valores: center, left, right
+    validator: (value) => ['center', 'left', 'right'].includes(value)
   }
 });
 
@@ -226,17 +233,22 @@ const {
 
 // Estilo calculado del elemento
 const elementStyle = computed(() => {
-  return {
+  // Generar estilo base
+  const baseStyle = {
     position: 'absolute',
     top: `${position.value.top}px`,
     left: `${position.value.left}px`,
     width: `${size.value.width}px`,
     height: `${size.value.height}px`,
+    justifyContent: props.contentAlignment === 'left' ? 'flex-start' : 
+                    props.contentAlignment === 'right' ? 'flex-end' : 'center',
     cursor: isDragging.value ? 'grabbing' : 'grab',
-    zIndex: isDragging.value || isResizing.value ? 10 : 1,
-    transition: isDragging.value || isResizing.value ? 'none' : 'all 0.05s ease',
+    zIndex: isDragging.value || isResizing.value ? 100 : 10,
+    transformOrigin: 'top left',
     ...props.additionalStyles
   };
+  
+  return baseStyle;
 });
 
 // Manejadores de eventos
