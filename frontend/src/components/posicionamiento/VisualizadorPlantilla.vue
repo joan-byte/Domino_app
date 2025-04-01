@@ -76,7 +76,26 @@ const disminuirEscala = () => {
 
 // Resetear a escala 1:1 para posicionamiento preciso
 const resetearEscala = () => {
-  escala.value = 1; // Siempre volver a 1:1 para posicionamiento exacto
+  // Calcular el tamaño óptimo para que la página se ajuste al área visible con márgenes pequeños
+  if (contenedorRef.value) {
+    // Obtener el ancho del contenedor padre
+    const contenedorWidth = contenedorRef.value.offsetWidth - 20; // 20px para márgenes
+    const contenedorHeight = window.innerHeight * 0.7; // Usar 70% de la altura visible
+    
+    // Calcular la proporción para ajustarse al contenedor
+    const escalaAncho = contenedorWidth / 842;
+    const escalaAlto = contenedorHeight / 595;
+    
+    // Usar la escala más pequeña para asegurar que cabe completo
+    const escalaOptima = Math.min(escalaAncho, escalaAlto);
+    
+    // Asegurar que la escala está entre 0.5 y 1
+    escala.value = Math.max(0.5, Math.min(1, escalaOptima));
+  } else {
+    // Si no hay referencia, volver a escala 1:1
+    escala.value = 1;
+  }
+  
   emit('update:escala', escala.value);
 };
 
