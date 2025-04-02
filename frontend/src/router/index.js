@@ -10,6 +10,7 @@ import CrearParejaView from '../views/CrearParejaView.vue'
 import ModificarParejaView from '../views/ModificarParejaView.vue'
 import ModificarResultadoView from '../views/ModificarResultadoView.vue'
 import LogoPosicionamiento from '../components/posicionamiento/LogoPosicionamiento.vue'
+import ConfiguracionView from '../views/ConfiguracionView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -83,6 +84,15 @@ const router = createRouter({
       meta: {
         requiresAuth: false,
         title: 'Posicionamiento de Información'
+      }
+    },
+    {
+      path: '/configuracion',
+      name: 'configuracion',
+      component: ConfiguracionView,
+      meta: {
+        requiresAuth: false,
+        title: 'Configuración'
       }
     }
   ]

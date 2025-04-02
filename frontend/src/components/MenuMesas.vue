@@ -13,7 +13,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:show-menu', 'clear-timeout', 'close-menus', 'imprimir', 'mostrar-modal-plantilla', 'mostrar-posicionamiento-logo']);
+const emit = defineEmits(['update:show-menu', 'clear-timeout', 'close-menus', 'imprimir']);
 
 // Abrir el menú al pasar el ratón
 const abrirMenu = () => {
@@ -28,22 +28,6 @@ const cerrarMenu = () => {
 const imprimir = () => {
   cerrarMenu();
   emit('imprimir');
-};
-
-const mostrarPlantilla = () => {
-  cerrarMenu();
-  emit('mostrar-modal-plantilla');
-};
-
-const mostrarPosicionamientoLogo = () => {
-  console.log('MenuMesas: Ejecutando mostrarPosicionamientoLogo');
-  cerrarMenu();
-  console.log('MenuMesas: Menú cerrado, emitiendo evento mostrar-posicionamiento-logo');
-  
-  // Usar el evento para mantener la compatibilidad con la estructura actual
-  emit('mostrar-posicionamiento-logo');
-  
-  console.log('MenuMesas: Evento mostrar-posicionamiento-logo emitido');
 };
 </script>
 
@@ -94,18 +78,6 @@ const mostrarPosicionamientoLogo = () => {
           @click="imprimir"
         >
           Imprimir
-        </button>
-        <button 
-          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          @click="mostrarPlantilla"
-        >
-          Configurar Plantilla
-        </button>
-        <button 
-          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          @click="mostrarPosicionamientoLogo"
-        >
-          Posicionamiento información
         </button>
       </div>
     </div>

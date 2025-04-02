@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import MenuMesas from './MenuMesas.vue';
 import MenuResultados from './MenuResultados.vue';
+import MenuConfiguracion from './MenuConfiguracion.vue';
 
 const props = defineProps({
   campeonato: Object
@@ -15,6 +16,7 @@ const router = useRouter();
 // Asegurarse de que los menús comiencen cerrados
 const showMesasMenu = ref(false);
 const showResultadosMenu = ref(false);
+const showConfiguracionMenu = ref(false);
 
 const closeMenus = (e) => {
   // Cerrar los menús si se hace clic fuera de ellos
@@ -45,18 +47,30 @@ const handleMostrarPosicionamientoLogo = () => {
 const updateMesasMenu = (value) => {
   showMesasMenu.value = value;
   
-  // Si se abre el menú de Mesas, asegurarse que el de Resultados esté cerrado
+  // Si se abre el menú de Mesas, asegurarse que los otros estén cerrados
   if (value) {
     showResultadosMenu.value = false;
+    showConfiguracionMenu.value = false;
   }
 };
 
 const updateResultadosMenu = (value) => {
   showResultadosMenu.value = value;
   
-  // Si se abre el menú de Resultados, asegurarse que el de Mesas esté cerrado
+  // Si se abre el menú de Resultados, asegurarse que los otros estén cerrados
   if (value) {
     showMesasMenu.value = false;
+    showConfiguracionMenu.value = false;
+  }
+};
+
+const updateConfiguracionMenu = (value) => {
+  showConfiguracionMenu.value = value;
+  
+  // Si se abre el menú de Configuración, asegurarse que los otros estén cerrados
+  if (value) {
+    showMesasMenu.value = false;
+    showResultadosMenu.value = false;
   }
 };
 
@@ -64,6 +78,7 @@ const updateResultadosMenu = (value) => {
 const cerrarTodosLosMenus = () => {
   showMesasMenu.value = false;
   showResultadosMenu.value = false;
+  showConfiguracionMenu.value = false;
 };
 
 // Invocamos la función al inicio para asegurar que los menús estén cerrados
@@ -147,8 +162,6 @@ const handleLogoError = (event) => {
             @update:show-menu="updateMesasMenu"
             @close-menus="closeMenus"
             @imprimir="handleImprimir"
-            @mostrar-modal-plantilla="handleMostrarModalPlantilla"
-            @mostrar-posicionamiento-logo="handleMostrarPosicionamientoLogo"
           />
 
           <MenuResultados 
@@ -156,6 +169,15 @@ const handleLogoError = (event) => {
             @update:show-menu="updateResultadosMenu"
             @close-menus="closeMenus" 
             @imprimir-ranking="handleImprimirRanking"
+          />
+
+          <MenuConfiguracion 
+            class="ml-12" 
+            :show-menu="showConfiguracionMenu" 
+            @update:show-menu="updateConfiguracionMenu"
+            @close-menus="closeMenus"
+            @mostrar-modal-plantilla="handleMostrarModalPlantilla"
+            @mostrar-posicionamiento-logo="handleMostrarPosicionamientoLogo"
           />
         </div>
       </div>
