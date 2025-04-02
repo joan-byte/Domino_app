@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { campeonatoService, mesaService, parejaService, resultadoService } from '../services/api';
 import { useResultadoStore } from '../stores/resultado';
 
@@ -58,44 +58,60 @@ const parejasMesas = ref([]);
 const error = ref(null);
 const paginaActual = ref(0);
 const intervalId = ref(null);
-const PAREJAS_POR_PAGINA = 15;
+const PAREJAS_POR_PAGINA = 15; // Número de parejas a mostrar por página
 const INTERVALO_CAMBIO = 10000; // 10 segundos en milisegundos
 
 const resultadoStore = useResultadoStore();
 const resultados = ref([]);
 
+// Calcular el número total de páginas basado en la cantidad de parejas
 const totalPaginas = computed(() => {
   return Math.ceil(parejasMesas.value.length / PAREJAS_POR_PAGINA);
 });
 
+// Obtener las parejas visibles en la página actual
 const parejasVisibles = computed(() => {
   const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
   const fin = inicio + PAREJAS_POR_PAGINA;
   return parejasMesas.value.slice(inicio, fin);
 });
 
+// Cambiar a la siguiente página o volver al inicio si estamos en la última
 const cambiarPagina = () => {
   const maxPagina = totalPaginas.value - 1;
   if (paginaActual.value >= maxPagina) {
-    paginaActual.value = 0;
+    paginaActual.value = 0; // Volver a la primera página
   } else {
-    paginaActual.value++;
+    paginaActual.value++; // Ir a la siguiente página
   }
 };
 
+// Iniciar el intervalo para cambiar páginas automáticamente
 const iniciarRotacionPaginas = () => {
-  detenerRotacionPaginas();
+  detenerRotacionPaginas(); // Primero detener cualquier intervalo existente
   if (totalPaginas.value > 1) {
+    // Solo iniciar rotación si hay más de una página
+    console.log('Iniciando rotación automática de páginas cada 10 segundos');
     intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
   }
 };
 
+// Detener el intervalo de rotación de páginas
 const detenerRotacionPaginas = () => {
   if (intervalId.value) {
+    console.log('Deteniendo rotación automática de páginas');
     clearInterval(intervalId.value);
     intervalId.value = null;
   }
 };
+
+// Observar cambios en las parejas para reiniciar la rotación cuando cambian los datos
+watch(parejasMesas, () => {
+  // Si cambia el conjunto de parejas, reiniciar la paginación
+  if (document.visibilityState === 'visible') {
+    iniciarRotacionPaginas();
+  }
+}, { deep: true });
 
 const mesasParaImprimir = computed(() => {
   if (!parejasMesas.value?.length || !campeonato.value) return [];
@@ -263,7 +279,9 @@ const cargarDatos = async () => {
       }))
       .sort((a, b) => a.id - b.id);
 
+    // Reiniciar a la primera página cuando se cargan nuevos datos
     paginaActual.value = 0;
+    // Iniciar la rotación automática de páginas
     iniciarRotacionPaginas();
 
   } catch (e) {
@@ -273,17 +291,22 @@ const cargarDatos = async () => {
 };
 
 onMounted(() => {
-  cargarDatos();
+  cargarDatos(); // Cargar datos iniciales
+  
+  // Iniciar o detener la rotación según la visibilidad de la página
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+      // Reiniciar rotación cuando la página se hace visible
       iniciarRotacionPaginas();
     } else {
+      // Detener rotación cuando la página no es visible
       detenerRotacionPaginas();
     }
   });
 });
 
 onUnmounted(() => {
+  // Limpiar intervalo y evento al desmontar el componente
   detenerRotacionPaginas();
   document.removeEventListener('visibilitychange', () => {});
 });
