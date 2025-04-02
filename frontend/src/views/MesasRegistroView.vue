@@ -40,13 +40,6 @@
 
     <!-- Lista de Mesas -->
     <div class="space-y-8">
-      <!-- Debug info -->
-      <div class="text-sm text-gray-500">
-        Total mesas: {{ mesas.length }}
-        Grupo A: {{ mesasGrupoA.length }}
-        Grupo B: {{ mesasGrupoB.length }}
-      </div>
-
       <!-- Grupo A -->
       <div class="space-y-4">
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Grupo A</h3>
@@ -214,12 +207,12 @@
                 <!-- Resultado Total (RT) -->
                 <div class="flex flex-col">
                   <label 
-                    for="rt_pareja1" 
+                    :for="!mesaSeleccionada.pareja2 ? 'rt_pareja1_display' : 'rt_pareja1'" 
                     class="block text-sm text-gray-600 h-6"
                   >
                     Resultado Total (RT)
                   </label>
-                  <div v-if="!mesaSeleccionada.pareja2" class="px-3 py-2 bg-gray-100 rounded-md">
+                  <div v-if="!mesaSeleccionada.pareja2" id="rt_pareja1_display" aria-labelledby="rt_label_pareja1" class="px-3 py-2 bg-gray-100 rounded-md">
                     150
                   </div>
                   <input
@@ -239,12 +232,12 @@
                 <!-- Manos Ganadas (MG) -->
                 <div class="flex flex-col">
                   <label 
-                    for="mg_pareja1" 
+                    :for="!mesaSeleccionada.pareja2 ? 'mg_pareja1_display' : 'mg_pareja1'" 
                     class="block text-sm text-gray-600 h-6"
                   >
                     Manos Ganadas (MG)
                   </label>
-                  <div v-if="!mesaSeleccionada.pareja2" class="px-3 py-2 bg-gray-100 rounded-md">
+                  <div v-if="!mesaSeleccionada.pareja2" id="mg_pareja1_display" aria-labelledby="mg_label_pareja1" class="px-3 py-2 bg-gray-100 rounded-md">
                     5
                   </div>
                   <input
@@ -262,39 +255,51 @@
 
                 <!-- Resultado Partida (RP) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="rp_pareja1" 
+                  <span 
+                    id="rp_label_pareja1"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Resultado Partida (RP)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="rp_display_pareja1" 
+                    aria-labelledby="rp_label_pareja1"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ calculos.rp1 }}
                   </div>
                 </div>
                 
                 <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="pg_pareja1" 
+                  <span 
+                    id="pg_label_pareja1"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Partidas Ganadas (PG)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="pg_display_pareja1" 
+                    aria-labelledby="pg_label_pareja1"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ !mesaSeleccionada.pareja2 ? 1 : calculos.pg1 }}
                   </div>
                 </div>
                 
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="pp_pareja1" 
+                  <span 
+                    id="pp_label_pareja1"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Diferencia (Dif.)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="pp_display_pareja1" 
+                    aria-labelledby="pp_label_pareja1"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ !mesaSeleccionada.pareja2 ? 150 : calculos.pp1 }}
                   </div>
                 </div>
@@ -323,7 +328,6 @@
                     type="number"
                     required
                     min="0"
-                    :readonly="!mesaSeleccionada?.pareja2"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -343,46 +347,57 @@
                     type="number"
                     required
                     min="0"
-                    :readonly="!mesaSeleccionada?.pareja2"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
                 <!-- Resultado Partida (RP) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="rp_pareja2" 
+                  <span 
+                    id="rp_label_pareja2"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Resultado Partida (RP)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="rp_display_pareja2" 
+                    aria-labelledby="rp_label_pareja2"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ calculos.rp2 }}
                   </div>
                 </div>
                 
                 <!-- Partidas Ganadas (PG) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="pg_pareja2" 
+                  <span 
+                    id="pg_label_pareja2"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Partidas Ganadas (PG)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="pg_display_pareja2" 
+                    aria-labelledby="pg_label_pareja2"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ calculos.pg2 }}
                   </div>
                 </div>
                 
                 <!-- Puntos Partida (PP) -->
                 <div class="flex flex-col">
-                  <label 
-                    for="pp_pareja2" 
+                  <span 
+                    id="pp_label_pareja2"
                     class="block text-sm text-gray-600 h-6"
                   >
                     Diferencia (Dif.)
-                  </label>
-                  <div class="px-3 py-2 bg-gray-100 rounded-md">
+                  </span>
+                  <div 
+                    id="pp_display_pareja2" 
+                    aria-labelledby="pp_label_pareja2"
+                    class="px-3 py-2 bg-gray-100 rounded-md"
+                  >
                     {{ calculos.pp2 }}
                   </div>
                 </div>
@@ -449,15 +464,41 @@ const secondScreenView = ref('ranking');
 // Funciones
 const cargarDatos = async () => {
   try {
-    await campeonatoStore.obtenerActual();
-    campeonato.value = campeonatoStore.campeonato;
+    // Obtener campeonato actual actualizado
+    const campeonatoActual = await campeonatoStore.obtenerActual();
+    campeonato.value = campeonatoActual;
     
     if (!campeonato.value) {
       error.value = 'No hay campeonato activo';
       return;
     }
 
-    await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+    console.log(`Cargando mesas para campeonato ID: ${campeonato.value.id}, partida: ${campeonato.value.partida_actual}`);
+    
+    // Cargar las mesas según la partida actual
+    const mesasCargadas = await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+    console.log(`Mesas cargadas: ${mesasCargadas.length}`);
+    
+    if (mesasCargadas.length === 0) {
+      console.warn('No se encontraron mesas directamente, verificando si hay resultados para reconstruirlas');
+      
+      // Si no hay mesas, esperar un segundo y volver a intentar
+      // Esto es necesario para dar tiempo al backend para reconstruir las mesas desde los resultados
+      setTimeout(async () => {
+        const mesasRecargadas = await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+        console.log(`Mesas recargadas después de espera: ${mesasRecargadas.length}`);
+        
+        if (mesasRecargadas.length === 0) {
+          console.warn('No se pudieron cargar mesas ni siquiera después de reintento');
+        }
+        
+        // Actualizar el ranking siempre, independientemente de si se encontraron mesas o no
+        await resultadoStore.obtenerRanking(campeonato.value.id);
+      }, 1000);
+    } else {
+      // Actualizar también el ranking
+      await resultadoStore.obtenerRanking(campeonato.value.id);
+    }
   } catch (e) {
     console.error('Error al cargar los datos:', e);
     error.value = 'Error al cargar los datos';
@@ -497,14 +538,16 @@ const calculos = computed(() => {
   const pm = campeonato.value?.pm || 350;
 
   // Calcular RP basado en RT y PM
+  // RP está limitado por PM
   const rp1 = rt1 > pm ? pm : rt1;
   const rp2 = rt2 > pm ? pm : rt2;
 
-  // Calcular PG
-  const pg1 = rt1 > rt2 ? 1 : 0;
-  const pg2 = rt2 > rt1 ? 1 : 0;
+  // Calcular PG basado en RP (no en RT)
+  // La pareja que gana es la que tiene mayor RP
+  const pg1 = rp1 > rp2 ? 1 : 0;
+  const pg2 = rp2 > rp1 ? 1 : 0;
 
-  // Calcular PP basado en RP (no en RT)
+  // Calcular PP basado en RP
   const pp1 = rp1 - rp2;
   const pp2 = rp2 - rp1;
 
@@ -637,7 +680,14 @@ const guardarResultado = async () => {
     const rt2 = resultado.value.rt_pareja2;
     const pm = campeonato.value?.pm || 350;
 
-    // Calcular RP (resultado de la partida) limitado por PM
+    // Límite para RT (MP+129)
+    const limitRT = pm + 129;
+    
+    // RT debe conservar el valor introducido por el usuario, pero con un máximo de MP+129
+    const rtFinal1 = rt1 > limitRT ? limitRT : rt1;
+    const rtFinal2 = rt2 > limitRT ? limitRT : rt2;
+    
+    // RP (resultado de la partida) limitado por PM
     const rp1 = rt1 > pm ? pm : rt1;
     const rp2 = rt2 > pm ? pm : rt2;
 
@@ -655,10 +705,10 @@ const guardarResultado = async () => {
           mesa_id: mesaSeleccionada.value.id,
           partida: campeonato.value.partida_actual,
           campeonato_id: campeonato.value.id,
-          rt: rt1,
+          rt: rtFinal1, // Usar RT con límite de MP+129
           mg: resultado.value.mg_pareja1,
-          rp: rp1,
-          pg: rt1 > rt2 ? 1 : 0,
+          rp: rp1,      // RP limitado a MP
+          pg: rp1 > rp2 ? 1 : 0,  // PG basado en RP
           pp: rp1 - rp2,
           gb: pareja1.gb || false
         };
@@ -667,10 +717,10 @@ const guardarResultado = async () => {
           mesa_id: mesaSeleccionada.value.id,
           partida: campeonato.value.partida_actual,
           campeonato_id: campeonato.value.id,
-          rt: rt2,
+          rt: rtFinal2, // Usar RT con límite de MP+129
           mg: resultado.value.mg_pareja2,
-          rp: rp2,
-          pg: rt2 > rt1 ? 1 : 0,
+          rp: rp2,      // RP limitado a MP
+          pg: rp2 > rp1 ? 1 : 0,  // PG basado en RP
           pp: rp2 - rp1,
           gb: pareja2.gb || false
         };
@@ -680,10 +730,10 @@ const guardarResultado = async () => {
           mesa_id: mesaSeleccionada.value.id,
           partida: campeonato.value.partida_actual,
           campeonato_id: campeonato.value.id,
-          rt: rt2,
+          rt: rtFinal2, // Usar RT con límite de MP+129
           mg: resultado.value.mg_pareja2,
-          rp: rp2,
-          pg: rt2 > rt1 ? 1 : 0,
+          rp: rp2,      // RP limitado a MP
+          pg: rp2 > rp1 ? 1 : 0,  // PG basado en RP
           pp: rp2 - rp1,
           gb: pareja2.gb || false
         };
@@ -692,10 +742,10 @@ const guardarResultado = async () => {
           mesa_id: mesaSeleccionada.value.id,
           partida: campeonato.value.partida_actual,
           campeonato_id: campeonato.value.id,
-          rt: rt1,
+          rt: rtFinal1, // Usar RT con límite de MP+129
           mg: resultado.value.mg_pareja1,
-          rp: rp1,
-          pg: rt1 > rt2 ? 1 : 0,
+          rp: rp1,      // RP limitado a MP
+          pg: rp1 > rp2 ? 1 : 0,  // PG basado en RP
           pp: rp1 - rp2,
           gb: pareja1.gb || false
         };
@@ -707,10 +757,10 @@ const guardarResultado = async () => {
         mesa_id: mesaSeleccionada.value.id,
         partida: campeonato.value.partida_actual,
         campeonato_id: campeonato.value.id,
-        rt: rt1,
+        rt: rtFinal1, // Usar RT con límite de MP+129
         mg: resultado.value.mg_pareja1,
-        rp: rp1,
-        pg: rt1 > rt2 ? 1 : 0,
+        rp: rp1,      // RP limitado a MP
+        pg: rp1 > rp2 ? 1 : 0,  // PG basado en RP
         pp: rp1 - rp2,
         gb: pareja1.gb || false
       };
@@ -719,10 +769,10 @@ const guardarResultado = async () => {
         mesa_id: mesaSeleccionada.value.id,
         partida: campeonato.value.partida_actual,
         campeonato_id: campeonato.value.id,
-        rt: rt2,
+        rt: rtFinal2, // Usar RT con límite de MP+129
         mg: resultado.value.mg_pareja2,
-        rp: rp2,
-        pg: rt2 > rt1 ? 1 : 0,
+        rp: rp2,      // RP limitado a MP
+        pg: rp2 > rp1 ? 1 : 0,  // PG basado en RP
         pp: rp2 - rp1,
         gb: pareja2.gb || false
       };
@@ -830,8 +880,17 @@ const cerrarPartida = async () => {
         if (secondScreenView.value === 'ranking') {
           toggleSecondScreen('mesas');
         }
-        // Recargar los datos
-        await cargarDatos();
+        
+        // Emitir evento personalizado para notificar que se ha cerrado la partida
+        console.log('Emitiendo evento partida-cerrada');
+        window.dispatchEvent(new CustomEvent('partida-cerrada'));
+        
+        // Recargar la página automáticamente al pasar a la siguiente partida
+        // para asegurar que todos los componentes se actualicen correctamente
+        console.log('Recargando página para actualizar el estado de la aplicación...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     }
   } catch (e) {
@@ -842,7 +901,14 @@ const cerrarPartida = async () => {
 
 // Abrir la segunda pantalla con el ranking al montar el componente
 onMounted(async () => {
+  // Limpiar cualquier estado previo
+  mesas.value = [];
+  mesaSeleccionada.value = null;
+  error.value = null;
+  
+  // Cargar los datos frescos
   await cargarDatos();
+  
   // Iniciar con la vista de ranking en la segunda pantalla
   toggleSecondScreen('ranking');
 });

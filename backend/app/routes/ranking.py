@@ -15,9 +15,9 @@ async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
     Para la primera partida y siguientes, ordena según los criterios establecidos:
     - GB ascendente (grupo A antes que B)
     - PG como sumatorio descendente
-    - PP como sumatorio descendente
-    - RT como sumatorio descendente
-    - MG como sumatorio ascendente
+    - PP como sumatorio descendente (Diferencia)
+    - RT como sumatorio descendente (Puntos Totales)
+    - MG como sumatorio ascendente (Manos Ganadas)
     """
     # Primero obtener el campeonato para saber en qué partida estamos
     campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
@@ -82,17 +82,21 @@ async def obtener_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         Pareja.activa == True
     )
 
-    # Aplicar orden según la partida
-    if campeonato.partida_actual == 1:
-        ranking_query = ranking_query.order_by(orden_sorteo_subquery.c.orden)
-    else:
-        ranking_query = ranking_query.order_by(
-            asc(Pareja.gb),  # GB ascendente (grupo A antes que B)
-            desc(func.coalesce(resultados_subquery.c.pg, 0)),  # PG descendente
-            desc(func.coalesce(resultados_subquery.c.pp, 0)),  # PP descendente
-            desc(func.coalesce(resultados_subquery.c.rt, 0)),  # RT descendente
-            asc(func.coalesce(resultados_subquery.c.mg, 0))    # MG ascendente
-        )
+    # Aplicar siempre los criterios de ordenación
+    # 1. GB ascendente (grupo A antes que B)
+    # 2. PG sumatorio descendente
+    # 3. PP (Diferencia) sumatorio descendente
+    # 4. RT (Puntos Totales) sumatorio descendente
+    # 5. MG (Manos Ganadas) sumatorio ascendente
+    # 6. Si todo es igual, usar el orden del sorteo inicial como desempate
+    ranking_query = ranking_query.order_by(
+        asc(Pareja.gb),  # GB ascendente (grupo A antes que B)
+        desc(func.coalesce(resultados_subquery.c.pg, 0)),  # PG descendente
+        desc(func.coalesce(resultados_subquery.c.pp, 0)),  # PP/Dif descendente
+        desc(func.coalesce(resultados_subquery.c.rt, 0)),  # RT/PT descendente
+        asc(func.coalesce(resultados_subquery.c.mg, 0)),   # MG ascendente
+        asc(orden_sorteo_subquery.c.orden)                # Sorteo inicial como desempate final
+    )
 
     ranking = ranking_query.all()
 

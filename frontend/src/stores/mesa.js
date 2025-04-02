@@ -12,7 +12,14 @@ export const useMesaStore = defineStore('mesa', () => {
     const obtenerMesas = async (campeonatoId, partida) => {
         loading.value = true;
         try {
+            console.log(`Store: Obteniendo mesas para campeonato ${campeonatoId}, partida ${partida}`);
+            
+            // Reiniciar el estado
+            mesas.value = [];
+            error.value = null;
+            
             const mesasData = await mesaService.obtenerMesas(campeonatoId, partida);
+            console.log(`Store: Se encontraron ${mesasData.length} mesas`);
             
             // Obtener los resultados para cada mesa
             const mesasConResultados = await Promise.all(mesasData.map(async mesa => {
@@ -34,8 +41,10 @@ export const useMesaStore = defineStore('mesa', () => {
             }));
 
             mesas.value = mesasConResultados;
+            console.log(`Store: Mesas procesadas con resultados: ${mesas.value.length}`);
             return mesasConResultados;
         } catch (e) {
+            console.error(`Store: Error al obtener mesas:`, e);
             error.value = e.response?.data?.detail || 'Error al obtener las mesas';
             mesas.value = [];
             throw e;

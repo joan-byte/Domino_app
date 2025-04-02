@@ -62,11 +62,25 @@ export const useCampeonatoStore = defineStore('campeonato', () => {
         }
     };
 
+    const retrocederPartida = async (id) => {
+        try {
+            await campeonatoService.retrocederPartida(id);
+            const campeonatoActualizado = await campeonatoService.obtenerActual();
+            campeonato.value = campeonatoActualizado;
+            error.value = null;
+            return campeonatoActualizado;
+        } catch (e) {
+            error.value = e.response?.data?.detail || 'Error al retroceder la partida';
+            throw e;
+        }
+    };
+
     return {
         campeonato,
         error,
         obtenerActual,
         cerrarInscripcion,
-        reiniciarCampeonato
+        reiniciarCampeonato,
+        retrocederPartida
     };
 }); 

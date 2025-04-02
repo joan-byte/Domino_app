@@ -43,9 +43,7 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            console.log('Obteniendo resultados del campeonato:', campeonatoId);
             const response = await resultadoService.obtenerResultadosCampeonato(campeonatoId);
-            console.log('Resultados obtenidos:', response);
             return response;
         } catch (e) {
             console.error('Error al obtener resultados del campeonato:', e);
@@ -67,7 +65,6 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            console.log('Store: Obteniendo ranking para campeonato:', campeonatoId);
             const response = await resultadoService.obtenerRanking(campeonatoId);
             
             if (!response) {
@@ -80,7 +77,6 @@ export const useResultadoStore = defineStore('resultado', () => {
                 throw new Error('Formato de respuesta inválido');
             }
             
-            console.log('Store: Ranking obtenido:', response);
             ranking.value = response;
             return response;
         } catch (e) {
@@ -109,9 +105,7 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            console.log('Obteniendo resultados para mesa:', mesaId, 'partida:', partida);
             const response = await resultadoService.obtenerPorMesa(mesaId, partida);
-            console.log('Resultados de mesa obtenidos:', response);
             return response;
         } catch (e) {
             console.error('Error al obtener resultados de mesa:', e);
@@ -126,13 +120,29 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
-            console.log('Obteniendo resultados para pareja:', parejaId);
             const response = await resultadoService.obtenerResultadosPorPareja(parejaId);
-            console.log('Resultados de pareja obtenidos:', response);
             return response;
         } catch (e) {
             console.error('Error al obtener resultados de pareja:', e);
             error.value = e.response?.data?.detail || 'Error al obtener los resultados';
+            return [];
+        } finally {
+            loading.value = false;
+        }
+    };
+
+    const obtenerResultadosPorPartida = async (campeonatoId, partida) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            // Primero obtener todos los resultados del campeonato
+            const todosResultados = await resultadoService.obtenerResultadosCampeonato(campeonatoId);
+            // Filtrar solo los resultados de la partida especificada
+            const resultadosPartida = todosResultados.filter(r => r.partida === partida);
+            return resultadosPartida;
+        } catch (e) {
+            console.error('Error al obtener resultados por partida:', e);
+            error.value = e.response?.data?.detail || 'Error al obtener los resultados por partida';
             return [];
         } finally {
             loading.value = false;
@@ -149,6 +159,7 @@ export const useResultadoStore = defineStore('resultado', () => {
         obtenerRankingFinal,
         obtenerResultadosPorMesa,
         obtenerResultadosPorPareja,
-        obtenerResultadosCampeonato
+        obtenerResultadosCampeonato,
+        obtenerResultadosPorPartida
     };
 }); 

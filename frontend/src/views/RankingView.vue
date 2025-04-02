@@ -159,30 +159,33 @@ const isRankingCompleto = computed(() => route.path === '/ranking');
 const sortedRanking = computed(() => {
   if (!ranking.value) return [];
   return [...ranking.value].sort((a, b) => {
-    // GB ascendente: convertimos boolean a número (false=0, true=1)
+    // 1. GB ascendente: convertimos boolean a número (false=0, true=1)
     const aGB = a.gb ? 1 : 0;
     const bGB = b.gb ? 1 : 0;
     if (aGB !== bGB) return aGB - bGB;
-    // PG descendente
+    
+    // 2. PG descendente (Partidas Ganadas)
     const aPG = a.pg || 0;
     const bPG = b.pg || 0;
     if (aPG !== bPG) return bPG - aPG;
-    // PP descendente
+    
+    // 3. PP descendente (Diferencia)
     const aPP = a.pp || 0;
     const bPP = b.pp || 0;
     if (aPP !== bPP) return bPP - aPP;
-    // Si es Ranking Completo, incluir RT y MG en la ordenación
-    if (isRankingCompleto.value) {
-      // RT descendente
-      const aRT = getRT(a);
-      const bRT = getRT(b);
-      if (aRT !== bRT) return bRT - aRT;
-      // MG ascendente
-      const aMG = a.mg || 0;
-      const bMG = b.mg || 0;
-      return aMG - bMG;
-    }
-    return 0;
+    
+    // 4. RT descendente (Puntos Totales)
+    const aRT = getRT(a);
+    const bRT = getRT(b);
+    if (aRT !== bRT) return bRT - aRT;
+    
+    // 5. MG ascendente (Manos Ganadas)
+    const aMG = a.mg || 0;
+    const bMG = b.mg || 0;
+    if (aMG !== bMG) return aMG - bMG;
+    
+    // 6. Si todo es igual, orden del sorteo como desempate
+    return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
   });
 });
 

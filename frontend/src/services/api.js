@@ -75,7 +75,7 @@ export const plantillaService = {
       return response.data.url;
     } catch (error) {
       // Si el servidor no está disponible o devuelve error 404, usar localStorage como respaldo
-      console.log('No se pudo obtener la plantilla del servidor, buscando en localStorage');
+      // Silencioso aquí, no es un error crítico
       const localTemplate = localStorage.getItem('plantilla_mesas_url');
       if (localTemplate) {
         return localTemplate;
@@ -130,6 +130,11 @@ export const campeonatoService = {
 
   async reiniciarCampeonato(id) {
     const response = await api.put(`/campeonatos/${id}/reiniciar`);
+    return response.data;
+  },
+
+  async retrocederPartida(id) {
+    const response = await api.post(`/campeonatos/${id}/retroceder-partida`);
     return response.data;
   }
 };
@@ -225,10 +230,8 @@ export const resultadoService = {
       throw new Error('ID de campeonato es requerido');
     }
     
-    console.log('Realizando petición GET a /resultados/ranking con campeonato_id:', campeonatoId);
     try {
       const response = await api.get(`/resultados/ranking?campeonato_id=${campeonatoId}`);
-      console.log('Respuesta recibida:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error en obtenerRanking:', error);

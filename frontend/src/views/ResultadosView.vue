@@ -139,49 +139,40 @@ const sortedRanking = computed(() => {
     return [];
   }
   
-  console.log('Calculando sortedRanking con datos:', ranking.value);
-  
   return [...ranking.value].sort((a, b) => {
-    // Si es la primera partida, mantener el orden exacto del sorteo inicial
-    if (campeonato.value?.partida_actual === 1) {
-      console.log('Primera partida, ordenando por sorteo');
-      return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
-    }
-
-    // Para el resto de partidas:
+    // Aplicar los criterios en orden:
     // 1. GB ascendente (grupo A antes que B)
     const aGB = a.gb ? 1 : 0;
     const bGB = b.gb ? 1 : 0;
     if (aGB !== bGB) return aGB - bGB;
 
-    // 2. PG total descendente (sumatorio de PG)
+    // 2. PG total descendente (sumatorio de Partidas Ganadas)
     const aPG = a.pg || 0;
     const bPG = b.pg || 0;
     if (aPG !== bPG) return bPG - aPG;
 
-    // 3. PP/Dif total descendente (sumatorio de PP)
+    // 3. PP/Dif total descendente (sumatorio de Diferencia)
     const aPP = a.pp || 0;
     const bPP = b.pp || 0;
     if (aPP !== bPP) return bPP - aPP;
 
-    // 4. PT/RT total descendente (sumatorio de RT)
+    // 4. RT/PT total descendente (sumatorio de Puntos Totales)
     const aRT = a.rt || 0;
     const bRT = b.rt || 0;
     if (aRT !== bRT) return bRT - aRT;
 
-    // 5. MG total ascendente (sumatorio de MG)
+    // 5. MG total ascendente (sumatorio de Manos Ganadas)
     const aMG = a.mg || 0;
     const bMG = b.mg || 0;
     if (aMG !== bMG) return aMG - bMG;
 
-    // Si todo es igual, mantener el orden del sorteo inicial
+    // 6. Si todo es igual, mantener el orden del sorteo inicial como desempate
     return (a.ordenSorteo || 0) - (b.ordenSorteo || 0);
   });
 });
 
 const parejasVisibles = computed(() => {
   const sorted = sortedRanking.value;
-  console.log('Calculando parejasVisibles con sortedRanking:', sorted);
   
   if (!sorted || !Array.isArray(sorted)) {
     console.error('sortedRanking no es un array o es null:', sorted);
@@ -190,7 +181,6 @@ const parejasVisibles = computed(() => {
   
   const inicio = paginaActual.value * PAREJAS_POR_PAGINA;
   const parejas = sorted.slice(inicio, inicio + PAREJAS_POR_PAGINA);
-  console.log('Parejas visibles calculadas:', parejas);
   return parejas;
 });
 
@@ -203,7 +193,6 @@ const cambiarPagina = () => {
     } else {
       paginaActual.value++;
     }
-    console.log('Cambiando a página:', paginaActual.value + 1);
   }
 };
 
@@ -213,14 +202,12 @@ const iniciarRotacionPaginas = () => {
   
   // Solo iniciar la rotación si hay más de una página
   if (totalPaginas.value > 1) {
-    console.log('Iniciando rotación de páginas, total páginas:', totalPaginas.value);
     intervalId.value = setInterval(cambiarPagina, INTERVALO_CAMBIO);
   }
 };
 
 const detenerRotacionPaginas = () => {
   if (intervalId.value) {
-    console.log('Deteniendo rotación de páginas');
     clearInterval(intervalId.value);
     intervalId.value = null;
   }
@@ -242,8 +229,6 @@ const iniciarRecargaAutomatica = async () => {
     intervalRecargaId.value = setInterval(async () => {
       if (document.visibilityState === 'visible') {
         try {
-          console.log('Iniciando actualización automática:', new Date().toLocaleTimeString());
-          
           // Obtener el campeonato actualizado
           const campeonatoActualizado = await campeonatoStore.obtenerActual();
           if (!campeonatoActualizado) {
@@ -251,24 +236,18 @@ const iniciarRecargaAutomatica = async () => {
             return;
           }
           
-          console.log('Campeonato actualizado en recarga:', campeonatoActualizado);
           await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
 
           // Obtener y actualizar el ranking
           const nuevosResultados = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
           if (nuevosResultados) {
-            console.log('Nuevos resultados obtenidos:', nuevosResultados);
             await resultadoStore.$patch({ ranking: nuevosResultados });
           }
-
-          console.log('Actualización automática completada:', new Date().toLocaleTimeString());
         } catch (error) {
           console.error('Error en la actualización automática:', error);
         }
       }
     }, INTERVALO_RECARGA);
-    
-    console.log('Recarga automática iniciada');
   } catch (e) {
     console.error('Error al iniciar la recarga automática:', e);
   }
@@ -276,7 +255,6 @@ const iniciarRecargaAutomatica = async () => {
 
 const detenerRecargaAutomatica = () => {
   if (intervalRecargaId.value) {
-    console.log('Deteniendo intervalo de recarga');
     clearInterval(intervalRecargaId.value);
     intervalRecargaId.value = null;
   }
@@ -293,22 +271,17 @@ const cargarRanking = async () => {
   error.value = null;
   
   try {
-    console.log('Iniciando carga de datos:', new Date().toLocaleTimeString());
-    
     // 1. Obtener el campeonato actualizado y esperar a que se complete
     const campeonatoActualizado = await campeonatoStore.obtenerActual();
     if (!campeonatoActualizado) {
       throw new Error('No se pudo obtener el campeonato actualizado');
     }
     
-    console.log('Campeonato actualizado obtenido:', campeonatoActualizado);
-    
     // 2. Actualizar el store con el campeonato
     await campeonatoStore.$patch({ campeonato: campeonatoActualizado });
 
     // 3. Si es la primera partida, necesitamos el orden del sorteo
     if (campeonatoActualizado.partida_actual === 1) {
-      console.log('Primera partida, obteniendo orden del sorteo');
       // Obtener las mesas y esperar a que se complete
       const mesasData = await mesaService.obtenerMesas(
         campeonatoActualizado.id, 
@@ -318,8 +291,6 @@ const cargarRanking = async () => {
       if (!mesasData || !mesasData.length) {
         throw new Error('No se encontraron mesas para la primera partida');
       }
-
-      console.log('Mesas obtenidas:', mesasData);
 
       // Ordenar las mesas por número
       const mesasOrdenadas = [...mesasData].sort((a, b) => Number(a.id) - Number(b.id));
@@ -342,15 +313,11 @@ const cargarRanking = async () => {
         }
       });
 
-      console.log('Orden de parejas calculado:', Object.fromEntries(ordenPorPareja));
-
       // 4. Obtener el ranking y esperar a que se complete
       const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
       if (!rankingData) {
         throw new Error('No se pudo obtener el ranking');
       }
-
-      console.log('Ranking obtenido:', rankingData);
 
       // 5. Actualizar el ranking con el orden del sorteo
       const rankingActualizado = rankingData.map(pareja => ({
@@ -359,21 +326,16 @@ const cargarRanking = async () => {
         ordenSorteo: ordenPorPareja.get(pareja.id) || 0
       }));
 
-      console.log('Ranking actualizado con orden de sorteo:', rankingActualizado);
       await resultadoStore.$patch({ ranking: rankingActualizado });
     } else {
-      console.log('Obteniendo ranking para partida:', campeonatoActualizado.partida_actual);
       // Para el resto de partidas, obtener el ranking directamente
       const rankingData = await resultadoStore.obtenerRanking(campeonatoActualizado.id);
       if (!rankingData) {
         throw new Error('No se pudo obtener el ranking');
       }
       
-      console.log('Ranking obtenido:', rankingData);
       await resultadoStore.$patch({ ranking: rankingData });
     }
-
-    console.log('Carga de datos completada:', new Date().toLocaleTimeString());
   } catch (e) {
     console.error('Error al cargar los datos:', e);
     if (e.response) {
@@ -391,29 +353,25 @@ const cargarRanking = async () => {
 
 // Añadir watches para asegurar la reactividad
 watch(() => campeonato.value, (newCampeonato) => {
-  console.log('Campeonato actualizado:', newCampeonato?.partida_actual);
+  // Silencioso
 }, { deep: true });
 
 watch(() => ranking.value, (newRanking) => {
-  console.log('Ranking actualizado:', new Date().toLocaleTimeString());
-  
   // Verificar si necesitamos iniciar/detener la rotación de páginas
   if (totalPaginas.value > 1 && !intervalId.value) {
-    console.log('Iniciando rotación de páginas después de actualización');
     iniciarRotacionPaginas();
   } else if (totalPaginas.value <= 1 && intervalId.value) {
-    console.log('Deteniendo rotación de páginas después de actualización');
     detenerRotacionPaginas();
   }
 }, { deep: true });
 
+// Variable para almacenar la función de limpieza del evento de visibilidad
+let handleVisibilityChange = null;
+
 onMounted(async () => {
   try {
-    console.log('Componente ResultadosView montado, iniciando carga de datos');
-    
     // Obtener el campeonato inicial
     const campeonatoInicial = await campeonatoStore.obtenerActual();
-    console.log('Campeonato inicial obtenido:', campeonatoInicial);
     
     if (!campeonatoInicial) {
       console.error('No se pudo obtener el campeonato inicial');
@@ -429,47 +387,32 @@ onMounted(async () => {
     
     // Actualizar el store con el campeonato
     await campeonatoStore.$patch({ campeonato: campeonatoInicial });
-    console.log('Store de campeonato actualizado');
     
     // Realizar la carga inicial del ranking
-    console.log('Iniciando carga del ranking para campeonato:', campeonatoInicial.id);
     const rankingInicial = await resultadoStore.obtenerRanking(campeonatoInicial.id);
-    console.log('Ranking inicial obtenido:', rankingInicial);
     
     // Iniciar la recarga automática
     await iniciarRecargaAutomatica();
-    console.log('Recarga automática iniciada');
     
     // Verificar si necesitamos iniciar la rotación de páginas
     if (totalPaginas.value > 1) {
-      console.log('Iniciando rotación de páginas inicial');
       iniciarRotacionPaginas();
     }
     
     // Configurar el evento de visibilidad
-    const handleVisibilityChange = async () => {
+    handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        console.log('Página visible, reiniciando actualizaciones');
         await iniciarRecargaAutomatica();
         if (totalPaginas.value > 1) {
           iniciarRotacionPaginas();
         }
       } else {
-        console.log('Página oculta, deteniendo actualizaciones');
         detenerRotacionPaginas();
         detenerRecargaAutomatica();
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Limpiar al desmontar
-    onUnmounted(() => {
-      console.log('Componente desmontado, limpiando intervalos y eventos');
-      detenerRotacionPaginas();
-      detenerRecargaAutomatica();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    });
     
   } catch (e) {
     console.error('Error en la inicialización:', e);
@@ -481,6 +424,17 @@ onMounted(async () => {
       });
     }
     error.value = e.message || 'Error al inicializar el ranking';
+  }
+});
+
+// Registrar el hook onUnmounted al nivel de setup, no dentro de una función asíncrona
+onUnmounted(() => {
+  detenerRotacionPaginas();
+  detenerRecargaAutomatica();
+  
+  // Eliminar el evento de visibilitychange solo si se ha registrado
+  if (handleVisibilityChange) {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   }
 });
 

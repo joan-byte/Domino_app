@@ -41,11 +41,11 @@ async def actualizar_resultados_mesa(
 ):
     """
     Actualiza los resultados de una mesa, calculando automáticamente los campos derivados:
-    - RT: Es igual a RP si es inferior a PM, sino es PM (para mesas con dos parejas)
-    - RT: Es 150 para mesas con una sola pareja
+    - RT: Mantiene el valor original (limitado a PM+129)
+    - RP: Es igual a RT si es inferior a PM, sino es PM
     - MG: Se mantiene el valor del input
     - PP: Es RP de la pareja - RP de la pareja contraria
-    - PG: Es 1 si PP es positivo, 0 si es negativo
+    - PG: Se determina según RT (no RP)
     """
     # Buscar resultados existentes para la mesa y partida
     resultados_existentes = db.query(Resultado).filter(
@@ -59,7 +59,8 @@ async def actualizar_resultados_mesa(
     ).first()
     if not campeonato:
         raise HTTPException(status_code=404, detail="Campeonato no encontrado")
-
+    
+    # Define la función para actualizar resultados    
     def actualizar_resultado(resultado_existente, resultado_nuevo, rp_contrario=None):
         if resultado_existente:
             # Actualizar campos básicos
@@ -69,15 +70,24 @@ async def actualizar_resultados_mesa(
             # Si no hay pareja contraria (mesa con una sola pareja)
             if rp_contrario is None:
                 resultado_existente.rt = 150  # RT fijo de 150 para mesas con una pareja
+                resultado_existente.rp = 150  # RP fijo de 150
                 resultado_existente.pp = 150  # PP fijo de 150 para mesas con una pareja
                 resultado_existente.pg = 1    # PG fijo de 1 para mesas con una pareja
             else:
-                # RT: Es igual a RP si es inferior a PM, sino es PM
-                resultado_existente.rt = min(resultado_existente.rp, campeonato.pm)
+                # Límite para RT (PM+129)
+                limite_rt = campeonato.pm + 129
+                
+                # RT: Mantiene su valor pero limitado a PM+129
+                resultado_existente.rt = min(resultado_existente.rt, limite_rt)
+                
+                # RP: Es igual a RT si es inferior a PM, sino es PM
+                resultado_existente.rp = min(resultado_existente.rt, campeonato.pm)
+                
                 # PP: Es RP de la pareja - RP de la pareja contraria
                 resultado_existente.pp = resultado_existente.rp - rp_contrario
-                # PG: Es 1 si PP es positivo, 0 si es negativo
-                resultado_existente.pg = 1 if resultado_existente.pp > 0 else 0
+    
+    # Calcular límite RT (PM+129)
+    limite_rt = campeonato.pm + 129
 
     # Si solo hay un resultado (mesa con una sola pareja)
     if resultado2 is None:
@@ -100,10 +110,19 @@ async def actualizar_resultados_mesa(
             None
         )
         
-        # Actualizar ambos resultados con los RP contrarios
+        # Actualizar ambos resultados
         if resultado_1_existente and resultado_2_existente:
-            actualizar_resultado(resultado_1_existente, resultado1, resultado2.rp)
-            actualizar_resultado(resultado_2_existente, resultado2, resultado1.rp)
+            # Calcular los RP limitados por PM
+            rp1 = min(resultado1.rt, campeonato.pm)
+            rp2 = min(resultado2.rt, campeonato.pm)
+            
+            # Calcular PG basado en RP (no en RT)
+            resultado_1_existente.pg = 1 if rp1 > rp2 else 0
+            resultado_2_existente.pg = 1 if rp2 > rp1 else 0
+            
+            # Actualizar los demás campos
+            actualizar_resultado(resultado_1_existente, resultado1, rp2)
+            actualizar_resultado(resultado_2_existente, resultado2, rp1)
 
     try:
         db.commit()
@@ -125,9 +144,10 @@ async def crear_resultados(
     - PP = 150
     - PG = 1
     Para mesas con dos parejas:
-    - RT = min(RP, PM del campeonato)
+    - RT = valor original (limitado a PM+129)
+    - RP = min(RT, PM del campeonato)
     - PP = RP propio - RP contrario
-    - PG = 1 si PP > 0, 0 en caso contrario
+    - PG = 1 si RT propio > RT contrario, 0 en caso contrario
     """
     try:
         # Obtener el campeonato para acceder a su PM
@@ -146,31 +166,42 @@ async def crear_resultados(
                 campeonato_id=resultado1.campeonato_id,
                 rt=150,  # RT fijo para mesas con una pareja
                 mg=resultado1.mg,
-                rp=resultado1.rp,
+                rp=150,  # RP fijo para mesas con una pareja
                 pg=1,    # PG fijo para mesas con una pareja
                 pp=150,  # PP fijo para mesas con una pareja
                 gb=resultado1.gb
             )
             db.add(nuevo_resultado1)
         else:
-            # Calcular RT, PP y PG para ambas parejas
-            rt1 = min(resultado1.rp, campeonato.pm)
-            rt2 = min(resultado2.rp, campeonato.pm)
-            pp1 = resultado1.rp - resultado2.rp
-            pp2 = resultado2.rp - resultado1.rp
-            pg1 = 1 if pp1 > 0 else 0
-            pg2 = 1 if pp2 > 0 else 0
+            # Límite de RT (PM+129)
+            limite_rt = campeonato.pm + 129
+            
+            # RT debe mantener su valor original (limitado a PM+129)
+            rt1 = min(resultado1.rt, limite_rt)
+            rt2 = min(resultado2.rt, limite_rt)
+            
+            # RP está limitado por PM
+            rp1 = min(resultado1.rt, campeonato.pm)
+            rp2 = min(resultado2.rt, campeonato.pm)
+            
+            # PP basado en RP
+            pp1 = rp1 - rp2
+            pp2 = rp2 - rp1
+            
+            # PG basado en RP (no en RT)
+            pg1 = 1 if rp1 > rp2 else 0
+            pg2 = 1 if rp2 > rp1 else 0
 
             nuevo_resultado1 = Resultado(
                 pareja_id=resultado1.pareja_id,
                 mesa_id=resultado1.mesa_id,
                 partida=resultado1.partida,
                 campeonato_id=resultado1.campeonato_id,
-                rt=rt1,
+                rt=rt1,      # RT conserva valor original (limitado a PM+129)
                 mg=resultado1.mg,
-                rp=resultado1.rp,
-                pg=pg1,
-                pp=pp1,
+                rp=rp1,      # RP limitado a PM
+                pg=pg1,      # PG basado en RT
+                pp=pp1,      # PP basado en RP
                 gb=resultado1.gb
             )
             db.add(nuevo_resultado1)
@@ -180,11 +211,11 @@ async def crear_resultados(
                 mesa_id=resultado2.mesa_id,
                 partida=resultado2.partida,
                 campeonato_id=resultado2.campeonato_id,
-                rt=rt2,
+                rt=rt2,      # RT conserva valor original (limitado a PM+129)
                 mg=resultado2.mg,
-                rp=resultado2.rp,
-                pg=pg2,
-                pp=pp2,
+                rp=rp2,      # RP limitado a PM
+                pg=pg2,      # PG basado en RT
+                pp=pp2,      # PP basado en RP
                 gb=resultado2.gb
             )
             db.add(nuevo_resultado2)

@@ -350,4 +350,79 @@ async def upload_logo(file: UploadFile = File(...)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al subir la imagen: {str(e)}"
+        )
+
+@router.post("/{campeonato_id}/retroceder-partida")
+def retroceder_partida(campeonato_id: int, db: Session = Depends(get_db)):
+    """
+    Retrocede a la partida anterior si no hay resultados en la partida actual.
+    Primero verifica si hay resultados en la partida actual.
+    Si hay resultados, retorna un error.
+    Si no hay resultados, retrocede a la partida anterior y elimina las mesas de la partida actual.
+    """
+    try:
+        logger.info(f"Intentando retroceder partida del campeonato {campeonato_id}")
+        
+        # Verificar que existe el campeonato
+        campeonato = db.query(Campeonato).filter(Campeonato.id == campeonato_id).first()
+        if not campeonato:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Campeonato no encontrado"
+            )
+        
+        # Verificar que el campeonato ha comenzado
+        if campeonato.partida_actual <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede retroceder desde la primera partida"
+            )
+        
+        # Verificar si hay resultados en la partida actual
+        resultados = db.query(Resultado).filter(
+            Resultado.campeonato_id == campeonato_id,
+            Resultado.partida == campeonato.partida_actual
+        ).all()
+        
+        if resultados:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede retroceder porque ya hay resultados registrados en la partida actual"
+            )
+        
+        # Guardar la partida anterior para devolverla en la respuesta
+        partida_anterior = campeonato.partida_actual - 1
+        
+        # Eliminar las mesas de la partida actual
+        db.query(Mesa).filter(
+            Mesa.campeonato_id == campeonato_id,
+            Mesa.partida == campeonato.partida_actual
+        ).delete()
+        
+        # Actualizar la partida actual
+        campeonato.partida_actual = partida_anterior
+        db.commit()
+        
+        # Obtener información de las mesas de la partida anterior para devolverla en la respuesta
+        mesas_partida_anterior = db.query(Mesa).filter(
+            Mesa.campeonato_id == campeonato_id,
+            Mesa.partida == partida_anterior
+        ).all()
+        
+        logger.info(f"Partida retrocedida exitosamente para el campeonato {campeonato_id}")
+        return {
+            "message": "Partida retrocedida exitosamente",
+            "partida_actual": partida_anterior,
+            "campeonato_actual": campeonato,
+            "mesas_count": len(mesas_partida_anterior)
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.error(f"Error al retroceder partida: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al retroceder la partida: {str(e)}"
         ) 

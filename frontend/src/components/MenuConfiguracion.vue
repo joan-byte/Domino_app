@@ -1,11 +1,19 @@
 <!-- Componente para el menú de configuración -->
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   showMenu: {
     type: Boolean,
     default: false
+  },
+  campeonato: {
+    type: Object,
+    default: null
+  },
+  hayResultadosPartidaActual: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -13,8 +21,39 @@ const emit = defineEmits([
   'update:show-menu', 
   'close-menus',
   'mostrar-modal-plantilla',
-  'mostrar-posicionamiento-logo'
+  'mostrar-posicionamiento-logo',
+  'rehacer-partida'
 ]);
+
+// Verificar si se puede rehacer la partida
+const puedeRehacerPartida = computed(() => {
+  // Solo se puede rehacer si:
+  // 1. Hay un campeonato activo
+  // 2. La partida actual es mayor a 1 (no es la primera partida)
+  // 3. No hay resultados en la partida actual
+  return props.campeonato && 
+         props.campeonato.partida_actual > 1 && 
+         !props.hayResultadosPartidaActual;
+});
+
+// Determinar si mostrar la opción en el menú (siempre que no sea la primera partida)
+const mostrarOpcionRehacerPartida = computed(() => {
+  return props.campeonato && props.campeonato.partida_actual > 1;
+});
+
+// Texto del tooltip para explicar por qué está deshabilitada la opción
+const textoTooltipRehacerPartida = computed(() => {
+  if (!props.campeonato) {
+    return "No hay campeonato activo";
+  } 
+  if (props.campeonato.partida_actual <= 1) {
+    return "No se puede rehacer la primera partida";
+  }
+  if (props.hayResultadosPartidaActual) {
+    return "No se puede rehacer porque ya hay resultados registrados en la partida actual";
+  }
+  return "Permite volver a la partida anterior para modificar sus resultados";
+});
 
 // Función para cerrar el menú
 const cerrarMenu = () => {
@@ -37,6 +76,12 @@ const mostrarPosicionamientoLogo = () => {
   emit('mostrar-posicionamiento-logo');
   
   console.log('MenuConfiguracion: Evento mostrar-posicionamiento-logo emitido');
+};
+
+// Función para rehacer partida
+const rehacerPartida = () => {
+  cerrarMenu();
+  emit('rehacer-partida');
 };
 </script>
 
@@ -72,6 +117,16 @@ const mostrarPosicionamientoLogo = () => {
           @click="mostrarPosicionamientoLogo"
         >
           Posicionamiento información
+        </button>
+        <button 
+          v-if="mostrarOpcionRehacerPartida"
+          :disabled="!puedeRehacerPartida"
+          class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+          :class="puedeRehacerPartida ? 'text-gray-700' : 'text-gray-400 cursor-not-allowed'"
+          @click="puedeRehacerPartida && rehacerPartida()"
+          :title="textoTooltipRehacerPartida"
+        >
+          Rehacer partida
         </button>
       </div>
     </div>

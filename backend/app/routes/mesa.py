@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from typing import List
-import random
+from typing import List, Dict
+from random import shuffle, randint
 from ..database import get_db
 from ..models import Mesa, Pareja, Campeonato, Resultado
 from ..schemas import MesaCreate, Mesa as MesaSchema
 from sqlalchemy import func, text
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/mesas", tags=["mesas"])
 
@@ -105,7 +109,9 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             parejas_ranking = db.query(
                 Pareja,
                 func.coalesce(func.sum(Resultado.pg), 0).label('total_pg'),
-                func.coalesce(func.sum(Resultado.pp), 0).label('total_pp')
+                func.coalesce(func.sum(Resultado.pp), 0).label('total_pp'),
+                func.coalesce(func.sum(Resultado.rt), 0).label('total_rt'),
+                func.coalesce(func.sum(Resultado.mg), 0).label('total_mg')
             ).outerjoin(
                 Resultado,
                 (Pareja.id == Resultado.pareja_id) & 
@@ -116,8 +122,10 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
             ).group_by(
                 Pareja.id
             ).order_by(
-                func.coalesce(func.sum(Resultado.pg), 0).desc(),
-                func.coalesce(func.sum(Resultado.pp), 0).desc()
+                func.coalesce(func.sum(Resultado.pg), 0).desc(),  # 1. PG descendente (Partidas Ganadas)
+                func.coalesce(func.sum(Resultado.pp), 0).desc(),  # 2. PP descendente (Diferencia)
+                func.coalesce(func.sum(Resultado.rt), 0).desc(),  # 3. RT descendente (Puntos Totales)
+                func.coalesce(func.sum(Resultado.mg), 0).asc()    # 4. MG ascendente (Manos Ganadas)
             ).all()
 
             # Calcular el índice desde donde empiezan las parejas GB=B
@@ -146,11 +154,11 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
         ).group_by(
             Pareja.id
         ).order_by(
-            Pareja.gb.asc(),  # False antes que True
-            func.coalesce(func.sum(Resultado.pg), 0).desc(),
-            func.coalesce(func.sum(Resultado.pp), 0).desc(),
-            func.coalesce(func.sum(Resultado.rt), 0).desc(),
-            func.coalesce(func.sum(Resultado.mg), 0).asc()
+            Pareja.gb.asc(),  # 1. GB ascendente (grupo A antes que B)
+            func.coalesce(func.sum(Resultado.pg), 0).desc(),  # 2. PG descendente (Partidas Ganadas)
+            func.coalesce(func.sum(Resultado.pp), 0).desc(),  # 3. PP descendente (Diferencia)
+            func.coalesce(func.sum(Resultado.rt), 0).desc(),  # 4. RT descendente (Puntos Totales)
+            func.coalesce(func.sum(Resultado.mg), 0).asc()    # 5. MG ascendente (Manos Ganadas)
         ).all()
 
         if not parejas_ranking:
@@ -219,13 +227,75 @@ def crear_mesas_ranking(campeonato_id: int, db: Session = Depends(get_db)):
 
 @router.get("", response_model=List[MesaSchema])
 def get_mesas(campeonato_id: int, partida: int, db: Session = Depends(get_db)):
-    return db.query(Mesa).filter(
+    # Buscar mesas existentes
+    mesas = db.query(Mesa).filter(
         Mesa.campeonato_id == campeonato_id,
         Mesa.partida == partida
     ).options(
         joinedload(Mesa.pareja1).load_only(Pareja.id, Pareja.nombre, Pareja.gb),
         joinedload(Mesa.pareja2).load_only(Pareja.id, Pareja.nombre, Pareja.gb)
     ).order_by(Mesa.id.asc()).all()
+    
+    # Si hay mesas, retornarlas
+    if mesas:
+        return mesas
+    
+    # Si no hay mesas, intentar reconstruirlas desde los resultados
+    # Esto es útil cuando se retrocede una partida
+    print(f"No se encontraron mesas para campeonato {campeonato_id}, partida {partida}. Intentando reconstruirlas desde resultados.")
+    
+    # Obtener resultados de la partida
+    resultados = db.query(Resultado).filter(
+        Resultado.campeonato_id == campeonato_id,
+        Resultado.partida == partida
+    ).all()
+    
+    if not resultados:
+        print(f"No se encontraron resultados para reconstruir las mesas de la partida {partida}.")
+        return []
+    
+    # Agrupar resultados por mesa_id
+    mesas_por_id = {}
+    for resultado in resultados:
+        mesa_id = resultado.mesa_id
+        if mesa_id not in mesas_por_id:
+            mesas_por_id[mesa_id] = {
+                'id': mesa_id,
+                'parejas': []
+            }
+        
+        # Obtener la pareja completa
+        pareja = db.query(Pareja).filter(Pareja.id == resultado.pareja_id).first()
+        if pareja:
+            mesas_por_id[mesa_id]['parejas'].append(pareja)
+    
+    # Crear objetos Mesa a partir de los resultados reconstruidos
+    mesas_reconstruidas = []
+    for mesa_id, datos in mesas_por_id.items():
+        if len(datos['parejas']) > 0:
+            pareja1 = datos['parejas'][0] if len(datos['parejas']) > 0 else None
+            pareja2 = datos['parejas'][1] if len(datos['parejas']) > 1 else None
+            
+            # Crear una nueva mesa sin guardarla en la base de datos
+            mesa = Mesa(
+                id=mesa_id,
+                partida=partida,
+                pareja1_id=pareja1.id if pareja1 else None,
+                pareja2_id=pareja2.id if pareja2 else None,
+                campeonato_id=campeonato_id
+            )
+            
+            # Asignar manualmente las relaciones
+            mesa.pareja1 = pareja1
+            mesa.pareja2 = pareja2
+            
+            mesas_reconstruidas.append(mesa)
+    
+    # Ordenar mesas por id
+    mesas_reconstruidas.sort(key=lambda m: m.id)
+    print(f"Se reconstruyeron {len(mesas_reconstruidas)} mesas desde los resultados.")
+    
+    return mesas_reconstruidas
 
 @router.get("/{mesa_id}", response_model=MesaSchema)
 def get_mesa(mesa_id: int, db: Session = Depends(get_db)):
