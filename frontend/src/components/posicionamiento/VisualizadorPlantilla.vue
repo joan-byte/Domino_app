@@ -67,11 +67,17 @@ const escala = ref(props.escalaInicial);
 const aumentarEscala = () => {
   escala.value = Math.min(2, escala.value + 0.1);
   emit('update:escala', escala.value);
+  
+  // Guardar la escala actual en localStorage si ya hay datos
+  guardarEscalaEnLocalStorage();
 };
 
 const disminuirEscala = () => {
   escala.value = Math.max(0.5, escala.value - 0.1);
   emit('update:escala', escala.value);
+  
+  // Guardar la escala actual en localStorage si ya hay datos
+  guardarEscalaEnLocalStorage();
 };
 
 // Resetear a escala 1:1 para posicionamiento preciso
@@ -97,6 +103,50 @@ const resetearEscala = () => {
   }
   
   emit('update:escala', escala.value);
+  
+  // Guardar la escala actual en localStorage si ya hay datos
+  guardarEscalaEnLocalStorage();
+};
+
+// Función auxiliar para guardar la escala en localStorage
+const guardarEscalaEnLocalStorage = () => {
+  try {
+    // Verificar si ya existen posiciones guardadas
+    const datosGuardadosJSON = localStorage.getItem('posiciones');
+    
+    if (datosGuardadosJSON) {
+      try {
+        const datosGuardados = JSON.parse(datosGuardadosJSON);
+        
+        // Verificar si el formato es el nuevo (con posiciones y escala)
+        if (datosGuardados && typeof datosGuardados === 'object') {
+          if (datosGuardados.posiciones) {
+            // Guardar con el nuevo formato
+            const nuevosValores = {
+              posiciones: datosGuardados.posiciones,
+              escala: escala.value
+            };
+            
+            localStorage.setItem('posiciones', JSON.stringify(nuevosValores));
+            console.log('Escala actualizada y guardada:', escala.value);
+          } else if (Object.keys(datosGuardados).length > 0) {
+            // Es el formato antiguo (solo posiciones)
+            const nuevosValores = {
+              posiciones: datosGuardados,
+              escala: escala.value
+            };
+            
+            localStorage.setItem('posiciones', JSON.stringify(nuevosValores));
+            console.log('Escala guardada con formato antiguo convertido:', escala.value);
+          }
+        }
+      } catch (error) {
+        console.error('Error al guardar escala en localStorage:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error al acceder a localStorage para guardar escala:', error);
+  }
 };
 
 // Actualizar escala cuando cambie la escala inicial

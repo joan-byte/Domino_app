@@ -497,10 +497,23 @@ const positionStorage = usePositionStorage({
 // Métodos para manejar posiciones
 const obtenerPosicion = (elementType, side, subElement = null) => {
   try {
+    // Log para verificar qué posición se está solicitando
+    console.log(`Obteniendo posición para ${elementType}.${side}${subElement ? '.' + subElement : ''}`);
+    
     // Intentar obtener posiciones directamente desde localStorage primero
     const posicionesLocalStorageJSON = localStorage.getItem('posiciones');
     if (posicionesLocalStorageJSON) {
-      const posicionesLocalStorage = JSON.parse(posicionesLocalStorageJSON);
+      const datosLocalStorage = JSON.parse(posicionesLocalStorageJSON);
+      
+      // Verificar si es el nuevo formato con posiciones y escala
+      let posicionesLocalStorage;
+      if (datosLocalStorage.posiciones) {
+        // Nuevo formato
+        posicionesLocalStorage = datosLocalStorage.posiciones;
+      } else {
+        // Formato antiguo (sin escala)
+        posicionesLocalStorage = datosLocalStorage;
+      }
       
       // Verificar si existe la posición específica en localStorage
       let posicionEnLocalStorage = null;
@@ -599,18 +612,27 @@ const actualizarPosicion = (elementType, side, subElementOrPosition, position = 
     // Actualizar la posición en el almacenamiento
     positionStorage.updateElementPosition(elementType, side, subElementOrPosition, position);
     
-    // Guardar inmediatamente en localStorage para persistencia
-    localStorage.setItem('posiciones', JSON.stringify(positionStorage.getAllPositions()));
-    console.log('Posiciones guardadas automáticamente en localStorage después de actualizar', elementType, subElementOrPosition, side);
+    // Guardar inmediatamente en localStorage para persistencia usando el nuevo formato
+    // que incluye escala para mantener los cambios permanentes
+    const datosAGuardar = {
+      posiciones: positionStorage.getAllPositions(),
+      escala: escala.value
+    };
+    
+    localStorage.setItem('posiciones', JSON.stringify(datosAGuardar));
+    console.log('Posiciones y escala guardadas automáticamente en localStorage después de actualizar', elementType, subElementOrPosition, side);
     
     // Para posiciones críticas, verificar que se hayan guardado correctamente
     if ((elementType === 'pareja1' || elementType === 'pareja2') && 
         (subElementOrPosition === 'pos' || subElementOrPosition === 'pg' || subElementOrPosition === 'dif' || subElementOrPosition === 'nombre')) {
-      const posicionesActuales = JSON.parse(localStorage.getItem('posiciones') || '{}');
-      console.log(`%c ✅ Verificación de guardado para ${elementType}.${side}.${subElementOrPosition}:`, 
-                 'background: green; color: white; padding: 3px;');
-      console.log('Posición guardada en localStorage:', 
-                 posicionesActuales?.[elementType]?.[side]?.[subElementOrPosition]);
+      const posicionesActualesJSON = localStorage.getItem('posiciones');
+      if (posicionesActualesJSON) {
+        const posicionesActuales = JSON.parse(posicionesActualesJSON);
+        console.log(`%c ✅ Verificación de guardado para ${elementType}.${side}.${subElementOrPosition}:`, 
+                  'background: green; color: white; padding: 3px;');
+        console.log('Posición guardada en localStorage:', 
+                  posicionesActuales?.posiciones?.[elementType]?.[side]?.[subElementOrPosition]);
+      }
     }
   } catch (error) {
     console.error(`Error al actualizar posición: ${error.message}`);
@@ -661,8 +683,14 @@ const guardarPosiciones = async () => {
     console.log('pareja2.izquierda.pg (ancho):', posicionesAntesDeGuardar?.pareja2?.izquierda?.pg?.width);
     console.log('pareja2.izquierda.dif (ancho):', posicionesAntesDeGuardar?.pareja2?.izquierda?.dif?.width);
     
+    // Guardar la escala junto con las posiciones
+    const datosAGuardar = {
+      posiciones: posicionesAntesDeGuardar,
+      escala: escala.value
+    };
+    
     // Guardar directamente en localStorage para uso inmediato en la impresión
-    localStorage.setItem('posiciones', JSON.stringify(posicionesAntesDeGuardar));
+    localStorage.setItem('posiciones', JSON.stringify(datosAGuardar));
     
     // Evitar guardar a través del servicio/composable ya que esto podría estar causando el problema
     // Solo usar el localStorage para guardar las posiciones
@@ -736,9 +764,17 @@ const resetearPosiciones = () => {
     // Primero usamos las posiciones por defecto exactas (sin escalado)
     positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
     
+    // Restablecer la escala a 1
+    escala.value = 1;
+    
     // Luego las guardamos en localStorage para que el servicio de impresión las utilice
-    localStorage.setItem('posiciones', JSON.stringify(POSICIONES_POR_DEFECTO));
-    console.log('Posiciones restablecidas a los valores por defecto para una impresión exacta');
+    const datosAGuardar = {
+      posiciones: POSICIONES_POR_DEFECTO,
+      escala: 1
+    };
+    
+    localStorage.setItem('posiciones', JSON.stringify(datosAGuardar));
+    console.log('Posiciones y escala restablecidas a los valores por defecto para una impresión exacta');
     
     // Notificar al usuario
     ultimoGuardado.value = new Date();
@@ -755,18 +791,43 @@ const volverAtras = () => {
 // Cargar posiciones y datos al montar el componente
 onMounted(async () => {
   try {
-    // Inicializar las posiciones por defecto inmediatamente
-    console.log('Inicializando posiciones por defecto:', POSICIONES_POR_DEFECTO);
-    positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
+    // Intentar cargar escala y posiciones guardadas
+    const datosGuardadosJSON = localStorage.getItem('posiciones');
     
-    // Intentar cargar posiciones guardadas
-    const posicionesGuardadas = await positionStorage.loadPositions();
-    console.log('Posiciones cargadas:', posicionesGuardadas ? 'Sí' : 'No, usando valores por defecto');
-    
-    // Si no hay posiciones guardadas, asegurar que se usen las por defecto
-    if (!posicionesGuardadas) {
-      console.log('Aplicando posiciones por defecto');
+    if (datosGuardadosJSON) {
+      try {
+        const datosGuardados = JSON.parse(datosGuardadosJSON);
+        
+        // Verificar si el formato es el nuevo (con posiciones y escala)
+        if (datosGuardados && typeof datosGuardados === 'object') {
+          if (datosGuardados.escala && datosGuardados.posiciones) {
+            // Nuevo formato con escala
+            console.log('Cargando posiciones y escala del nuevo formato', datosGuardados);
+            escala.value = datosGuardados.escala;
+            positionStorage.resetPositions(datosGuardados.posiciones);
+          } else {
+            // Formato antiguo (solo posiciones)
+            console.log('Cargando posiciones del formato antiguo', datosGuardados);
+            positionStorage.resetPositions(datosGuardados);
+            
+            // Inicializar escala por defecto
+            escala.value = 1;
+          }
+          
+          // Marcar como cargadas
+          positionStorage.isLoaded.value = true;
+        }
+      } catch (parseError) {
+        console.error('Error al analizar JSON de posiciones:', parseError);
+        // Inicializar posiciones por defecto
+        positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
+        escala.value = 1;
+      }
+    } else {
+      // Si no hay posiciones guardadas, inicializar con valores por defecto
+      console.log('Inicializando posiciones por defecto:', POSICIONES_POR_DEFECTO);
       positionStorage.resetPositions(POSICIONES_POR_DEFECTO);
+      escala.value = 1;
     }
     
     // Forzar a que isLoaded sea true para que se renderice el componente

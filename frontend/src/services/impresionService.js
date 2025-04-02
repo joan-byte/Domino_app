@@ -678,7 +678,20 @@ const ejecutarImpresion = async (campeonato, mesas, plantillaUrl) => {
       const savedPositionsJSON = localStorage.getItem('posiciones');
       
       if (savedPositionsJSON) {
-        posicionesGuardadas = JSON.parse(savedPositionsJSON);
+        const datosGuardados = JSON.parse(savedPositionsJSON);
+        
+        // Verificar si es el nuevo formato con posiciones y escala
+        if (datosGuardados.posiciones) {
+          // Nuevo formato
+          posicionesGuardadas = datosGuardados.posiciones;
+          // También podemos usar la escala guardada si fuera necesario
+          const escalaGuardada = datosGuardados.escala || 1;
+          console.log('Utilizando posiciones del nuevo formato con escala:', escalaGuardada);
+        } else {
+          // Formato antiguo (sin escala)
+          posicionesGuardadas = datosGuardados;
+          console.log('Utilizando posiciones del formato antiguo (sin escala)');
+        }
         
         // Verificar si las posiciones tienen una estructura diferente a la esperada y corregirla
         if (posicionesGuardadas?.pareja1?.nombre?.izquierda && !posicionesGuardadas?.pareja1?.izquierda?.nombre) {
