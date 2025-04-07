@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from ..database import get_db
-from ..models import Pareja, Jugador, Campeonato
+from ..models import Pareja, Jugador, Campeonato, Resultado
 from ..schemas import ParejaCreate, Pareja as ParejaSchema
 from sqlalchemy import desc
 
@@ -100,9 +100,12 @@ def get_parejas(campeonato_id: int, db: Session = Depends(get_db)):
 @router.get("/{pareja_id}", response_model=ParejaSchema)
 def get_pareja(pareja_id: int, db: Session = Depends(get_db)):
     try:
-        # Obtener la pareja con sus jugadores usando joinedload
+        # Obtener la pareja con sus jugadores y campeonato usando joinedload
         pareja = db.query(Pareja)\
-                  .options(joinedload(Pareja.jugadores))\
+                  .options(
+                      joinedload(Pareja.jugadores),
+                      joinedload(Pareja.campeonato)
+                  )\
                   .filter(Pareja.id == pareja_id)\
                   .first()
         
@@ -128,14 +131,6 @@ def update_pareja(pareja_id: int, pareja_update: ParejaCreate, db: Session = Dep
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Pareja no encontrada"
-            )
-        
-        # Verificar que el campeonato no ha comenzado
-        campeonato = db.query(Campeonato).filter(Campeonato.id == pareja.campeonato_id).first()
-        if campeonato.partida_actual > 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se pueden modificar parejas una vez iniciado el campeonato"
             )
         
         # Verificar que hay exactamente 2 jugadores
@@ -214,12 +209,20 @@ def delete_pareja(pareja_id: int, db: Session = Depends(get_db)):
                 detail="Pareja no encontrada"
             )
         
-        # Verificar que el campeonato no ha comenzado
+        # Verificar si hay resultados registrados para esta pareja
+        resultados = db.query(Resultado).filter(Resultado.pareja_id == pareja_id).first()
+        if resultados:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede eliminar una pareja que ya tiene resultados registrados. Puede modificar los jugadores o desactivarla."
+            )
+        
+        # Si el campeonato ha comenzado, solo permitir modificar los jugadores, no eliminar la pareja
         campeonato = db.query(Campeonato).filter(Campeonato.id == pareja.campeonato_id).first()
         if campeonato.partida_actual > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se pueden eliminar parejas una vez iniciado el campeonato"
+                detail="No se pueden eliminar parejas una vez iniciado el campeonato. Puede modificar los jugadores o desactivarla."
             )
         
         # Eliminar jugadores asociados
@@ -230,6 +233,9 @@ def delete_pareja(pareja_id: int, db: Session = Depends(get_db)):
         db.commit()
         
         return {"message": "Pareja eliminada correctamente"}
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
         db.rollback()
         raise HTTPException(

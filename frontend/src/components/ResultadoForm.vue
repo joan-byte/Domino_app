@@ -30,15 +30,21 @@
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Resultado Total (RT)</label>
             <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">150</div>
-            <input
-              v-else
-              type="number"
-              v-model.number="resultados.pareja1.rt"
-              class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="0"
-              required
-              @input="calcularResultados"
-            />
+            <div v-else class="space-y-1">
+              <input
+                type="number"
+                v-model.number="resultados.pareja1.rt"
+                class="w-full px-3 py-2 bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :class="{
+                  'border-red-500 bg-red-50': rtFueraDeRango.pareja1,
+                  'border-gray-300': !rtFueraDeRango.pareja1
+                }"
+                min="0"
+                required
+                @input="calcularResultados"
+              />
+              <p v-if="rtFueraDeRango.pareja1" class="text-red-500 text-xs">{{ mensajeErrorRT }}</p>
+            </div>
           </div>
 
           <!-- Manos Ganadas (MG) -->
@@ -87,14 +93,21 @@
           <!-- Resultado Total (RT) -->
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Resultado Total (RT)</label>
-            <input
-              type="number"
-              v-model.number="resultados.pareja2.rt"
-              class="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="0"
-              required
-              @input="calcularResultados"
-            />
+            <div class="space-y-1">
+              <input
+                type="number"
+                v-model.number="resultados.pareja2.rt"
+                class="w-full px-3 py-2 bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :class="{
+                  'border-red-500 bg-red-50': rtFueraDeRango.pareja2,
+                  'border-gray-300': !rtFueraDeRango.pareja2
+                }"
+                min="0"
+                required
+                @input="calcularResultados"
+              />
+              <p v-if="rtFueraDeRango.pareja2" class="text-red-500 text-xs">{{ mensajeErrorRT }}</p>
+            </div>
           </div>
 
           <!-- Manos Ganadas (MG) -->
@@ -231,6 +244,12 @@ const calcularResultados = () => {
   const rt1 = resultados.value.pareja1.rt;
   const rt2 = resultados.value.pareja2.rt;
   const pm = props.campeonato?.pm ?? 300; // Usar 300 como valor por defecto
+  const limite = limiteSuperiorRT.value;
+
+  // Validar que RT no exceda el límite
+  if (rt1 > limite || rt2 > limite) {
+    return; // No realizar cálculos si los valores están fuera de rango
+  }
 
   // Calcular RP basado en RT y PM
   resultados.value.pareja1.rp = rt1 > pm ? pm : rt1;
@@ -247,6 +266,31 @@ const calcularResultados = () => {
   resultados.value.pareja2.pp = rp2 - rp1;
 };
 
+// Añadir nuevas variables computadas para validar los rangos de RT
+const limiteSuperiorRT = computed(() => {
+  const pm = props.campeonato?.pm ?? 300; // Usar 300 como valor por defecto
+  return pm + 129;
+});
+
+const rtFueraDeRango = computed(() => {
+  if (!props.pareja2) return { pareja1: false, pareja2: false };
+  
+  const rt1 = resultados.value.pareja1.rt;
+  const rt2 = resultados.value.pareja2.rt;
+  const limite = limiteSuperiorRT.value;
+  
+  return {
+    pareja1: rt1 < 0 || rt1 > limite,
+    pareja2: rt2 < 0 || rt2 > limite
+  };
+});
+
+const mensajeErrorRT = computed(() => {
+  const limite = limiteSuperiorRT.value;
+  return `El resultado total no puede exceder ${limite} puntos (PM + 129)`;
+});
+
+// Modificar la función esValido para ser más estricta
 const esValido = computed(() => {
   if (!props.pareja2) return true; // Siempre válido para una sola pareja
   
@@ -254,16 +298,40 @@ const esValido = computed(() => {
   const rt2 = resultados.value.pareja2.rt;
   const mg1 = resultados.value.pareja1.mg;
   const mg2 = resultados.value.pareja2.mg;
+  const limite = limiteSuperiorRT.value;
 
-  return (
-    rt1 >= 0 && rt2 >= 0 &&
-    mg1 >= 0 && mg2 >= 0 &&
-    rt1 !== rt2 // No pueden empatar
-  );
+  // Verificar que los valores estén dentro del rango permitido
+  if (rt1 < 0 || rt1 > limite || rt2 < 0 || rt2 > limite) {
+    return false;
+  }
+
+  // Verificar otras condiciones
+  const mgValido = mg1 >= 0 && mg2 >= 0;
+  const noEmpate = rt1 !== rt2;
+
+  return mgValido && noEmpate;
 });
 
+// Función para validar si un valor está dentro del rango
+const validarRangoRT = (valor) => {
+  const limite = limiteSuperiorRT.value;
+  return valor >= 0 && valor <= limite;
+};
+
+// Modificar la función guardarResultado para incluir validación adicional
 const guardarResultado = () => {
-  if (!esValido.value) return;
+  const limite = limiteSuperiorRT.value;
+  const rt1 = resultados.value.pareja1.rt;
+  const rt2 = resultados.value.pareja2?.rt;
+
+  // Verificar explícitamente los rangos antes de guardar
+  if (rt1 > limite || (rt2 !== undefined && rt2 > limite)) {
+    return; // No permitir guardar si algún RT excede el límite
+  }
+
+  if (!esValido.value) {
+    return; // No hacer nada si los valores no son válidos
+  }
 
   const resultado1 = {
     pareja_id: props.pareja1.id,

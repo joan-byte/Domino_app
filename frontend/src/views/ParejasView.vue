@@ -88,7 +88,6 @@
               <h3 
                 @click="editarPareja(pareja)"
                 class="text-lg font-medium text-blue-500 hover:text-blue-700 cursor-pointer"
-                :class="{ 'pointer-events-none text-gray-400': campeonato?.partida_actual > 0 }"
               >
                 {{ pareja.nombre }}
               </h3>
@@ -229,7 +228,6 @@ const toggleEstado = async (pareja) => {
 };
 
 const editarPareja = (pareja) => {
-  if (campeonato.value?.partida_actual > 0) return;
   router.push(`/parejas/${pareja.id}/editar`);
 };
 

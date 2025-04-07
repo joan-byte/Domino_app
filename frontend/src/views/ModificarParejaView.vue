@@ -6,6 +6,12 @@
         <span class="block sm:inline">{{ error }}</span>
       </div>
 
+      <!-- Mensaje de alerta para sustitución de jugadores -->
+      <div v-if="campeonatoComenzado" class="mb-6 bg-amber-100 border border-amber-400 text-amber-700 px-4 py-3 rounded relative">
+        <span class="block sm:inline font-medium">Atención: El campeonato ya ha comenzado.</span>
+        <p class="mt-1">Al modificar los jugadores de esta pareja, los nuevos jugadores asumirán todos los resultados ya registrados. El ID de la pareja y sus resultados se mantendrán intactos.</p>
+      </div>
+
       <form @submit.prevent="guardarPareja" class="space-y-6">
         <!-- Nombre de la Pareja -->
         <div>
@@ -115,7 +121,9 @@
           <button
             type="button"
             @click="eliminarPareja"
+            :disabled="campeonatoComenzado"
             class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            :class="{'opacity-50 cursor-not-allowed': campeonatoComenzado}"
           >
             Eliminar
           </button>
@@ -148,6 +156,7 @@ const route = useRoute();
 const parejasStore = useParejasStore();
 const error = ref(null);
 const clubInput = ref(null);
+const campeonatoComenzado = ref(false);
 
 const form = ref({
   nombre: '',
@@ -189,6 +198,11 @@ onMounted(async () => {
     
     if (!pareja) {
       throw new Error('No se pudo cargar la pareja');
+    }
+
+    // Verificar si el campeonato ya ha comenzado
+    if (pareja.campeonato && pareja.campeonato.partida_actual > 0) {
+      campeonatoComenzado.value = true;
     }
 
     // Asegurarse de que hay al menos dos jugadores
@@ -254,15 +268,21 @@ const guardarPareja = async () => {
 };
 
 const eliminarPareja = async () => {
-  if (confirm('¿Está seguro de que desea eliminar esta pareja?')) {
-    try {
-      error.value = null;
-      await parejasStore.eliminarPareja(route.params.id);
-      router.push('/parejas');
-    } catch (e) {
-      console.error('Error al eliminar la pareja:', e);
-      error.value = e.response?.data?.detail?.[0]?.msg || 'Error al eliminar la pareja';
+  try {
+    if (campeonatoComenzado.value) {
+      error.value = "No se puede eliminar una pareja cuando el campeonato ya ha comenzado. Solo es posible modificar los jugadores o desactivar la pareja.";
+      return;
     }
+
+    if (!confirm('¿Está seguro de que desea eliminar esta pareja? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    await parejasStore.eliminarPareja(route.params.id);
+    router.push('/parejas');
+  } catch (e) {
+    console.error('Error al eliminar la pareja:', e);
+    error.value = e.message || 'Error al eliminar la pareja';
   }
 };
 

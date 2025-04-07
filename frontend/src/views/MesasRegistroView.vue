@@ -225,8 +225,13 @@
                     required
                     min="0"
                     :readonly="!mesaSeleccionada?.pareja2"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    :class="{
+                      'border-red-500 bg-red-50': rtFueraDeRango.pareja1,
+                      'border-gray-300': !rtFueraDeRango.pareja1
+                    }"
                   />
+                  <p v-if="rtFueraDeRango.pareja1" class="text-red-500 text-xs mt-1">{{ mensajeErrorRT }}</p>
                 </div>
 
                 <!-- Manos Ganadas (MG) -->
@@ -328,8 +333,13 @@
                     type="number"
                     required
                     min="0"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    :class="{
+                      'border-red-500 bg-red-50': rtFueraDeRango.pareja2,
+                      'border-gray-300': !rtFueraDeRango.pareja2
+                    }"
                   />
+                  <p v-if="rtFueraDeRango.pareja2" class="text-red-500 text-xs mt-1">{{ mensajeErrorRT }}</p>
                 </div>
 
                 <!-- Manos Ganadas (MG) -->
@@ -805,6 +815,12 @@ const esValido = computed(() => {
   const mg1 = resultado.value.mg_pareja1;
   const mg2 = resultado.value.mg_pareja2;
   const pm = campeonato.value?.pm ?? 300; // Usar 300 como valor por defecto
+  const limite = pm + 129;
+
+  // Verificar que los valores no excedan el límite permitido
+  if (rt1 > limite || rt2 > limite) {
+    return false;
+  }
 
   return (
     rt1 >= 0 && rt2 >= 0 &&
@@ -911,5 +927,27 @@ onMounted(async () => {
   
   // Iniciar con la vista de ranking en la segunda pantalla
   toggleSecondScreen('ranking');
+});
+
+// Agregar una nueva computed property para validar los RT
+const rtFueraDeRango = computed(() => {
+  if (!mesaSeleccionada.value?.pareja2) return { pareja1: false, pareja2: false };
+  
+  const rt1 = resultado.value.rt_pareja1;
+  const rt2 = resultado.value.rt_pareja2;
+  const pm = campeonato.value?.pm || 350;
+  const limite = pm + 129;
+  
+  return {
+    pareja1: rt1 > limite,
+    pareja2: rt2 > limite
+  };
+});
+
+// Mensaje de error para RT fuera de rango
+const mensajeErrorRT = computed(() => {
+  const pm = campeonato.value?.pm || 350;
+  const limite = pm + 129;
+  return `El resultado total no puede exceder ${limite} puntos (PM + 129)`;
 });
 </script> 
