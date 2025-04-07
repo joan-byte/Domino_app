@@ -10,7 +10,7 @@ services:
     ports:
       - "80:80"      # frontend
       - "8000:8000"  # backend API
-      - "5432:5432"  # PostgreSQL
+      - "5433:5432"  # PostgreSQL (puerto externo 5433, interno 5432)
     volumes:
       - ./secrets:/app/secrets:ro
       - postgres_data:/var/lib/postgresql/data
