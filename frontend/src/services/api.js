@@ -26,6 +26,79 @@ api.interceptors.response.use(
   }
 );
 
+// Servicio para gestión de archivos y uploads
+export const fileService = {
+  async uploadLogo(file) {
+    try {
+      console.log('Iniciando carga de logo:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
+      
+      // Verificar que el archivo sea una imagen
+      if (!file.type.startsWith('image/')) {
+        console.error('El archivo no es una imagen:', file.type);
+        throw new Error('El archivo debe ser una imagen (jpg, png, gif, etc.)');
+      }
+      
+      // Verificar tamaño máximo (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        console.error('El archivo es demasiado grande:', file.size);
+        throw new Error('El archivo no debe superar los 5MB');
+      }
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // URL completa del endpoint
+      const uploadUrl = `${api.defaults.baseURL}/campeonatos/upload-logo`;
+      console.log('URL del endpoint:', uploadUrl);
+      
+      // Configurar la petición con timeout mayor
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 30000 // 30 segundos
+      };
+      
+      console.log('Enviando petición...');
+      const response = await axios.post(uploadUrl, formData, config);
+      console.log('Respuesta recibida:', response.data);
+      
+      // Si llegamos aquí, todo salió bien
+      return response.data;
+    } catch (error) {
+      console.error('Error en uploadLogo:', error);
+      
+      // Información detallada del error para depuración
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('No se recibió respuesta. Request:', error.request);
+      }
+      
+      // Relanzar el error para que lo maneje el componente
+      throw error;
+    }
+  },
+  
+  getCompleteUrl(path) {
+    if (!path) return null;
+    
+    // Si ya es una URL completa, devolverla tal cual
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    // Si es una ruta relativa, añadir la URL base
+    const baseUrl = api.defaults.baseURL;
+    
+    if (path.startsWith('/')) {
+      return `${baseUrl}${path}`;
+    } else {
+      return `${baseUrl}/${path}`;
+    }
+  }
+};
+
 // Nuevo servicio para gestionar plantillas de impresión
 export const plantillaService = {
   /**

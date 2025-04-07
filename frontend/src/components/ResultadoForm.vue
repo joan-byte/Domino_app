@@ -8,11 +8,11 @@
     <div v-if="!pareja2" class="mb-6 p-4 bg-blue-50 rounded-lg">
       <p class="text-blue-800">Esta mesa solo tiene una pareja. Se asignará automáticamente:</p>
       <ul class="list-disc list-inside mt-2 text-blue-700">
-        <li>RT = 150 puntos</li>
-        <li>MG = 5 manos</li>
-        <li>RP = 150 puntos</li>
+        <li>RT = {{ pm/2 }} puntos (PM/2)</li>
+        <li>MG = {{ Math.round((pm/2)/30) }} manos (RT/30 redondeado)</li>
+        <li>RP = {{ pm/2 }} puntos (igual que RT)</li>
         <li>PG = 1 punto</li>
-        <li>PP = 150 puntos</li>
+        <li>PP = {{ pm/2 }} puntos (igual que RT)</li>
       </ul>
     </div>
 
@@ -29,7 +29,7 @@
           <!-- Resultado Total (RT) -->
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Resultado Total (RT)</label>
-            <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">150</div>
+            <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">{{ pm/2 }}</div>
             <div v-else class="space-y-1">
               <input
                 type="number"
@@ -50,7 +50,7 @@
           <!-- Manos Ganadas (MG) -->
           <div class="flex-1">
             <label class="block text-gray-600 mb-2">Manos Ganadas (MG)</label>
-            <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">5</div>
+            <div v-if="!pareja2" class="px-3 py-2 bg-gray-100 rounded-lg">{{ Math.round((pm/2)/30) }}</div>
             <input
               v-else
               type="number"
@@ -203,11 +203,11 @@ const emit = defineEmits(['guardar', 'cancelar']);
 // Inicializar resultados
 const resultados = ref({
   pareja1: {
-    rt: !props.pareja2 ? 150 : 0,
-    mg: !props.pareja2 ? 5 : 0,
-    rp: !props.pareja2 ? 150 : 0,
+    rt: !props.pareja2 ? (props.campeonato?.pm || 300) / 2 : 0,
+    mg: !props.pareja2 ? Math.round(((props.campeonato?.pm || 300) / 2) / 30) : 0,
+    rp: !props.pareja2 ? (props.campeonato?.pm || 300) / 2 : 0,
     pg: !props.pareja2 ? 1 : 0,
-    pp: !props.pareja2 ? 150 : 0
+    pp: !props.pareja2 ? (props.campeonato?.pm || 300) / 2 : 0
   },
   pareja2: props.pareja2 ? {
     rt: 0,

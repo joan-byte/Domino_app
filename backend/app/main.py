@@ -5,14 +5,16 @@ import logging
 
 # Configurar logging
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format='%(levelname)s: %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 # Configurar el nivel de logging para SQLAlchemy
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+logging.getLogger('app.database').setLevel(logging.INFO)
 
+# Cargar variables de entorno desde el archivo .env
 BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
 env = os.getenv("ENV", "development")
 if env.lower() == "production":
@@ -20,6 +22,14 @@ if env.lower() == "production":
 else:
     dotenv_path = BASE_DIR / ".env.dev"
 load_dotenv(dotenv_path=str(dotenv_path))
+
+# Cargar secretos desde archivos si están especificados
+for secret_key in ["SECRET_KEY", "JWT_SECRET_KEY"]:
+    file_path = os.getenv(f"{secret_key}_FILE")
+    if file_path and os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            os.environ[secret_key] = f.read().strip()
+            logger.info(f"Cargado {secret_key} desde archivo {file_path}")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,12 +49,21 @@ app.add_middleware(
         "http://127.0.0.1",
         "http://127.0.0.1:80",
         "http://127.0.0.1:8000",
-        "http://localhost:8000"
+        "http://localhost:8000",
+        # Añadir todos los orígenes de desarrollo y producción
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        # Añadir comodín para desarrollo local en cualquier puerto
+        "http://localhost:*",
+        "http://127.0.0.1:*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
+    max_age=3600  # Tiempo de caché de preflight en segundos
 )
 
 # Montar directorio de archivos estáticos
@@ -59,7 +78,8 @@ DB_NAME = os.getenv("DB_NAME")
 if not DB_NAME:
     raise ValueError("DB_NAME no está definido en el archivo .env")
 
-logger.info(f"Intentando conectar a la base de datos con URL: {get_db_url(DB_NAME)}")
+logger.info(f"Nombre de base de datos configurado: {DB_NAME}")
+logger.info(f"Inicializando con configuración de base de datos")
 engine = init_db(DB_NAME)
 
 # Crear tablas
@@ -71,4 +91,8 @@ app.include_router(pareja)
 app.include_router(mesa)
 app.include_router(resultados)
 app.include_router(ranking)
-app.include_router(plantilla) 
+app.include_router(plantilla)
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "database": engine is not None} 

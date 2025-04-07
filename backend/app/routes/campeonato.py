@@ -333,18 +333,37 @@ async def upload_logo(file: UploadFile = File(...)):
                 detail="El archivo debe ser una imagen"
             )
         
+        # Asegurar que el directorio existe
+        os.makedirs(LOGO_DIR, exist_ok=True)
+        logger.info(f"Directorio de logos: {LOGO_DIR}")
+        
         # Crear un nombre seguro para el archivo
-        file_extension = file.filename.split(".")[-1]
+        file_extension = file.filename.split(".")[-1].lower()
+        
+        # Validar la extensión del archivo
+        valid_extensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']
+        if file_extension not in valid_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Extensión no permitida. Use: {', '.join(valid_extensions)}"
+            )
+            
         file_name = f"logo_{random.randint(10000, 99999)}.{file_extension}"
         file_path = LOGO_DIR / file_name
         
         # Guardar el archivo
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            
+        logger.info(f"Logo guardado en: {file_path}")
         
         # Devolver la ruta relativa para acceder al archivo
-        return {"logo_path": f"/static/logos/{file_name}"}
+        logo_path = f"/static/logos/{file_name}"
+        return {"logo_path": logo_path}
     
+    except HTTPException as he:
+        logger.error(f"Error de validación al subir logo: {he.detail}")
+        raise he
     except Exception as e:
         logger.error(f"Error al subir logo: {str(e)}")
         raise HTTPException(

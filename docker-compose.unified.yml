@@ -1,54 +1,34 @@
-version: '3.9'
-
 services:
   domino-parejas:
     container_name: domino-parejas
-    image: joanalba/domino-parejas:latest
-    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
     ports:
       - "80:80"      # frontend
-      - "8000:8000"  # backend
+      - "8000:8000"  # backend API
+      - "5432:5432"  # PostgreSQL
     volumes:
       - ./secrets:/app/secrets:ro
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - ENV=production
       - APP_ENV=production
-      - DATABASE_URL=postgresql://postgres:$$(cat /app/secrets/db_password.txt)@db:5432/domino_parejas
-      - CORS_ORIGINS=http://localhost,http://localhost:80
-      - SECRET_KEY=$$(cat /app/secrets/secret_key.txt)
-      - JWT_SECRET_KEY=$$(cat /app/secrets/jwt_secret_key.txt)
+      - POSTGRES_USER=domino
+      - POSTGRES_DB=domino_app
+      - POSTGRES_PASSWORD_FILE=/app/secrets/db_password.txt
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://0.0.0.0:80,http://domino-parejas
+      - SECRET_KEY_FILE=/app/secrets/secret_key.txt
+      - JWT_SECRET_KEY_FILE=/app/secrets/jwt_secret_key.txt
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    restart: unless-stopped
-    networks:
-      - domino-net
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    image: postgres:15-alpine
-    platform: linux/amd64
-    container_name: domino-parejas-db
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=$$(cat /run/secrets/db_password)
-      - POSTGRES_DB=domino_parejas
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./secrets/db_password.txt:/run/secrets/db_password:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     restart: unless-stopped
     networks:
       - domino-net

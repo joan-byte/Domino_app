@@ -11,12 +11,25 @@ export const useResultadoStore = defineStore('resultado', () => {
         loading.value = true;
         error.value = null;
         try {
+            console.log('Creando resultado:', { resultado1, resultado2 });
+            
+            // Construir el cuerpo de la petición basado en si hay dos parejas o solo una
+            const requestBody = resultado2 
+                ? { resultado1, resultado2 }
+                : { resultado1 };
+                
             const response = await resultadoService.crear(resultado1, resultado2);
             await obtenerRanking(resultado1.campeonato_id);
             return response;
         } catch (e) {
             console.error('Error al crear resultado:', e);
-            error.value = e.response?.data?.detail || 'Error al crear el resultado';
+            if (e.response?.data?.detail) {
+                error.value = Array.isArray(e.response.data.detail) 
+                    ? e.response.data.detail[0].msg 
+                    : e.response.data.detail;
+            } else {
+                error.value = 'Error al crear el resultado';
+            }
             throw e;
         } finally {
             loading.value = false;

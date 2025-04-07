@@ -180,9 +180,20 @@ onMounted(async () => {
 
 // Función para manejar errores de carga de imagen
 const handleImageError = (event) => {
-  console.error('Error al cargar la imagen del logo:', event);
-  console.log('URL de la imagen con error:', event.target.src);
-  // Opcional: mostrar una imagen de fallback o esconder el contenedor
+  // Mensaje de error más detallado
+  console.error('Error al cargar el logo:', event.target.src);
+  
+  // Registrar información adicional para depuración
+  const img = event.target;
+  console.log('Detalles de la imagen:', {
+    src: img.src,
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+    complete: img.complete
+  });
+  
+  // Opcional: establecer un logo por defecto o esconder el contenedor
+  // event.target.src = '/path/to/default-logo.png'; // Descomentar para usar logo por defecto
 };
 
 // Función para corregir la URL del logo si es necesario
@@ -191,29 +202,34 @@ const getLogoUrl = (url) => {
   
   console.log('Procesando URL del logo:', url);
   
-  // Si ya es una URL completa, devolverla tal cual
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    console.log('URL ya completa, devolviendo:', url);
-    return url;
+  try {
+    // Si ya es una URL completa, devolverla tal cual
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      console.log('URL ya completa, devolviendo:', url);
+      return url;
+    }
+    
+    // Si es una ruta relativa, añadir la URL base
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    let finalUrl = '';
+    
+    if (url.startsWith('/static/')) {
+      // URLs que empiezan con /static/ solo necesitan el baseUrl
+      finalUrl = `${baseUrl}${url}`;
+    } else if (url.startsWith('/')) {
+      // Otras URLs que comienzan con / solo necesitan el baseUrl
+      finalUrl = `${baseUrl}${url}`;
+    } else {
+      // URLs sin / inicial necesitan un / adicional
+      finalUrl = `${baseUrl}/${url}`;
+    }
+    
+    console.log('URL final construida:', finalUrl);
+    return finalUrl;
+  } catch (error) {
+    console.error('Error al procesar URL del logo:', error);
+    return null; // Retornar null en caso de error
   }
-  
-  // Si es una ruta relativa, añadir la URL base
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-  let finalUrl = '';
-  
-  if (url.startsWith('/static/')) {
-    // URLs que empiezan con /static/ solo necesitan el baseUrl
-    finalUrl = `${baseUrl}${url}`;
-  } else if (url.startsWith('/')) {
-    // Otras URLs que comienzan con / solo necesitan el baseUrl
-    finalUrl = `${baseUrl}${url}`;
-  } else {
-    // URLs sin / inicial necesitan un / adicional
-    finalUrl = `${baseUrl}/${url}`;
-  }
-  
-  console.log('URL final construida:', finalUrl);
-  return finalUrl;
 };
 
 // Función para registrar cuando la imagen se carga correctamente

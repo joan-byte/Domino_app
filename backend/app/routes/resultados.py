@@ -69,10 +69,12 @@ async def actualizar_resultados_mesa(
             
             # Si no hay pareja contraria (mesa con una sola pareja)
             if rp_contrario is None:
-                resultado_existente.rt = 150  # RT fijo de 150 para mesas con una pareja
-                resultado_existente.rp = 150  # RP fijo de 150
-                resultado_existente.pp = 150  # PP fijo de 150 para mesas con una pareja
-                resultado_existente.pg = 1    # PG fijo de 1 para mesas con una pareja
+                # Cálculo basado en PM del campeonato
+                rt_valor = campeonato.pm / 2
+                resultado_existente.rt = rt_valor  # RT = PM/2
+                resultado_existente.rp = rt_valor  # RP = RT
+                resultado_existente.pp = rt_valor  # PP = RT
+                resultado_existente.pg = 1         # PG fijo de 1 para mesas con una pareja
             else:
                 # Límite para RT (PM+129)
                 limite_rt = campeonato.pm + 129
@@ -140,8 +142,9 @@ async def crear_resultados(
     """
     Crea nuevos resultados para una mesa.
     Para mesas con una sola pareja:
-    - RT = 150
-    - PP = 150
+    - RT = PM/2
+    - RP = RT
+    - PP = RT
     - PG = 1
     Para mesas con dos parejas:
     - RT = valor original (limitado a PM+129)
@@ -157,18 +160,20 @@ async def crear_resultados(
         if not campeonato:
             raise HTTPException(status_code=404, detail="Campeonato no encontrado")
 
-        # Si solo hay una pareja, valores fijos
+        # Si solo hay una pareja, valores calculados en base al PM
         if resultado2 is None:
+            # Cálculo del RT exacto como PM/2
+            rt_valor = campeonato.pm / 2
             nuevo_resultado1 = Resultado(
                 pareja_id=resultado1.pareja_id,
                 mesa_id=resultado1.mesa_id,
                 partida=resultado1.partida,
                 campeonato_id=resultado1.campeonato_id,
-                rt=150,  # RT fijo para mesas con una pareja
+                rt=rt_valor,  # RT = PM/2
                 mg=resultado1.mg,
-                rp=150,  # RP fijo para mesas con una pareja
-                pg=1,    # PG fijo para mesas con una pareja
-                pp=150,  # PP fijo para mesas con una pareja
+                rp=rt_valor,  # RP = RT
+                pg=1,         # PG fijo de 1
+                pp=rt_valor,  # PP = RT
                 gb=resultado1.gb
             )
             db.add(nuevo_resultado1)

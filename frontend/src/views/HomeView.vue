@@ -38,7 +38,7 @@
       <div class="bg-gray-50 p-4 rounded-lg">
         <h3 class="text-lg font-semibold mb-3">Información General</h3>
         <div class="flex flex-col md:flex-row gap-4">
-          <!-- Logo del campeonato si existe -->
+          <!-- Logo del campeonato si existe, ahora soporta base64 -->
           <div v-if="campeonato.logo" class="flex justify-center mb-4 md:mb-0">
             <img :src="campeonato.logo" alt="Logo del campeonato" class="h-24 w-auto object-contain"/>
           </div>
@@ -75,11 +75,11 @@
               />
             </div>
             
-            <!-- Campo para logo del campeonato -->
+            <!-- Campo para logo del campeonato - Mejorado para mostrar datos base64 -->
             <div>
               <label for="logoFile" class="block text-sm font-medium text-gray-700">Logo del Campeonato (opcional)</label>
               <div class="mt-1 flex flex-col space-y-2">
-                <!-- Vista previa si hay un logo -->
+                <!-- Vista previa si hay un logo (funciona con URLs y base64) -->
                 <img v-if="nuevoCampeonato.logo" :src="nuevoCampeonato.logo" alt="Vista previa del logo" class="h-20 w-auto object-contain"/>
                 <!-- Input para cargar la imagen -->
                 <div class="flex items-center space-x-2">
@@ -250,9 +250,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { campeonatoService } from '../services/api';
+import { campeonatoService, fileService } from '../services/api';
 import { windowManager } from '../services/windowManager';
-import axios from 'axios';
 
 const router = useRouter();
 const campeonato = ref(null);
@@ -341,7 +340,22 @@ const cerrarModal = () => {
 
 const crearCampeonato = async () => {
   try {
-    const campeonatoCreado = await campeonatoService.crear(nuevoCampeonato.value);
+    // Hacer una copia del objeto de campeonato para no modificar el original
+    const campeonatoData = { ...nuevoCampeonato.value };
+    
+    // Verificar si el logo es base64 (comienza con "data:")
+    if (campeonatoData.logo && campeonatoData.logo.startsWith('data:')) {
+      console.log('Logo en formato base64 detectado. Procesando...');
+      
+      // En este caso, se guarda directamente el formato base64
+      // (al estar directamente en la base de datos, no se necesita ninguna conversión adicional)
+      console.log('Longitud de datos base64:', campeonatoData.logo.length);
+    } else {
+      console.log('Logo en formato URL detectado.');
+    }
+    
+    // Llamar al servicio para crear el campeonato
+    const campeonatoCreado = await campeonatoService.crear(campeonatoData);
     cerrarModal();
     await cargarCampeonatoActual();
   } catch (e) {
@@ -352,7 +366,16 @@ const crearCampeonato = async () => {
 
 const actualizarCampeonato = async () => {
   try {
-    await campeonatoService.actualizar(campeonato.value.id, nuevoCampeonato.value);
+    // Hacer una copia del objeto de campeonato para no modificar el original
+    const campeonatoData = { ...nuevoCampeonato.value };
+    
+    // Verificar si el logo es base64 (comienza con "data:")
+    if (campeonatoData.logo && campeonatoData.logo.startsWith('data:')) {
+      console.log('Logo en formato base64 detectado. Procesando para actualización...');
+      // Se maneja igual que en la creación
+    }
+    
+    await campeonatoService.actualizar(campeonato.value.id, campeonatoData);
     cerrarModal();
     await cargarCampeonatoActual();
   } catch (e) {
@@ -401,24 +424,57 @@ const handleLogoUpload = async (event) => {
   if (!file) return;
   
   logoFileName.value = file.name;
+  error.value = null;
   
   try {
-    const formData = new FormData();
-    formData.append('file', file);
+    console.log('Iniciando carga de logo:', file.name);
     
-    // Usar la URL base de la API
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const response = await axios.post(`${baseUrl}/campeonatos/upload-logo`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    // Método primario: Intentar cargar el archivo al servidor
+    try {
+      const response = await fileService.uploadLogo(file);
+      
+      // Actualizar el valor del logo con la URL recibida
+      if (response && response.logo_path) {
+        nuevoCampeonato.value.logo = response.logo_path;
+        console.log('Logo cargado exitosamente con método primario:', nuevoCampeonato.value.logo);
+        return; // Éxito, salimos de la función
       }
-    });
+    } catch (uploadError) {
+      console.error('Error en método primario de carga, intentando método alternativo:', uploadError);
+      // Continuamos con el método alternativo si el primario falla
+    }
     
-    // Actualizar el valor del logo con la URL recibida
-    nuevoCampeonato.value.logo = `${baseUrl}${response.data.logo_path}`;
+    // Método alternativo: Convertir la imagen a base64
+    console.log('Usando método alternativo (base64)...');
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const base64Data = e.target.result;
+        
+        // Actualizar directamente con los datos base64
+        nuevoCampeonato.value.logo = base64Data;
+        console.log('Logo cargado exitosamente con método alternativo (base64)');
+      } catch (e) {
+        console.error('Error con método alternativo:', e);
+        error.value = 'Error al procesar la imagen. Intenta con una imagen más pequeña.';
+        logoFileName.value = '';
+      }
+    };
+    
+    reader.onerror = (e) => {
+      console.error('Error al leer el archivo:', e);
+      error.value = 'Error al leer la imagen. Intenta con otra imagen.';
+      logoFileName.value = '';
+    };
+    
+    // Iniciar la lectura como base64
+    reader.readAsDataURL(file);
+    
   } catch (e) {
-    console.error('Error al subir el logo:', e);
+    console.error('Error general al subir el logo:', e);
     error.value = 'Error al subir la imagen del logo';
+    logoFileName.value = '';
   }
 };
 

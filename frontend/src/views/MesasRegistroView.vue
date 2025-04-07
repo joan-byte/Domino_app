@@ -191,7 +191,7 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-yellow-700">
-                    ¡Atención! Los resultados totales (RT) de ambas parejas no pueden ser superiores a {{ campeonato?.pm || 350 }} puntos.
+                    ¡Atención! Los resultados totales (RT) de ambas parejas no pueden ser superiores a {{ campeonato?.pm || 300 }} puntos.
                   </p>
                 </div>
               </div>
@@ -213,7 +213,7 @@
                     Resultado Total (RT)
                   </label>
                   <div v-if="!mesaSeleccionada.pareja2" id="rt_pareja1_display" aria-labelledby="rt_label_pareja1" class="px-3 py-2 bg-gray-100 rounded-md">
-                    150
+                    {{ campeonato?.pm ? campeonato.pm/2 : 150 }}
                   </div>
                   <input
                     v-else
@@ -243,7 +243,7 @@
                     Manos Ganadas (MG)
                   </label>
                   <div v-if="!mesaSeleccionada.pareja2" id="mg_pareja1_display" aria-labelledby="mg_label_pareja1" class="px-3 py-2 bg-gray-100 rounded-md">
-                    5
+                    {{ campeonato?.pm ? Math.round((campeonato.pm/2)/30) : 5 }}
                   </div>
                   <input
                     v-else
@@ -305,7 +305,7 @@
                     aria-labelledby="pp_label_pareja1"
                     class="px-3 py-2 bg-gray-100 rounded-md"
                   >
-                    {{ !mesaSeleccionada.pareja2 ? 150 : calculos.pp1 }}
+                    {{ !mesaSeleccionada.pareja2 ? (campeonato?.pm ? campeonato.pm/2 : 150) : calculos.pp1 }}
                   </div>
                 </div>
               </div>
@@ -545,7 +545,7 @@ const esUltimaPartida = computed(() => {
 const calculos = computed(() => {
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 350;
+  const pm = campeonato.value?.pm || 300;
 
   // Calcular RP basado en RT y PM
   // RP está limitado por PM
@@ -611,10 +611,16 @@ const abrirFormularioResultado = async (mesa) => {
   
   // Caso especial: Mesa con una sola pareja
   if (!mesa.pareja2) {
+    const pm = campeonato.value?.pm || 300;
+    // RT = PM/2 exactamente (sin redondeo)
+    const rt = pm / 2;
+    // MG = entero redondeado de RT/30
+    const mg = Math.round(rt / 30);
+    
     resultado.value = {
-      rt_pareja1: 150,
+      rt_pareja1: rt,
       rt_pareja2: 0,
-      mg_pareja1: 5,
+      mg_pareja1: mg,
       mg_pareja2: 0
     };
     mostrarModal.value = true;
@@ -671,24 +677,71 @@ const cerrarModal = () => {
 };
 
 const calcularResultados = () => {
-  if (!mesaSeleccionada.value?.pareja2) {
+  if (!mesaSeleccionada.value?.pareja2 || !mesaSeleccionada.value.pareja2.id) {
+    // Si la mesa solo tiene una pareja, establecer valores según las fórmulas correctas
+    const pm = campeonato.value?.pm || 300;
+    // RT = PM/2 exactamente (sin redondeo)
+    const rt = pm / 2;
+    // MG = entero redondeado de RT/30
+    const mg = Math.round(rt / 30);
+    
     resultado.value = {
-      rt_pareja1: 150,
+      rt_pareja1: rt,
       rt_pareja2: 0,
-      mg_pareja1: 5,
+      mg_pareja1: mg,
       mg_pareja2: 0
     };
     return;
   }
+  
+  // Caso normal con dos parejas (no hacemos nada, se usa el valor inicial)
 };
 
 const guardarResultado = async () => {
   if (!esValido.value) return;
 
   try {
+    const pm = campeonato.value?.pm || 300;
+    
+    // Caso especial: la mesa solo tiene una pareja
+    if (!mesaSeleccionada.value.pareja2 || !mesaSeleccionada.value.pareja2.id) {
+      // Cálculos según lo requerido:
+      // RT = PM/2 exacto
+      const rt = pm / 2;
+      // MG = entero redondeado de RT/30
+      const mg = Math.round(rt / 30);
+      
+      // Crear solo el resultado para la pareja 1
+      const resultado1 = {
+        pareja_id: mesaSeleccionada.value.pareja1.id,
+        mesa_id: mesaSeleccionada.value.id,
+        partida: campeonato.value.partida_actual,
+        campeonato_id: campeonato.value.id,
+        rt: rt,
+        mg: mg,
+        rp: rt,      // Resultado partida = RT
+        pg: 1,       // Partida ganada = 1
+        pp: rt,      // Diferencia partidas ganadas = RT
+        gb: mesaSeleccionada.value.pareja1.gb || false
+      };
+      
+      console.log('Guardando resultado para mesa con una sola pareja:', resultado1);
+      
+      if (mesaSeleccionada.value.tiene_resultado) {
+        await resultadoService.actualizarPorMesa(mesaSeleccionada.value.id, resultado1, null);
+      } else {
+        await resultadoStore.crear(resultado1, null);
+      }
+      
+      await mesaStore.obtenerMesas(campeonato.value.id, campeonato.value.partida_actual);
+      await resultadoStore.obtenerRanking(campeonato.value.id);
+      cerrarModal();
+      return;
+    }
+    
+    // Caso normal con dos parejas - código existente
     const rt1 = resultado.value.rt_pareja1;
     const rt2 = resultado.value.rt_pareja2;
-    const pm = campeonato.value?.pm || 350;
 
     // Límite para RT (MP+129)
     const limitRT = pm + 129;
@@ -798,18 +851,17 @@ const guardarResultado = async () => {
     await resultadoStore.obtenerRanking(campeonato.value.id);
     cerrarModal();
   } catch (e) {
-    console.error('Error al guardar el resultado:', e);
-    if (e.response?.data?.detail) {
-      error.value = Array.isArray(e.response.data.detail) 
-        ? e.response.data.detail[0].msg 
-        : e.response.data.detail;
-    } else {
-      error.value = 'Error al guardar el resultado';
-    }
+    console.error('Error al guardar resultado:', e);
+    error.value = 'Error al guardar el resultado. Intente nuevamente.';
   }
 };
 
 const esValido = computed(() => {
+  // Si solo hay una pareja, siempre es válido
+  if (!mesaSeleccionada.value?.pareja2 || !mesaSeleccionada.value.pareja2.id) {
+    return true;
+  }
+  
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
   const mg1 = resultado.value.mg_pareja1;
@@ -832,11 +884,17 @@ const esValido = computed(() => {
 
 // Computed property para controlar los valores por defecto
 const resultadoMostrado = computed(() => {
-  if (mesaSeleccionada.value && !mesaSeleccionada.value.pareja2) {
+  if (mesaSeleccionada.value && (!mesaSeleccionada.value.pareja2 || !mesaSeleccionada.value.pareja2.id)) {
+    const pm = campeonato.value?.pm || 300;
+    // RT = PM/2 exactamente (sin redondeo)
+    const rt = pm / 2;
+    // MG = entero redondeado de RT/30
+    const mg = Math.round(rt / 30);
+    
     return {
-      rt_pareja1: 150,
+      rt_pareja1: rt,
       rt_pareja2: 0,
-      mg_pareja1: 5,
+      mg_pareja1: mg,
       mg_pareja2: 0
     };
   }
@@ -849,7 +907,7 @@ const ambosRTSuperanPM = computed(() => {
   
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 350;
+  const pm = campeonato.value?.pm || 300;
 
   return rt1 > pm && rt2 > pm;
 });
@@ -935,7 +993,7 @@ const rtFueraDeRango = computed(() => {
   
   const rt1 = resultado.value.rt_pareja1;
   const rt2 = resultado.value.rt_pareja2;
-  const pm = campeonato.value?.pm || 350;
+  const pm = campeonato.value?.pm || 300;
   const limite = pm + 129;
   
   return {
@@ -946,7 +1004,7 @@ const rtFueraDeRango = computed(() => {
 
 // Mensaje de error para RT fuera de rango
 const mensajeErrorRT = computed(() => {
-  const pm = campeonato.value?.pm || 350;
+  const pm = campeonato.value?.pm || 300;
   const limite = pm + 129;
   return `El resultado total no puede exceder ${limite} puntos (PM + 129)`;
 });
