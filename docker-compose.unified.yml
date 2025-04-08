@@ -1,12 +1,7 @@
 services:
   domino-parejas:
     container_name: domino-parejas
-    build:
-      context: .
-      dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
+    image: joanalba/domino-parejas:latest
     ports:
       - "80:80"      # frontend
       - "8000:8000"  # backend API
