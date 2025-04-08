@@ -111,61 +111,6 @@ const verificarResultadosPartidaActual = async () => {
   }
 };
 
-// Función para manejar el retroceso de partida
-const handleRehacerPartida = async () => {
-  if (!props.campeonato) return;
-  
-  try {
-    // Confirmar la acción con el usuario
-    if (!confirm('¿Está seguro de que desea rehacer la partida? Esta acción permite modificar resultados de la partida anterior.')) {
-      return;
-    }
-    
-    console.log('Iniciando proceso para rehacer partida...');
-    
-    // Mostrar que estamos procesando
-    const loadingMessage = document.createElement('div');
-    loadingMessage.textContent = 'Procesando...';
-    loadingMessage.style.position = 'fixed';
-    loadingMessage.style.top = '50%';
-    loadingMessage.style.left = '50%';
-    loadingMessage.style.transform = 'translate(-50%, -50%)';
-    loadingMessage.style.background = 'rgba(0, 0, 0, 0.7)';
-    loadingMessage.style.color = 'white';
-    loadingMessage.style.padding = '20px';
-    loadingMessage.style.borderRadius = '5px';
-    loadingMessage.style.zIndex = '9999';
-    document.body.appendChild(loadingMessage);
-    
-    // Llamar al servicio para retroceder la partida
-    const response = await campeonatoStore.retrocederPartida(props.campeonato.id);
-    
-    console.log('Respuesta del servidor:', response);
-    
-    // Eliminar el mensaje de carga
-    document.body.removeChild(loadingMessage);
-    
-    // Verificar si el servidor devolvió información sobre el campeonato actualizado
-    if (response && response.campeonato_actual) {
-      console.log(`Partida rehecha exitosamente. Ahora en partida ${response.campeonato_actual.partida_actual}`);
-      console.log(`Mesas disponibles: ${response.mesas_count || 'No informado'}`);
-      
-      // Esperar un breve momento antes de redireccionar
-      setTimeout(() => {
-        // Realizar una recarga completa de la página para asegurar que todos los componentes se refrescan correctamente
-        window.location.href = '/mesas/registro';
-      }, 100);
-    } else {
-      console.warn('La respuesta del servidor no contiene información del campeonato actualizado');
-      // Redireccionar de todas formas
-      window.location.href = '/mesas/registro';
-    }
-  } catch (error) {
-    console.error('Error al rehacer la partida:', error);
-    alert('Error al rehacer la partida: ' + (error.response?.data?.detail || error.message));
-  }
-};
-
 // Variables para almacenar referencias a intervalos
 const intervalIds = ref([]);
 // Variable para almacenar la función del event listener
@@ -225,11 +170,6 @@ onUnmounted(() => {
   // Limpiar todos los intervalos
   intervalIds.value.forEach(id => clearInterval(id));
 });
-
-// Función para manejar errores de carga del logo
-const handleLogoError = (event) => {
-  console.error('Error al cargar el logo:', event.target.src);
-};
 </script>
 
 <template>
@@ -242,11 +182,11 @@ const handleLogoError = (event) => {
           <div class="flex-shrink-0 flex items-center">
             <!-- Logo del campeonato si existe -->
             <div v-if="campeonato && campeonato.logo" class="mr-3 h-18 w-18 flex items-center justify-center">
-              <img 
-                :src="campeonato.logo" 
+              <img
+                :src="campeonato.logo"
                 alt="Logo del campeonato"
                 style="height: 78px; max-width: 78px; object-fit: contain; display: block;"
-                @error="handleLogoError"
+                @error="$event.target.src='/default_logo.png'"
               />
             </div>
             <!-- Debug info -->

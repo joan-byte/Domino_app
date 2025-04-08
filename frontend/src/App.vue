@@ -148,8 +148,9 @@ onMounted(async () => {
     campeonato.value = await campeonatoService.obtenerActual();
     
     if (campeonato.value && campeonato.value.logo && !campeonato.value.logo.startsWith('http')) {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      campeonato.value.logo = `${baseUrl}${campeonato.value.logo.startsWith('/') ? '' : '/'}${campeonato.value.logo}`;
+      // Usar window.location.origin para construir la URL de archivos estáticos
+      const originUrl = window.location.origin;
+      campeonato.value.logo = `${originUrl}${campeonato.value.logo.startsWith('/') ? '' : '/'}${campeonato.value.logo}`;
     }
     
     // Cargar escala del logo desde localStorage

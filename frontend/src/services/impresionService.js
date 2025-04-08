@@ -338,9 +338,9 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, posicionesG
       if (campeonato && campeonato.logo) {
         const posLogo = posicionesGuardadas?.logo?.izquierda || { top: 15, left: 20, width: 120, height: 70 };
         const estiloLogo = crearEstiloPosicion(posLogo);
-        // Añadir clase para debugging
+        // Añadir clase para debugging y el manejador onerror
         contenidoHTML += `<div class="elemento-posicionado debugLogo" style="${estiloLogo}">
-          <img src="${campeonato.logo}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: left center;" alt="Logo campeonato" />
+          <img src="${campeonato.logo}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: left center;" alt="Logo campeonato" onerror="this.onerror=null;this.src='/default_logo.png';" />
         </div>`;
       }
 
@@ -443,8 +443,9 @@ const generarHTMLImpresion = (mesas, campeonato, plantillaImagenUrl, posicionesG
         if (campeonato && campeonato.logo) {
           const posLogo = posicionesGuardadas?.logo?.derecha || { top: 15, left: 690, width: 120, height: 70 };
           const estiloLogo = crearEstiloPosicion(posLogo);
+          // Añadir manejador onerror
           contenidoHTML += `<div class="elemento-posicionado debugLogo" style="${estiloLogo}">
-            <img src="${campeonato.logo}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: left center;" alt="Logo campeonato" />
+            <img src="${campeonato.logo}" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: left center;" alt="Logo campeonato" onerror="this.onerror=null;this.src='/default_logo.png';" />
           </div>`;
         }
   

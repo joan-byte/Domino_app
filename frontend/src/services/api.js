@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Crear instancia de axios con la configuración base
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -88,13 +88,19 @@ export const fileService = {
       return path;
     }
     
-    // Si es una ruta relativa, añadir la URL base
-    const baseUrl = api.defaults.baseURL;
-    
+    // Para rutas relativas (que empiezan con /), usar el origen de la ventana
+    // Esto es importante para archivos estáticos que no pasan por /api
     if (path.startsWith('/')) {
-      return `${baseUrl}${path}`;
+      // Asegurarse de que no haya doble barra si el path ya empieza con una
+      const origin = window.location.origin;
+      return `${origin}${path}`;
     } else {
-      return `${baseUrl}/${path}`;
+      // Para otras rutas (si las hubiera), podríamos usar baseURL, pero
+      // por ahora, asumimos que todas las rutas relativas importantes empiezan con /
+      // Opcionalmente, podrías añadir lógica aquí si es necesario.
+      // Devolvemos null o lanzamos un error para rutas relativas inesperadas.
+      console.warn(`getCompleteUrl recibió una ruta relativa inesperada: ${path}`);
+      return null; 
     }
   }
 };

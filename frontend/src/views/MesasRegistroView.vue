@@ -983,8 +983,8 @@ onMounted(async () => {
   // Cargar los datos frescos
   await cargarDatos();
   
-  // Iniciar con la vista de ranking en la segunda pantalla
-  toggleSecondScreen('ranking');
+  // Iniciar con la vista de mesas en la segunda pantalla
+  toggleSecondScreen('mesas');
 });
 
 // Agregar una nueva computed property para validar los RT

@@ -38,9 +38,14 @@
       <div class="bg-gray-50 p-4 rounded-lg">
         <h3 class="text-lg font-semibold mb-3">Información General</h3>
         <div class="flex flex-col md:flex-row gap-4">
-          <!-- Logo del campeonato si existe, ahora soporta base64 -->
+          <!-- Logo del campeonato si existe, ahora soporta base64 y maneja errores -->
           <div v-if="campeonato.logo" class="flex justify-center mb-4 md:mb-0">
-            <img :src="campeonato.logo" alt="Logo del campeonato" class="h-24 w-auto object-contain"/>
+            <img 
+              :src="campeonato.logo" 
+              alt="Logo del campeonato" 
+              class="h-24 w-auto object-contain"
+              @error="$event.target.src='/default_logo.png'"
+            />
           </div>
           <div class="space-y-2 flex-1">
             <p><span class="font-medium">Fecha de inicio:</span> {{ formatearFecha(campeonato.fecha_inicio) }}</p>

@@ -199,6 +199,11 @@ const obtenerFormulaDiferencia = (pareja) => {
     return resultado.valor;
   }
   
+  // Caso especial: Pareja jugó sola
+  if (resultado.tipo === 'solo') {
+    return `${resultado.diferencia} - 0 = ${resultado.diferencia}`;
+  }
+  
   // Construir la fórmula con formato HTML para mostrar solo la diferencia en rojo cuando es negativa
   const puntosPareja = resultado.puntosPareja;
   const puntosContraria = resultado.puntosContraria;
@@ -245,7 +250,19 @@ const calcularDiferencia = (pareja) => {
   // Buscar todas las parejas en esta mesa
   const parejasMesa = resultadosUltimaPartida.value.filter(r => r.mesa_id == mesaId);
   
-  // Si no hay exactamente 2 parejas en la mesa, no podemos calcular la diferencia
+  // Caso especial: Mesa con una sola pareja
+  if (parejasMesa.length === 1 && parejasMesa[0].pareja_id == parejaId) {
+    // RP está limitado por PM (Puntuación Máxima)
+    const pm = campeonato.value?.pm || 300;
+    const rp = Math.min(resultado.rt, pm);
+    console.log(`Pareja ${parejaId} jugó sola. RP = ${rp}`);
+    return {
+      tipo: 'solo',
+      diferencia: rp // La diferencia es su propio RP
+    };
+  }
+  
+  // Si no hay exactamente 2 parejas en la mesa (y no es el caso de una sola), error
   if (parejasMesa.length !== 2) {
     return { tipo: 'error', valor: "-----" };
   }
